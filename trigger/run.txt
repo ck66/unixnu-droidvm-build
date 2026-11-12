@@ -1,4 +1,7 @@
 # 每改一次这个文件就是一次运行。
-# 本次只做内省：列出 build-droidvm-all.py 的步骤名 + 参考内核（reference-candidate）的接线方式。
+# 提交信息里带 [full] 就跑完整流水线；否则只做内省。
+#
+# 已知前提：kernel 步骤依赖 policies，policies 依赖 OS/SystemOS 卷，
+# 所以 volumes 那 ~8 GiB 跑不掉。
 
-run: 2026-11-12 18:44 introspect step list
+run: 2026-11-12 18:50 full pipeline, first attempt
