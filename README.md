@@ -63,7 +63,7 @@ ls release/
 | Xcode 版本 | UniXNU-droidvm README 写 macOS 27 / Xcode 27.1；`macos-26` 镜像只有 26.x。可能在编译阶段失败 |
 | 超时 | 给了 350 分钟上限；`build-droidvm-all.py` 步骤很多，可能不够 |
 | 磁盘 | 8 GB IPSW + 中间产物，runner 剩余空间是硬约束 |
-| 分钟数 | 公开仓库 macOS 分钟免费但有额度（2000 分钟额度按 10 倍折算 ≈ 200 分钟/月） |
+| 分钟数 | **公开仓库用标准 runner 免费且不计量**；只有私有仓库才按 10 倍折算额度 |
 
 ---
 
@@ -73,6 +73,8 @@ ls release/
 2. `data-store.img` 用 `tools/rig/make-data-store.sh` 生成（或按 `release.json` 里的说明）
 3. 在 DroidVM 里新建一台 VM：`backend=crosvm`、`hypervisor=gunyah`、`protected_vm=pseudo_unprotected`、`cpu_count=4`、`memory_mb` 先给 **2048**（5120 在 SM8650 上会整机复位）
 4. 固件用 `edk2-virtio-gpu.fd`（随 release 提供）；拿不到时先用 `edk2-gunyah.fd` 验证 UEFI 能到 BdsDxe
+
+> 前置条件（已在 K80 上验证）：`gunyah_host_share_gki_6.1` 模块必须加载，否则伪无保护模式会以 `os error 2` 退出。
 
 ---
 
