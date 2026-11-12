@@ -1,4 +1,5 @@
 # 每改一次这个文件就是一次运行（stage 默认 kernel）。
-# 第 5 次运行：kernel 构建 8 分钟后失败，重跑以获取完整报告（status/run-<id>.md）。
+# run 43194508321 / 43196953886：prepare-xnu-source.py 匿名调 GitHub API 撞 403 速率限制。
+# 已给 build 步骤传 GITHUB_TOKEN，本次为重跑。
 
-run: 2026-11-12 18:03 retry after kernel-build failure in run 43194508321
+run: 2026-11-12 18:14 with GITHUB_TOKEN
