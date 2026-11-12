@@ -1,7 +1,7 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43231649198（10-29 配对 + gsed）：kernel 124s、package 31s、tools 255s 全过，
-# plugin 卡在 glslangValidator is required。已补 glslang / spirv-tools / vulkan-*。
+# run 43237761867：我把一行 `printf '' | sed -i ''` 探测放进 host-tools 步骤，
+# GitHub 的 bash 带 -e，这一行返回非零直接把整个步骤中止（brew 根本没跑）。已删除。
 
-run: 2026-11-12 22:30 with glslang and the Vulkan toolchain
+run: 2026-11-12 22:38 no probe, glslang in
