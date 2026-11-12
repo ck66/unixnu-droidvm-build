@@ -1,8 +1,4 @@
 # 每改一次这个文件就是一次运行。
-# 提交信息里带 [full] 就跑完整流水线；否则只做内省。
-#
-# run 43203752527：26 分钟失败，ld 报 native_* 未定义，但旧报告只留了 error 行，
-# 漏掉了 "failed (N): <command>" 这一句——所以不知道是 reference 还是 kernel 步骤挂的。
-# 本版：full.log 整体落盘 + 最大日志尾部 + out-reference 预填 IPSW。
+# 提交信息带 [full] → 完整流水线；带 [probe] → 参考内核探针；两者都不带 → 仅内省。
 
-run: 2026-11-12 19:22 full again, whole full.log
+run: 2026-11-12 19:29 probe the reference kernel
