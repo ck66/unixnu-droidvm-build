@@ -2,4 +2,4 @@
 # stage 默认为 kernel（只验 Xcode 能不能编 XNU）。
 # 要跑全量请到 Actions 页面手动 Run workflow 并选 full。
 
-run: 2026-11-12 17:45 stage=kernel
+run: 2026-11-12 17:47 stage=kernel (yaml fixed)
