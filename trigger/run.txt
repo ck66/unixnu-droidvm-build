@@ -1,6 +1,4 @@
-# 每改一次这个文件就是一次运行（stage 默认 kernel）。
-# run 43198497539：403 已修，开始真编译（armdt-platform / software-aes / storage-abi /
-#   corecrypto 都有产物），约 10 分钟后失败，但报告取样取到了空日志。
-# 本版报告改为：抓最大的非空日志 + 所有 error 行。
+# 每改一次这个文件就是一次运行。
+# 本次只做内省：列出 build-droidvm-all.py 的步骤名 + 参考内核（reference-candidate）的接线方式。
 
-run: 2026-11-12 18:33 better log sampling
+run: 2026-11-12 18:44 introspect step list
