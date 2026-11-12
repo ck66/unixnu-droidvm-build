@@ -8,6 +8,11 @@
 #   stage=full     fetch the OS/SystemOS volumes, build the whole release set.
 #                  needs ARTIFACT_KEY and a 16-hex-digit chip id.
 #
+# Triggered two ways, and they mean the same thing:
+#   * Run workflow (workflow_dispatch), stage chosen in the form
+#   * a push touching trigger/ -- stage defaults to kernel, which lets an agent start a
+#     run by committing a file instead of clicking
+#
 # `unixnu ipsw fetch` never downloads an IPSW as a whole: it reads the ZIP directory and only
 # the configured members with HTTP range requests, and caches them in out/ipsw/<build>/.
 # The caches below keep that work across runs, so a failed run does not re-download it.
@@ -37,6 +42,9 @@ on:
       only:
         description: Optional --only STEP,... for a partial full run
         default: ""
+  push:
+    paths:
+      - "trigger/**"
 
 permissions:
   contents: read
@@ -46,6 +54,12 @@ env:
   UNIXNU_REPO: Droid-VM/UniXNU
   DEVICE_REPO: Droid-VM/UniXNU-droidvm
   IPSW_BUILD: "21H461"
+  # A push carries no inputs, so every value falls back to the same default the form shows.
+  STAGE: ${{ github.event.inputs.stage || 'kernel' }}
+  UNIXNU_REF: ${{ github.event.inputs.unixnu_ref || 'wip/droidvm' }}
+  DEVICE_REF: ${{ github.event.inputs.device_ref || 'wip/hackintosh' }}
+  XCODE: ${{ github.event.inputs.xcode || '' }}
+  ONLY: ${{ github.event.inputs.only || '' }}
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   HOMEBREW_NO_ENV_HINTS: 1
@@ -65,8 +79,8 @@ jobs:
       - name: Check out UniXNU (Droid-VM fork)
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.UNIXNU_REPO }}
-          ref: ${{ inputs.unixnu_ref }}
+          repository: Droid-VM/UniXNU
+          ref: ${{ env.UNIXNU_REF }}
           path: UniXNU
           submodules: recursive
           persist-credentials: false
@@ -74,8 +88,8 @@ jobs:
       - name: Check out the device repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.DEVICE_REPO }}
-          ref: ${{ inputs.device_ref }}
+          repository: Droid-VM/UniXNU-droidvm
+          ref: ${{ env.DEVICE_REF }}
           path: UniXNU-droidvm
           submodules: recursive
           persist-credentials: false
@@ -85,10 +99,9 @@ jobs:
           python-version: "3.13"
 
       - name: Pick Xcode and report the toolchain
-        env:
-          XCODE: ${{ inputs.xcode }}
         run: |
           if [ -n "$XCODE" ]; then sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"; fi
+          echo "stage: $STAGE"
           sw_vers
           uname -m
           xcodebuild -version
@@ -132,12 +145,12 @@ jobs:
       # Stage 1: only what the kernel needs. KernelCache is the prelink reference and the
       # source of the Apple kexts; a few tens of MB, not 8 GiB.
       - name: Fetch KernelCache only (stage: kernel)
-        if: inputs.stage == 'kernel'
+        if: env.STAGE == 'kernel'
         working-directory: UniXNU
         run: ./unixnu ipsw fetch KernelCache
 
       - name: Build the kernel only (stage: kernel)
-        if: inputs.stage == 'kernel'
+        if: env.STAGE == 'kernel'
         working-directory: UniXNU
         run: |
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" || \
@@ -145,7 +158,7 @@ jobs:
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)"
 
       - name: Report what stage 1 produced
-        if: always() && inputs.stage == 'kernel'
+        if: always() && env.STAGE == 'kernel'
         working-directory: UniXNU
         run: |
           ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
@@ -155,10 +168,10 @@ jobs:
 
       - name: Resolve the chip id (stage: full)
         id: chip
-        if: inputs.stage == 'full'
+        if: env.STAGE == 'full'
         env:
           SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
-          INPUT_CHIP_ID: ${{ inputs.unique_chip_id }}
+          INPUT_CHIP_ID: ${{ github.event.inputs.unique_chip_id || '' }}
         run: |
           chip="${INPUT_CHIP_ID:-$SECRET_CHIP_ID}"
           if [ -z "$chip" ]; then
@@ -173,11 +186,10 @@ jobs:
           echo "chip=$chip" >> "$GITHUB_OUTPUT"
 
       - name: Build the release set (stage: full)
-        if: inputs.stage == 'full'
+        if: env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         env:
           CHIP: ${{ steps.chip.outputs.chip }}
-          ONLY: ${{ inputs.only }}
         run: |
           args=(--unique-chip-id "$CHIP")
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
@@ -185,7 +197,7 @@ jobs:
           python3 scripts/build-droidvm-all.py "${args[@]}"
 
       - name: Show what came out
-        if: always() && inputs.stage == 'full'
+        if: always() && env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         run: |
           for d in out/droidvm/release out/droidvm/build-all; do
@@ -197,7 +209,7 @@ jobs:
 
       - name: Pack and encrypt
         id: pack
-        if: always() && inputs.stage == 'full'
+        if: always() && env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         env:
           ARTIFACT_KEY: ${{ secrets.ARTIFACT_KEY }}
