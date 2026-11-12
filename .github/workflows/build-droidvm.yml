@@ -17,14 +17,17 @@
 # 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
 # compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
 # repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it kernel
-# 124 s, package 31 s and tools 255 s pass and the run reaches the plugin step (43231649198).
+# 126 s, package 43 s, tools 251 s and the whole Turnip build pass, and the run reaches the plugin
+# host check (43239173186).
 #
 # HOST TOOLS, each one learned from a failed run:
-#   gnu-sed          tools step builds toybox with gsed            (43225566396)
+#   gnu-sed   tools step builds toybox with gsed                       (43225566396)
 #   -- but never put gnu-sed's or coreutils' libexec/gnubin on PATH: BSD sed must stay first,
-#      the kernel scripts call `sed -i ''` and GNU sed rejects it   (43229956762)
-#   glslang          plugin step: "glslangValidator is required"    (43231649198)
-#   spirv-tools, vulkan-headers, vulkan-loader: the Mesa/Turnip build behind the same step
+#      the kernel scripts call `sed -i ''` and GNU sed rejects it      (43229956762)
+#   glslang   the Mesa/Turnip build wants glslangValidator            (43231649198)
+#   shaderc   gen-turnip-smoke-shaders.py wants `glslc` (glslang does NOT provide it); without it
+#             the host check silently leaves no plugin_smoke        (43239173186)
+#   spirv-tools, vulkan-headers, vulkan-loader: the rest of that build
 #
 # GitHub runs `shell: bash` as `bash -eo pipefail`: any command that returns non-zero aborts the
 # step, so a diagnostic probe needs `|| true` (run 43237761867 died in the host-tools step on a
@@ -45,6 +48,7 @@
 #
 # Reporting hooks (the Actions log API needs admin rights):
 #   ::warning:: annotations, plus status/run-<id>.md committed back with full.log whole.
+#   The build logs live under UniXNU/out/droidvm/build-all/logs (NOT under the device repository).
 
 name: build droidvm release
 
@@ -146,21 +150,19 @@ jobs:
           SDK_VER="$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)"
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
-      # gnu-sed: toybox wants gsed. glslang: the plugin step builds Mesa/Turnip and needs
-      # glslangValidator. Nothing is added to PATH except bison/flex: BSD sed must stay first,
-      # the kernel scripts call `sed -i ''`. Every probe here ends in `|| true` because the shell
-      # runs with -e.
+      # shaderc gives glslc (gen-turnip-smoke-shaders.py needs it); glslang only gives glslangValidator.
+      # Nothing is added to PATH except bison/flex: BSD sed must stay first.
       - name: Install host tools
         run: |
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
                        gettext texinfo autoconf automake libtool gperf nasm \
-                       glslang spirv-tools vulkan-headers vulkan-loader
+                       glslang shaderc spirv-tools vulkan-headers vulkan-loader
           for formula in bison flex; do
             if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula")/bin" >> "$GITHUB_PATH"; fi
           done
           MISSING=""
           for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild gsed pkg-config \
-                      meson bison flex glslangValidator spirv-val; do
+                      meson bison flex glslangValidator glslc spirv-val; do
             path="$(command -v "$tool" || true)"
             printf '%-18s %s\n' "$tool" "${path:-MISSING}"
             [ -n "$path" ] || MISSING="$MISSING $tool"
@@ -348,18 +350,20 @@ jobs:
             done
             echo "## log inventory"
             echo '```'
-            d=UniXNU-droidvm/out/droidvm/build-all/logs
+            d=UniXNU/out/droidvm/build-all/logs
             if [ -d "$d" ]; then
-              find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -25
+              find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -30
+            else
+              echo "(no log directory: $d)"
             fi
             echo '```'
-            echo "## tail of the step logs"
-            for name in mesa-venv plugin mesa turnip metal2vulkan data trust payload images kernel; do
+            echo "## turnip / plugin logs"
+            for name in mesa-venv turnip-ios turnip-host turnip-host-check smoke plugin-smoke; do
               for f in "$d"/*"$name"*.log; do
                 [ -s "$f" ] || continue
-                echo "### $(basename "$f")"
+                echo "### $(basename "$f") ($(wc -c < "$f") bytes)"
                 echo '```'
-                tail -n 25 "$f"
+                tail -n 40 "$f"
                 echo '```'
               done
             done
@@ -370,7 +374,7 @@ jobs:
             else
               echo "release MISSING"
             fi
-            du -sh "UniXNU-droidvm/out/droidvm" "UniXNU/out/ipsw" 2>/dev/null
+            du -sh "UniXNU/out/droidvm" "UniXNU/out/ipsw" 2>/dev/null
             echo '```'
           } > "$OUT"
           echo "report is $(wc -c < "$OUT") bytes"
