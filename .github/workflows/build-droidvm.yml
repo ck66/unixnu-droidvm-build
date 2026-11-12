@@ -5,26 +5,21 @@
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
 #
-# BOTH REPOSITORIES ARE PINNED, AS A PAIR.
-#
-# wip/hackintosh has moved on to the iPadOS 27 board: every commit since 2026-11-03 is "ipados27: ...".
-# The root board (iPadOS 17.7.11) still exists and is the only one with scripts/build-droidvm-all.py,
-# but package/ is SHARED with the 27 board and now references symbols only the 27 board defines --
-# droidvm_gpu_sandbox_decides (ipados27/patches/xnu-12377/droidvm-gpu-sandbox-first.patch),
-# native_hid_pen_allocate / droidvm_trackpad_hid_allocate (ipados27/scripts/build-droidvm-hid-input.py),
-# native_adreno_fences (ipados27/scripts/build-droidvm-legacy-display.py). The root board has no
-# patches/xnu at all, so the kernel link cannot resolve them (runs 43208533681, 43213620917,
-# 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip compiles
-# drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
-# repository does not know (run 43220998711: "cannot initialize return object of type 'IOService *'
-# with an rvalue of type 'NativeLegacyDisplay *'", 76 errors).
-#
-# 2026-10-29 05:50 is the pair the author committed together, both mentioning the GopFramebuffer
-# merge of upstream feat/ipados27-gpu-parity:
+# BOTH REPOSITORIES ARE PINNED, AS A PAIR (2026-10-29 05:50, the author committed them together):
 #   device b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13  "Display: GopFramebuffer's half-float offers ..."
 #   UniXNU 56023cdc363249d201328e9e147f7b05690eba4e  "GPU parity ... GopFramebuffer merged",
 #          "for this board's iPadOS 17 guest (its iPadOS 27 / arm64e port is left for when it reaches main)"
-# That device commit still has no ipados27 symbol references and still has build-droidvm-all.py.
+#
+# Why: wip/hackintosh moved to the iPadOS 27 board (every commit since 2026-11-03 is "ipados27: ...").
+# The root board (iPadOS 17.7.11) is the only one with scripts/build-droidvm-all.py, but package/ is
+# SHARED with the 27 board and references symbols only the 27 board defines, so at the tip the kernel
+# link cannot resolve _droidvm_gpu_sandbox_decides / _native_hid_pen_allocate / ... (runs 43208533681,
+# 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
+# compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
+# repository does not know (run 43220998711, 76 errors). The pair above is the fix.
+#
+# Host tools matter: the tools step builds toybox with gsed (run 43225566396 died there). Mesa and
+# metal2vulkan come later in the plugin step, so their toolchain is installed up front too.
 #
 # Two more things learned the hard way:
 #
@@ -142,15 +137,20 @@ jobs:
           SDK_VER="$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)"
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
+      # gnu-sed is not optional: the tools step builds toybox with gsed (run 43225566396).
+      # The rest is the toolchain Mesa / metal2vulkan / ownervisor reach for later in the run,
+      # installed up front so a missing binary does not cost another 25-minute attempt.
       - name: Install host tools
         run: |
-          brew install llvm lld mtools dtc
-          if ! command -v unifdef >/dev/null; then
-            brew install unifdef
-            echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"
-          fi
+          brew install llvm lld mtools dtc gnu-sed coreutils pkg-config meson bison flex \
+                       gettext texinfo autoconf automake libtool gperf nasm
+          for formula in bison flex; do
+            if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula")/bin" >> "$GITHUB_PATH"; fi
+          done
+          echo "$(brew --prefix gnu-sed)/libexec/gnubin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix coreutils)/libexec/gnubin" >> "$GITHUB_PATH"
           MISSING=""
-          for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild; do
+          for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild gsed pkg-config meson bison flex; do
             path="$(command -v "$tool" || true)"
             printf '%-10s %s\n' "$tool" "${path:-MISSING}"
             [ -n "$path" ] || MISSING="$MISSING $tool"
@@ -315,11 +315,6 @@ jobs:
             echo '```'
             cat "$RUNNER_TEMP/overlay.log" 2>/dev/null
             echo '```'
-            echo "## reference candidate"
-            echo '```'
-            tail -n 20 "$RUNNER_TEMP/ref-kernel.log" 2>/dev/null
-            ls -l "$RUNNER_TEMP/ref" 2>/dev/null
-            echo '```'
             echo "## reference candidate in tree"
             echo '```'
             ls -l UniXNU-droidvm/out/droidvm/tree/build/reference-candidate 2>&1
@@ -347,10 +342,15 @@ jobs:
               find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -25
             fi
             echo '```'
-            echo "## archive-15 / display build errors"
-            echo '```'
-            grep -nE "error:|Undefined symbols|ld: library|cannot initialize" UniXNU/out/droidvm/logs/archive-15-build-native-legacy-display.log 2>/dev/null | head -25
-            echo '```'
+            echo "## last build log tails"
+            for name in tool-toybox tool-gfxprobe tool-lsdiag tool-ipatool plugin kernel package; do
+              f="$d/$name.log"
+              [ -s "$f" ] || continue
+              echo "### $name"
+              echo '```'
+              tail -n 20 "$f"
+              echo '```'
+            done
             echo "## verdict"
             echo '```'
             if [ -d "UniXNU-droidvm/out/droidvm/release" ]; then
