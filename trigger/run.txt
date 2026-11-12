@@ -1,5 +1,4 @@
-# 每改一次这个文件就是一次运行。
-# stage 默认为 kernel（只验 Xcode 能不能编 XNU）。
-# 要跑全量请到 Actions 页面手动 Run workflow 并选 full。
+# 每改一次这个文件就是一次运行（stage 默认 kernel）。
+# 第 5 次运行：kernel 构建 8 分钟后失败，重跑以获取完整报告（status/run-<id>.md）。
 
-run: 2026-11-12 17:47 stage=kernel (yaml fixed)
+run: 2026-11-12 18:03 retry after kernel-build failure in run 43194508321
