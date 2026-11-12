@@ -1,7 +1,7 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43237761867：我把一行 `printf '' | sed -i ''` 探测放进 host-tools 步骤，
-# GitHub 的 bash 带 -e，这一行返回非零直接把整个步骤中止（brew 根本没跑）。已删除。
+# run 43239173186（已到 plugin 末尾）：Turnip iOS/host 都编译成功，host 自检缺 plugin_smoke，
+# 因为 gen-turnip-smoke-shaders.py 要 glslc，而 glslang 只给 glslangValidator。已装 shaderc。
 
-run: 2026-11-12 22:38 no probe, glslang in
+run: 2026-11-13 07:47 with shaderc (glslc)
