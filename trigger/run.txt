@@ -1,4 +1,11 @@
 # 每改一次这个文件就是一次运行。
-# 提交信息带 [full] → 完整流水线；带 [probe] → 参考内核探针；两者都不带 → 仅内省。
+# 提交信息带 [full] → 完整流水线；带 [probe] → 参考内核探针；都不带 → 仅内省。
+#
+# run 43208533681 结论（首次拿到完整 full.log）：
+#   setup 719s   volumes 16s   policies 69s   data-base 62s
+#   reference 414s 成功   kernel 链接失败
+#   未定义的均是 _native_adreno_fences / _native_hid_pen_allocate / _droidvm_*，
+#   全部来自 libNativeLegacyDisplay.late.a——因为没应用 macOS-DroidVM 的 overlay 驱动。
+# 本版：构建前先应用 overlay。
 
-run: 2026-11-12 19:29 probe the reference kernel
+run: 2026-11-12 19:57 full run with the overlay applied
