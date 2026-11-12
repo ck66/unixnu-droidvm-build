@@ -1,20 +1,27 @@
 # build-droidvm: UniXNU-droidvm release set on a GitHub macOS runner
 #
 # stage=kernel  introspect only (list steps, show config) -- cheap, no build
-# stage=full    run build-droidvm-all.py for the whole release set
+# stage=full    everything below
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
 #
-# THE OVERLAY IS NOT OPTIONAL. Droid-VM/macOS-DroidVM carries overlay/droidvm/{patches,drivers,scripts};
-# without copying it into the device checkout, `kernel` dies in the link with
-#   "_native_adreno_fences", "_native_hid_pen_allocate", "_droidvm_page_info",
-#   "_droidvm_gpu_sandbox_decides", "_droidvm_sensor_processor_register" ...
-# referenced from libNativeLegacyDisplay.late.a (DroidVMGpu.o, HidInputProbe.o, DroidVMFileExport.o),
-# because the device repository's own drivers are the older UniXNU ones. Run 43208533681 proved it:
-# setup 719 s, volumes 16 s, policies 69 s, data-base 62 s, reference 414 s, kernel FAILED on the link.
+# Two things learned the hard way, both now hard-coded:
+#
+# 1. The overlay (Droid-VM/macOS-DroidVM/overlay/droidvm) is mandatory. Without it the kernel
+#    link fails on _native_adreno_fences / _native_hid_pen_allocate / _droidvm_page_info /
+#    _droidvm_gpu_sandbox_decides ... from libNativeLegacyDisplay.late.a (run 43208533681).
+#
+# 2. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.
+#    It derives the reference config by copying droidvm_defconfig and flipping flags to n, so it
+#    keeps CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a, while
+#    its shortened archive list never builds that library:
+#      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (run 43213620917)
+#    The supported path is the one mainline.yml uses: a whole second device repository from
+#    scripts/make-reference-device.py, which also clears every *_ARCHIVE. That build takes ~8 min
+#    and needs only KernelCache, so it runs first, then the pipeline resumes from `kernel`.
 #
 # Reporting hooks (the Actions log API needs admin rights):
-#   ::warning:: annotations, plus status/run-<id>.md committed back to the repo with full.log whole.
+#   ::warning:: annotations, plus status/run-<id>.md committed back with full.log whole.
 
 name: build droidvm release
 
@@ -41,7 +48,7 @@ on:
         description: 16 hex digits; only used by stage=full
         default: ""
       only:
-        description: Optional --only STEP,... passed to build-droidvm-all.py
+        description: Optional --only STEP,... for the pipeline phase
         default: ""
   push:
     paths:
@@ -131,9 +138,7 @@ jobs:
           done
           if [ -n "$MISSING" ]; then echo "::warning::missing host tools:$MISSING"; else echo "::warning::host tools OK"; fi
 
-      # Verbatim from Droid-VM/macOS-DroidVM mainline.yml, because the device repository on its own
-      # links against drivers that do not define the symbols its own objects reference.
-      - name: Apply the overlay into the device repository
+      - name: Apply the overlay and derive the reference device
         run: |
           mkdir -p UniXNU-droidvm/patches/xnu
           cp ci/overlay/$BOARD/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
@@ -141,12 +146,15 @@ jobs:
           cp -R ci/overlay/$BOARD/drivers/. UniXNU-droidvm/drivers/
           cp -R ci/overlay/$BOARD/scripts/. UniXNU-droidvm/scripts/
           cp -n UniXNU/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
-          python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig" 2>&1 | tee "$RUNNER_TEMP/overlay.log"
-          echo "--- overlay contents ---" | tee -a "$RUNNER_TEMP/overlay.log"
+          cp -R UniXNU-droidvm device-ref
+          python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig" 2>&1 | tee "$RUNNER_TEMP/overlay.log"
+          python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig" 2>&1 | tee -a "$RUNNER_TEMP/overlay.log"
+          echo "--- overlay drivers ---" | tee -a "$RUNNER_TEMP/overlay.log"
           ls ci/overlay/$BOARD/drivers | tee -a "$RUNNER_TEMP/overlay.log"
-          echo "--- defconfig EXTRA_LD_ARCHIVES ---" | tee -a "$RUNNER_TEMP/overlay.log"
+          echo "--- device EXTRA_LD_ARCHIVES ---" | tee -a "$RUNNER_TEMP/overlay.log"
           grep -n 'EXTRA_LD_ARCHIVES' UniXNU-droidvm/configs/${BOARD}_defconfig | tee -a "$RUNNER_TEMP/overlay.log"
-          echo "::warning::overlay applied: $(grep -c . "$RUNNER_TEMP/overlay.log") lines of log"
+          echo "--- device-ref EXTRA_LD_ARCHIVES (must be empty) ---" | tee -a "$RUNNER_TEMP/overlay.log"
+          grep -n 'EXTRA_LD_ARCHIVES' device-ref/configs/${BOARD}_defconfig | tee -a "$RUNNER_TEMP/overlay.log"
 
       - name: Cache the Apple source feed
         uses: actions/cache@v4
@@ -157,9 +165,7 @@ jobs:
       - name: Cache the extracted IPSW members
         uses: actions/cache@v4
         with:
-          path: |
-            UniXNU/out/ipsw
-            UniXNU/out-reference/ipsw
+          path: UniXNU/out/ipsw
           key: ipsw-${{ env.IPSW_BUILD }}
 
       - name: Introspect (stage kernel)
@@ -168,12 +174,46 @@ jobs:
         run: |
           python3 scripts/build-droidvm-all.py --list 2>&1 | tee "$RUNNER_TEMP/steps.log"
 
-      - name: Build the release set (stage full)
+      # The reference candidate: this board's kernel with the native storage / display / owner-root
+      # drivers off, built from device-ref. The storage audit reads it while the real kernel links.
+      - name: Build the reference candidate (stage full)
+        if: env.STAGE == 'full'
+        working-directory: UniXNU
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./unixnu defconfig "${BOARD}_defconfig" -D ../device-ref 2>&1 | tee "$RUNNER_TEMP/ref.log"
+          ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"
+          ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee "$RUNNER_TEMP/ref-kernel.log"
+          mkdir -p "$RUNNER_TEMP/ref"
+          cp "out/$BOARD/kernel/kernel.macho" "out/$BOARD/kernel/kernel.json" "$RUNNER_TEMP/ref/"
+          ls -l "$RUNNER_TEMP/ref"
+          echo "::warning::reference candidate built: $(wc -c < "$RUNNER_TEMP/ref/kernel.macho") bytes"
+
+      - name: Pipeline up to data-base (stage full)
+        if: env.STAGE == 'full'
+        working-directory: UniXNU-droidvm
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/build-droidvm-all.py --to data-base 2>&1 | tee "$RUNNER_TEMP/full1.log"
+
+      - name: Place the reference candidate in the tree (stage full)
+        if: env.STAGE == 'full'
+        run: |
+          ref="UniXNU-droidvm/out/droidvm/tree/build/reference-candidate"
+          mkdir -p "$ref"
+          cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"
+          ls -l "$ref"
+
+      - name: Pipeline from kernel to images (stage full)
         if: env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         env:
           SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
           INPUT_CHIP_ID: ${{ github.event.inputs.unique_chip_id || '' }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           chip="${INPUT_CHIP_ID:-${SECRET_CHIP_ID:-$CHIP_DEFAULT}}"
           if ! echo "$chip" | grep -Eq '^[0-9a-fA-F]{16}$'; then
@@ -181,31 +221,11 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$chip"
-
-          # step_reference builds into UniXNU/out-reference with its own `ipsw fetch`. Clone the members
-          # already extracted into UniXNU/out/ipsw so the ~8 GiB is not paid twice.
-          SRC="$(cd .. && pwd)/UniXNU/out/ipsw"
-          DST="$(cd .. && pwd)/UniXNU/out-reference/ipsw"
-          if [ -d "$SRC" ]; then
-            for b in "$SRC"/*/; do
-              [ -d "$b" ] || continue
-              n="$(basename "$b")"
-              mkdir -p "$DST/$n"
-              for f in "$b"*; do
-                [ -f "$f" ] || continue
-                dest="$DST/$n/$(basename "$f")"
-                [ -e "$dest" ] && continue
-                cp -c "$f" "$dest" 2>/dev/null || cp "$f" "$dest"
-              done
-            done
-            echo "pre-seeded $DST: $(du -sh "$DST" 2>/dev/null | cut -f1)"
+          if [ -n "$ONLY" ]; then
+            python3 scripts/build-droidvm-all.py --unique-chip-id "$chip" --only "$ONLY" 2>&1 | tee "$RUNNER_TEMP/full.log"
+          else
+            python3 scripts/build-droidvm-all.py --unique-chip-id "$chip" --from kernel 2>&1 | tee "$RUNNER_TEMP/full.log"
           fi
-
-          args=(--unique-chip-id "$chip")
-          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
-          if [ -d "$SRC/$IPSW_BUILD" ]; then args+=(--ipsw-cache "$SRC/$IPSW_BUILD"); fi
-          echo "running: python3 scripts/build-droidvm-all.py ${args[*]}"
-          python3 scripts/build-droidvm-all.py "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/full.log"
 
       - name: Show what came out (stage full)
         if: always() && env.STAGE == 'full'
@@ -270,37 +290,45 @@ jobs:
             echo '```'
             sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
             echo '```'
-            echo "## overlay"
+            echo "## overlay + reference device"
             echo '```'
             cat "$RUNNER_TEMP/overlay.log" 2>/dev/null
             echo '```'
-            echo "## full.log (whole)"
+            echo "## reference candidate"
             echo '```'
-            if [ -s "$RUNNER_TEMP/full.log" ]; then
-              sz=$(wc -c < "$RUNNER_TEMP/full.log")
+            tail -n 25 "$RUNNER_TEMP/ref-kernel.log" 2>/dev/null
+            ls -l "$RUNNER_TEMP/ref" 2>/dev/null
+            echo '```'
+            echo "## reference candidate in tree"
+            echo '```'
+            ls -l UniXNU-droidvm/out/droidvm/tree/build/reference-candidate 2>&1
+            echo '```'
+            for f in full1.log full.log; do
+              [ -s "$RUNNER_TEMP/$f" ] || continue
+              echo "## $f"
+              echo '```'
+              sz=$(wc -c < "$RUNNER_TEMP/$f")
               echo "size: $sz bytes"
-              if [ "$sz" -lt 250000 ]; then
-                cat "$RUNNER_TEMP/full.log"
+              if [ "$sz" -lt 200000 ]; then
+                cat "$RUNNER_TEMP/$f"
               else
-                head -c 120000 "$RUNNER_TEMP/full.log"
+                head -c 100000 "$RUNNER_TEMP/$f"
                 echo
-                echo "... (middle truncated by the report) ..."
-                tail -c 120000 "$RUNNER_TEMP/full.log"
+                echo "... (middle truncated) ..."
+                tail -c 100000 "$RUNNER_TEMP/$f"
               fi
-            else
-              echo "(no full.log)"
-            fi
-            echo '```'
+              echo '```'
+            done
             echo "## log inventory"
             echo '```'
             d=UniXNU-droidvm/out/droidvm/build-all/logs
             if [ -d "$d" ]; then
-              find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -30
+              find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -25
             fi
             echo '```'
-            echo "## kernel.log undefined symbols"
+            echo "## kernel.log errors"
             echo '```'
-            grep -nE "Undefined symbols|_native_|_droidvm_|ld: symbol|error:" "$d/kernel.log" 2>/dev/null | head -50
+            grep -nE "Undefined symbols|ld: library|_native_|_droidvm_|ld: symbol|error:" "$d/kernel.log" 2>/dev/null | head -40
             echo '```'
             echo "## verdict"
             echo '```'
@@ -309,7 +337,7 @@ jobs:
             else
               echo "release MISSING"
             fi
-            du -sh "UniXNU-droidvm/out/droidvm" "UniXNU/out/ipsw" "UniXNU/out-reference" 2>/dev/null
+            du -sh "UniXNU-droidvm/out/droidvm" "UniXNU/out/ipsw" 2>/dev/null
             echo '```'
           } > "$OUT"
           echo "report is $(wc -c < "$OUT") bytes"
