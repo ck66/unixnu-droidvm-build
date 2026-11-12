@@ -1,9 +1,9 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43217065598（overlay + 分两段跑）：参考内核 7 分钟成功并放进 tree，
-# data-base 之前全过，但正式内核仍缺 _native_adreno_fences / _native_hid_pen_allocate /
-# _droidvm_page_info / _droidvm_gpu_sandbox_decides —— 这些只由 ipados27 板的补丁与脚本定义。
-# 设备仓库已固定到 b0fe9c8（10-28）：最后一个“根板 + 发布管线”都自洽的提交。
+# run 43220998711（device pin 到 b0fe9c8、UniXNU 仍 tip）：未定义符号已消失，
+# 但在 archive-15 编译 GopFramebuffer/NativeLegacyDisplay.cpp 时报 76 个类型错误——
+# UniXNU 的驱动已改类结构，与 10-28 的设备仓库不匹配。
+# 本版两边成对固定到 2026-10-29 05:50（作者同一分钟提交的 GopFramebuffer 合并）。
 
-run: 2026-11-12 20:47 full run on pinned device b0fe9c8
+run: 2026-11-12 21:16 matched pair 10-29
