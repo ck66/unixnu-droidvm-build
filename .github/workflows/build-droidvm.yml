@@ -4,16 +4,17 @@
 # stage=full    run build-droidvm-all.py for the whole release set
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
-# Pipeline: setup volumes policies data-base reference kernel package tools plugin data trust
-# payload images. `reference` links a kernel of this board with the native storage/display/
-# owner-root drivers turned off; `kernel` then links the real one against it.
 #
-# Notes that cost runs to learn:
-#   * `reference` builds into UniXNU/out-reference and does its own `ipsw fetch`, so without
-#     pre-seeding it re-downloads the ~8 GiB volumes a second time. The step below clones them.
-#   * The Actions log API needs admin rights, so the report commits status/run-<id>.md back.
-#     It dumps full.log WHOLE: a previous version only grepped error lines and lost the
-#     "failed (N): <command>" line that names the step that actually broke.
+# THE OVERLAY IS NOT OPTIONAL. Droid-VM/macOS-DroidVM carries overlay/droidvm/{patches,drivers,scripts};
+# without copying it into the device checkout, `kernel` dies in the link with
+#   "_native_adreno_fences", "_native_hid_pen_allocate", "_droidvm_page_info",
+#   "_droidvm_gpu_sandbox_decides", "_droidvm_sensor_processor_register" ...
+# referenced from libNativeLegacyDisplay.late.a (DroidVMGpu.o, HidInputProbe.o, DroidVMFileExport.o),
+# because the device repository's own drivers are the older UniXNU ones. Run 43208533681 proved it:
+# setup 719 s, volumes 16 s, policies 69 s, data-base 62 s, reference 414 s, kernel FAILED on the link.
+#
+# Reporting hooks (the Actions log API needs admin rights):
+#   ::warning:: annotations, plus status/run-<id>.md committed back to the repo with full.log whole.
 
 name: build droidvm release
 
@@ -73,6 +74,14 @@ jobs:
     timeout-minutes: 350
 
     steps:
+      - name: Check out the ci harness (overlay + board scripts)
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/macOS-DroidVM
+          ref: main
+          path: ci
+          persist-credentials: false
+
       - name: Check out UniXNU (Droid-VM fork)
         uses: actions/checkout@v4
         with:
@@ -122,6 +131,23 @@ jobs:
           done
           if [ -n "$MISSING" ]; then echo "::warning::missing host tools:$MISSING"; else echo "::warning::host tools OK"; fi
 
+      # Verbatim from Droid-VM/macOS-DroidVM mainline.yml, because the device repository on its own
+      # links against drivers that do not define the symbols its own objects reference.
+      - name: Apply the overlay into the device repository
+        run: |
+          mkdir -p UniXNU-droidvm/patches/xnu
+          cp ci/overlay/$BOARD/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
+          mkdir -p UniXNU-droidvm/drivers
+          cp -R ci/overlay/$BOARD/drivers/. UniXNU-droidvm/drivers/
+          cp -R ci/overlay/$BOARD/scripts/. UniXNU-droidvm/scripts/
+          cp -n UniXNU/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
+          python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig" 2>&1 | tee "$RUNNER_TEMP/overlay.log"
+          echo "--- overlay contents ---" | tee -a "$RUNNER_TEMP/overlay.log"
+          ls ci/overlay/$BOARD/drivers | tee -a "$RUNNER_TEMP/overlay.log"
+          echo "--- defconfig EXTRA_LD_ARCHIVES ---" | tee -a "$RUNNER_TEMP/overlay.log"
+          grep -n 'EXTRA_LD_ARCHIVES' UniXNU-droidvm/configs/${BOARD}_defconfig | tee -a "$RUNNER_TEMP/overlay.log"
+          echo "::warning::overlay applied: $(grep -c . "$RUNNER_TEMP/overlay.log") lines of log"
+
       - name: Cache the Apple source feed
         uses: actions/cache@v4
         with:
@@ -156,8 +182,8 @@ jobs:
           fi
           echo "::add-mask::$chip"
 
-          # step_reference builds into UniXNU/out-reference and fetches the IPSW again. Clone the
-          # members already extracted into UniXNU/out/ipsw so the ~8 GiB is not paid twice.
+          # step_reference builds into UniXNU/out-reference with its own `ipsw fetch`. Clone the members
+          # already extracted into UniXNU/out/ipsw so the ~8 GiB is not paid twice.
           SRC="$(cd .. && pwd)/UniXNU/out/ipsw"
           DST="$(cd .. && pwd)/UniXNU/out-reference/ipsw"
           if [ -d "$SRC" ]; then
@@ -244,6 +270,10 @@ jobs:
             echo '```'
             sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
             echo '```'
+            echo "## overlay"
+            echo '```'
+            cat "$RUNNER_TEMP/overlay.log" 2>/dev/null
+            echo '```'
             echo "## full.log (whole)"
             echo '```'
             if [ -s "$RUNNER_TEMP/full.log" ]; then
@@ -263,22 +293,15 @@ jobs:
             echo '```'
             echo "## log inventory"
             echo '```'
-            for d in UniXNU-droidvm/out/droidvm/build-all/logs UniXNU/out/droidvm/build-all/logs; do
-              [ -d "$d" ] || continue
-              echo "== $d"
+            d=UniXNU-droidvm/out/droidvm/build-all/logs
+            if [ -d "$d" ]; then
               find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -30
-            done
+            fi
             echo '```'
-            echo "## biggest log tails"
-            for d in UniXNU-droidvm/out/droidvm/build-all/logs UniXNU/out/droidvm/build-all/logs; do
-              [ -d "$d" ] || continue
-              find "$d" -name '*.log' -size +0 2>/dev/null | while read -r f; do printf '%s %s\n' "$(wc -c < "$f")" "$f"; done | sort -rn | head -3 | while read -r s f; do
-                echo "### $(basename "$f") ($s bytes)"
-                echo '```'
-                tail -n 80 "$f"
-                echo '```'
-              done
-            done
+            echo "## kernel.log undefined symbols"
+            echo '```'
+            grep -nE "Undefined symbols|_native_|_droidvm_|ld: symbol|error:" "$d/kernel.log" 2>/dev/null | head -50
+            echo '```'
             echo "## verdict"
             echo '```'
             if [ -d "UniXNU-droidvm/out/droidvm/release" ]; then
