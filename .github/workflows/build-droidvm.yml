@@ -25,7 +25,9 @@ on:
       stage:
         description: kernel = toolchain probe only; full = the whole release set
         type: choice
-        options: [kernel, full]
+        options:
+          - kernel
+          - full
         default: kernel
       unixnu_ref:
         description: UniXNU ref (Droid-VM fork)
@@ -34,7 +36,7 @@ on:
         description: UniXNU-droidvm ref
         default: wip/hackintosh
       xcode:
-        description: Xcode on the image (/Applications/Xcode_<ver>.app); empty = default
+        description: Xcode on the image; empty = runner default
         default: ""
       unique_chip_id:
         description: 16 hex digits; only used by stage=full. Empty = use the secret.
@@ -51,10 +53,7 @@ permissions:
 
 env:
   BOARD: droidvm
-  UNIXNU_REPO: Droid-VM/UniXNU
-  DEVICE_REPO: Droid-VM/UniXNU-droidvm
   IPSW_BUILD: "21H461"
-  # A push carries no inputs, so every value falls back to the same default the form shows.
   STAGE: ${{ github.event.inputs.stage || 'kernel' }}
   UNIXNU_REF: ${{ github.event.inputs.unixnu_ref || 'wip/droidvm' }}
   DEVICE_REF: ${{ github.event.inputs.device_ref || 'wip/hackintosh' }}
@@ -144,21 +143,21 @@ jobs:
 
       # Stage 1: only what the kernel needs. KernelCache is the prelink reference and the
       # source of the Apple kexts; a few tens of MB, not 8 GiB.
-      - name: Fetch KernelCache only (stage: kernel)
-        if: env.STAGE == 'kernel'
+      - name: Fetch KernelCache only (stage kernel)
+        if: github.event.inputs.stage != 'full'
         working-directory: UniXNU
         run: ./unixnu ipsw fetch KernelCache
 
-      - name: Build the kernel only (stage: kernel)
-        if: env.STAGE == 'kernel'
+      - name: Build the kernel only (stage kernel)
+        if: github.event.inputs.stage != 'full'
         working-directory: UniXNU
         run: |
-          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" || \
-            echo "== first pass stopped as expected on a clean tree"
-          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)"
+          JOBS="$(sysctl -n hw.ncpu)"
+          ./unixnu build kernel -j "$JOBS" || echo "first pass stopped as expected on a clean tree"
+          ./unixnu build kernel -j "$JOBS"
 
       - name: Report what stage 1 produced
-        if: always() && env.STAGE == 'kernel'
+        if: always() && github.event.inputs.stage != 'full'
         working-directory: UniXNU
         run: |
           ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
@@ -166,9 +165,9 @@ jobs:
 
       # ---- stage=full only below this line ----
 
-      - name: Resolve the chip id (stage: full)
+      - name: Resolve the chip id (stage full)
         id: chip
-        if: env.STAGE == 'full'
+        if: github.event.inputs.stage == 'full'
         env:
           SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
           INPUT_CHIP_ID: ${{ github.event.inputs.unique_chip_id || '' }}
@@ -185,8 +184,8 @@ jobs:
           echo "::add-mask::$chip"
           echo "chip=$chip" >> "$GITHUB_OUTPUT"
 
-      - name: Build the release set (stage: full)
-        if: env.STAGE == 'full'
+      - name: Build the release set (stage full)
+        if: github.event.inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         env:
           CHIP: ${{ steps.chip.outputs.chip }}
@@ -197,7 +196,7 @@ jobs:
           python3 scripts/build-droidvm-all.py "${args[@]}"
 
       - name: Show what came out
-        if: always() && env.STAGE == 'full'
+        if: always() && github.event.inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         run: |
           for d in out/droidvm/release out/droidvm/build-all; do
@@ -209,7 +208,7 @@ jobs:
 
       - name: Pack and encrypt
         id: pack
-        if: always() && env.STAGE == 'full'
+        if: always() && github.event.inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         env:
           ARTIFACT_KEY: ${{ secrets.ARTIFACT_KEY }}
@@ -224,9 +223,7 @@ jobs:
             echo "::error::ARTIFACT_KEY secret is not set; refusing to upload unencrypted Apple binaries"
             exit 1
           fi
-          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:ARTIFACT_KEY \
-            -in "$RUNNER_TEMP/droidvm-release.tgz" \
-            -out "$RUNNER_TEMP/droidvm-release.tgz.enc"
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:ARTIFACT_KEY -in "$RUNNER_TEMP/droidvm-release.tgz" -out "$RUNNER_TEMP/droidvm-release.tgz.enc"
           ls -lh "$RUNNER_TEMP/droidvm-release.tgz.enc"
           echo "ok=1" >> "$GITHUB_OUTPUT"
 
