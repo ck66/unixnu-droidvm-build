@@ -1,0 +1,193 @@
+# build-droidvm: UniXNU-droidvm release set on a GitHub macOS runner
+#
+# The upstream UniXNU/.github/workflows/macos.yml uploads only sanitized logs and
+# no images ("Kernels, payloads, disk images, kernelcaches and IPSW members are never
+# uploaded: they derive from Apple software"). Droid-VM/macOS-DroidVM's mainline.yml
+# uploads encrypted binaries, but it only runs `unixnu build kernel` -- it does not
+# produce droidvm-disk.img / os.img / systemos.img.
+#
+# This workflow runs UniXNU-droidvm's scripts/build-droidvm-all.py, which goes from the
+# IPSW to a bootable release, then packs and ENCRYPTS out/droidvm/release before upload.
+#
+# Secrets: ARTIFACT_KEY (required), UNIXNU_UNIQUE_CHIP_ID (16 hex digits).
+
+name: build droidvm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      unixnu_ref:
+        description: UniXNU ref (Droid-VM fork)
+        default: wip/droidvm
+      device_ref:
+        description: UniXNU-droidvm ref
+        default: wip/hackintosh
+      xcode:
+        description: Xcode on the image (/Applications/Xcode_<ver>.app); empty = default
+        default: ""
+      unique_chip_id:
+        description: 16 hex digits; leave empty to use the UNIXNU_UNIQUE_CHIP_ID secret
+        default: ""
+      only:
+        description: Optional --only STEP,... for a partial run
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  BOARD: droidvm
+  UNIXNU_REPO: Droid-VM/UniXNU
+  DEVICE_REPO: Droid-VM/UniXNU-droidvm
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  HOMEBREW_NO_ENV_HINTS: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    # macos-26 is pinned on purpose: macos-latest drifts between images, and macos-15
+    # carries a clang that rejects the warning flags the build passes together with -Werror.
+    runs-on: macos-26
+    timeout-minutes: 350
+
+    steps:
+      - name: Check out UniXNU (Droid-VM fork)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UNIXNU_REPO }}
+          ref: ${{ inputs.unixnu_ref }}
+          path: UniXNU
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Check out the device repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DEVICE_REPO }}
+          ref: ${{ inputs.device_ref }}
+          path: UniXNU-droidvm
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Pick Xcode and report the toolchain
+        env:
+          XCODE: ${{ inputs.xcode }}
+        run: |
+          if [ -n "$XCODE" ]; then sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"; fi
+          sw_vers
+          uname -m
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun -f mig
+          clang --version | head -n 1
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Install host tools
+        run: |
+          brew install llvm lld mtools dtc
+          if ! command -v unifdef >/dev/null; then
+            brew install unifdef
+            echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"
+          fi
+          for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild; do
+            printf '%-10s %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
+          done
+
+      - name: Resolve the chip id
+        id: chip
+        env:
+          SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          INPUT_CHIP_ID: ${{ inputs.unique_chip_id }}
+        run: |
+          chip="${INPUT_CHIP_ID:-$SECRET_CHIP_ID}"
+          if [ -z "$chip" ]; then
+            echo "::error::need a 16-hex-digit chip id: set the UNIXNU_UNIQUE_CHIP_ID secret or the input"
+            exit 1
+          fi
+          if ! echo "$chip" | grep -Eq '^[0-9a-fA-F]{16}$'; then
+            echo "::error::chip id must be exactly 16 hex digits"
+            exit 1
+          fi
+          echo "::add-mask::$chip"
+          echo "chip=$chip" >> "$GITHUB_OUTPUT"
+
+      - name: Build the release set
+        working-directory: UniXNU-droidvm
+        env:
+          CHIP: ${{ steps.chip.outputs.chip }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          # build-droidvm-all.py expects the UniXNU checkout beside the device repository;
+          # the two checkout paths above give exactly that layout.
+          args=(--unique-chip-id "$CHIP")
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          echo "running: python3 scripts/build-droidvm-all.py ${args[*]}"
+          python3 scripts/build-droidvm-all.py "${args[@]}"
+
+      - name: Show what came out
+        if: always()
+        working-directory: UniXNU-droidvm
+        run: |
+          for d in out/droidvm/release out/droidvm/build-all; do
+            echo "== $d"
+            ls -la "$d" 2>/dev/null || echo "(missing)"
+          done
+          du -sh out/droidvm 2>/dev/null || true
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Pack and encrypt
+        id: pack
+        if: always()
+        working-directory: UniXNU-droidvm
+        env:
+          ARTIFACT_KEY: ${{ secrets.ARTIFACT_KEY }}
+        run: |
+          if [ ! -d out/droidvm/release ]; then
+            echo "::error::out/droidvm/release missing -- the build did not reach the release step"
+            exit 1
+          fi
+          tar -czf "$RUNNER_TEMP/droidvm-release.tgz" -C out/droidvm release
+          ls -lh "$RUNNER_TEMP/droidvm-release.tgz"
+          if [ -z "$ARTIFACT_KEY" ]; then
+            echo "::error::ARTIFACT_KEY secret is not set; refusing to upload unencrypted Apple binaries"
+            exit 1
+          fi
+          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:ARTIFACT_KEY \
+            -in "$RUNNER_TEMP/droidvm-release.tgz" \
+            -out "$RUNNER_TEMP/droidvm-release.tgz.enc"
+          ls -lh "$RUNNER_TEMP/droidvm-release.tgz.enc"
+          echo "ok=1" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the encrypted release
+        if: always() && steps.pack.outputs.ok == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidvm-release-enc
+          path: ${{ runner.temp }}/droidvm-release.tgz.enc
+          compression-level: 0
+          retention-days: 7
+
+      - name: Upload the build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidvm-logs
+          path: |
+            UniXNU-droidvm/out/droidvm/**/logs/*.log
+            UniXNU/out/**/logs/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove proprietary inputs
+        if: always()
+        run: |
+          rm -rf UniXNU/out/ipsw UniXNU-droidvm/out/ipsw 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/droidvm-release.tgz" 2>/dev/null || true
