@@ -8,6 +8,10 @@
 # Two deliberate reporting hooks, because the Actions log API needs admin rights:
 #   * ::warning:: annotations -- rendered server-side, readable anonymously
 #   * status/run-<id>.md committed back to the repo -- readable through the contents API
+#
+# GITHUB_TOKEN on the build steps is not optional: prepare-xnu-source.py lists Apple sources
+# through the GitHub API, and anonymous calls from hosted runners hit 403 "rate limit exceeded".
+# That is what killed runs 43194508321 and 43196953886, not the Xcode version.
 
 name: build droidvm release
 
@@ -51,6 +55,7 @@ env:
   DEVICE_REF: ${{ github.event.inputs.device_ref || 'wip/hackintosh' }}
   XCODE: ${{ github.event.inputs.xcode || '' }}
   ONLY: ${{ github.event.inputs.only || '' }}
+  GITHUB_TOKEN: ${{ github.token }}
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   HOMEBREW_NO_ENV_HINTS: 1
@@ -145,6 +150,8 @@ jobs:
       - name: Build the kernel only (stage kernel)
         if: github.event.inputs.stage != 'full'
         working-directory: UniXNU
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           JOBS="$(sysctl -n hw.ncpu)"
           ./unixnu build kernel -j "$JOBS" || echo "first pass stopped as expected on a clean tree"
@@ -188,6 +195,7 @@ jobs:
         working-directory: UniXNU-droidvm
         env:
           CHIP: ${{ steps.chip.outputs.chip }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           args=(--unique-chip-id "$CHIP")
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
@@ -250,8 +258,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # Write a report back into the repo. The Actions log API needs admin rights, but the
-      # contents API of a public repo does not -- this is how a run becomes readable.
       - name: Publish a run report into the repo
         if: always()
         env:
@@ -273,17 +279,19 @@ jobs:
             echo '```'
             echo "## out/ipsw"
             echo '```'
-            ls -la UniXNU/out/ipsw 2>&1 | head -40
+            ls -la UniXNU/out/ipsw 2>&1 | head -20
+            ls -laR "UniXNU/out/ipsw" 2>&1 | head -40
             echo '```'
             echo "## out/$BOARD"
             echo '```'
-            ls -laR "UniXNU/out/$BOARD" 2>&1 | head -80
+            ls -la "UniXNU/out/$BOARD" 2>&1 | head -40
+            ls -la "UniXNU/out/$BOARD/kernel" 2>&1 | head -40
             echo '```'
             echo "## log tails"
-            find UniXNU/out -name '*.log' -size -2000k 2>/dev/null | head -6 | while read -r f; do
+            find UniXNU/out -name '*.log' -size -2000k 2>/dev/null | grep -v '/feeds/' | head -8 | while read -r f; do
               echo "### $f"
               echo '```'
-              tail -n 60 "$f"
+              tail -n 80 "$f"
               echo '```'
             done
           } > "$OUT"
