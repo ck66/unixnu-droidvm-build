@@ -1,9 +1,7 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43220998711（device pin 到 b0fe9c8、UniXNU 仍 tip）：未定义符号已消失，
-# 但在 archive-15 编译 GopFramebuffer/NativeLegacyDisplay.cpp 时报 76 个类型错误——
-# UniXNU 的驱动已改类结构，与 10-28 的设备仓库不匹配。
-# 本版两边成对固定到 2026-10-29 05:50（作者同一分钟提交的 GopFramebuffer 合并）。
+# run 43225566396（10-29 配对）：kernel 152s 成功、package 32s 成功，
+# tools 卡在 need gsed (brew install gnu-sed)。已补装 gnu-sed 与 Mesa/metal2vulkan 所需工具链。
 
-run: 2026-11-12 21:16 matched pair 10-29
+run: 2026-11-12 21:43 with gsed and the full host toolchain
