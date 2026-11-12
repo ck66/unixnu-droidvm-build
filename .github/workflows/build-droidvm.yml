@@ -1,21 +1,28 @@
 # build-droidvm: UniXNU-droidvm release set on a GitHub macOS runner
 #
-# The upstream UniXNU/.github/workflows/macos.yml uploads only sanitized logs and
-# no images ("Kernels, payloads, disk images, kernelcaches and IPSW members are never
-# uploaded: they derive from Apple software"). Droid-VM/macOS-DroidVM's mainline.yml
-# uploads encrypted binaries, but it only runs `unixnu build kernel` -- it does not
-# produce droidvm-disk.img / os.img / systemos.img.
+# Two stages, because the expensive part (the iPadOS system volumes, ~8 GiB of HTTP range
+# reads) is only worth fetching once the cheap risk -- whether this Xcode can build XNU at
+# all -- is cleared.
 #
-# This workflow runs UniXNU-droidvm's scripts/build-droidvm-all.py, which goes from the
-# IPSW to a bootable release, then packs and ENCRYPTS out/droidvm/release before upload.
+#   stage=kernel   fetch KernelCache only, build the kernel.      ~30-60 min, tens of MB
+#   stage=full     fetch the OS/SystemOS volumes, build the whole release set.
 #
-# Secrets: ARTIFACT_KEY (required), UNIXNU_UNIQUE_CHIP_ID (16 hex digits).
+# `unixnu ipsw fetch` never downloads an IPSW as a whole: it reads the ZIP directory and only
+# the configured members with HTTP range requests, and caches them in out/ipsw/<build>/.
+# The caches below keep that work across runs, so a failed run does not re-download it.
+#
+# Secrets: ARTIFACT_KEY (required for upload), UNIXNU_UNIQUE_CHIP_ID (16 hex digits).
 
 name: build droidvm release
 
 on:
   workflow_dispatch:
     inputs:
+      stage:
+        description: kernel = toolchain probe only; full = the whole release set
+        type: choice
+        options: [kernel, full]
+        default: kernel
       unixnu_ref:
         description: UniXNU ref (Droid-VM fork)
         default: wip/droidvm
@@ -29,7 +36,7 @@ on:
         description: 16 hex digits; leave empty to use the UNIXNU_UNIQUE_CHIP_ID secret
         default: ""
       only:
-        description: Optional --only STEP,... for a partial run
+        description: Optional --only STEP,... for a partial full run
         default: ""
 
 permissions:
@@ -39,6 +46,7 @@ env:
   BOARD: droidvm
   UNIXNU_REPO: Droid-VM/UniXNU
   DEVICE_REPO: Droid-VM/UniXNU-droidvm
+  IPSW_BUILD: "21H461"
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   HOMEBREW_NO_ENV_HINTS: 1
@@ -101,6 +109,21 @@ jobs:
             printf '%-10s %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
           done
 
+      # Sources are ~ a few hundred MB and identical between runs.
+      - name: Cache the Apple source feed
+        uses: actions/cache@v4
+        with:
+          path: UniXNU/out/feeds
+          key: feeds-${{ hashFiles('UniXNU/feeds.toml', 'UniXNU-droidvm/feeds.toml') }}
+
+      # The extracted IPSW members are the expensive part: cache them so a failed build
+      # never pays for them twice.
+      - name: Cache the extracted IPSW members
+        uses: actions/cache@v4
+        with:
+          path: UniXNU/out/ipsw
+          key: ipsw-${{ env.IPSW_BUILD }}
+
       - name: Resolve the chip id
         id: chip
         env:
@@ -119,14 +142,42 @@ jobs:
           echo "::add-mask::$chip"
           echo "chip=$chip" >> "$GITHUB_OUTPUT"
 
-      - name: Build the release set
+      - name: Configure (defconfig + feeds)
+        working-directory: UniXNU
+        run: |
+          ./unixnu defconfig droidvm_defconfig -D ../UniXNU-droidvm
+          ./unixnu fetch
+
+      # Stage 1: only what the kernel needs. KernelCache is the prelink reference and the
+      # source of the Apple kexts; a few tens of MB, not 8 GiB.
+      - name: Fetch KernelCache only (stage: kernel)
+        if: inputs.stage == 'kernel'
+        working-directory: UniXNU
+        run: ./unixnu ipsw fetch KernelCache
+
+      - name: Build the kernel only (stage: kernel)
+        if: inputs.stage == 'kernel'
+        working-directory: UniXNU
+        run: |
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" || \
+            echo "== first pass stopped as expected on a clean tree"
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)"
+
+      - name: Report what stage 1 produced
+        if: always() && inputs.stage == 'kernel'
+        working-directory: UniXNU
+        run: |
+          ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
+          du -sh "out/$BOARD" out/ipsw 2>/dev/null || true
+
+      # Stage 2: the whole thing, including the OS/SystemOS volumes (~8 GiB).
+      - name: Build the release set (stage: full)
+        if: inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         env:
           CHIP: ${{ steps.chip.outputs.chip }}
           ONLY: ${{ inputs.only }}
         run: |
-          # build-droidvm-all.py expects the UniXNU checkout beside the device repository;
-          # the two checkout paths above give exactly that layout.
           args=(--unique-chip-id "$CHIP")
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
           echo "running: python3 scripts/build-droidvm-all.py ${args[*]}"
@@ -140,12 +191,12 @@ jobs:
             echo "== $d"
             ls -la "$d" 2>/dev/null || echo "(missing)"
           done
-          du -sh out/droidvm 2>/dev/null || true
+          du -sh out/droidvm out/ipsw 2>/dev/null || true
           df -h "$GITHUB_WORKSPACE"
 
       - name: Pack and encrypt
         id: pack
-        if: always()
+        if: always() && inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         env:
           ARTIFACT_KEY: ${{ secrets.ARTIFACT_KEY }}
@@ -185,9 +236,3 @@ jobs:
             UniXNU/out/**/logs/*.log
           if-no-files-found: ignore
           retention-days: 7
-
-      - name: Remove proprietary inputs
-        if: always()
-        run: |
-          rm -rf UniXNU/out/ipsw UniXNU-droidvm/out/ipsw 2>/dev/null || true
-          rm -f "$RUNNER_TEMP/droidvm-release.tgz" 2>/dev/null || true
