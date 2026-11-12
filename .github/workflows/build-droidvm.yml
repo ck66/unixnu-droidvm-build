@@ -10,12 +10,11 @@
 #
 # Triggered two ways, and they mean the same thing:
 #   * Run workflow (workflow_dispatch), stage chosen in the form
-#   * a push touching trigger/ -- stage defaults to kernel, which lets an agent start a
-#     run by committing a file instead of clicking
+#   * a push touching trigger/ -- stage defaults to kernel
 #
-# `unixnu ipsw fetch` never downloads an IPSW as a whole: it reads the ZIP directory and only
-# the configured members with HTTP range requests, and caches them in out/ipsw/<build>/.
-# The caches below keep that work across runs, so a failed run does not re-download it.
+# The ::warning:: lines are deliberate. GitHub renders step annotations server-side, so a
+# reader without a GitHub login (or without working DOM access to the Actions page) can still
+# see the toolchain version and whether the stage produced anything. Keep them.
 
 name: build droidvm release
 
@@ -69,8 +68,6 @@ defaults:
 
 jobs:
   build:
-    # macos-26 is pinned on purpose: macos-latest drifts between images, and macos-15
-    # carries a clang that rejects the warning flags the build passes together with -Werror.
     runs-on: macos-26
     timeout-minutes: 350
 
@@ -108,6 +105,9 @@ jobs:
           xcrun -f mig
           clang --version | head -n 1
           df -h "$GITHUB_WORKSPACE"
+          XCODE_VER="$(xcodebuild -version | tr '\n' ' ')"
+          SDK_VER="$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)"
+          echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
       - name: Install host tools
         run: |
@@ -116,19 +116,20 @@ jobs:
             brew install unifdef
             echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"
           fi
+          MISSING=""
           for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild; do
-            printf '%-10s %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
+            path="$(command -v "$tool" || true)"
+            printf '%-10s %s\n' "$tool" "${path:-MISSING}"
+            [ -n "$path" ] || MISSING="$MISSING $tool"
           done
+          if [ -n "$MISSING" ]; then echo "::warning::missing host tools:$MISSING"; else echo "::warning::host tools OK"; fi
 
-      # Sources are a few hundred MB and identical between runs.
       - name: Cache the Apple source feed
         uses: actions/cache@v4
         with:
           path: UniXNU/out/feeds
           key: feeds-${{ hashFiles('UniXNU/feeds.toml', 'UniXNU-droidvm/feeds.toml') }}
 
-      # The extracted IPSW members are the expensive part: cache them so a failed build
-      # never pays for them twice.
       - name: Cache the extracted IPSW members
         uses: actions/cache@v4
         with:
@@ -141,12 +142,12 @@ jobs:
           ./unixnu defconfig droidvm_defconfig -D ../UniXNU-droidvm
           ./unixnu fetch
 
-      # Stage 1: only what the kernel needs. KernelCache is the prelink reference and the
-      # source of the Apple kexts; a few tens of MB, not 8 GiB.
       - name: Fetch KernelCache only (stage kernel)
         if: github.event.inputs.stage != 'full'
         working-directory: UniXNU
-        run: ./unixnu ipsw fetch KernelCache
+        run: |
+          ./unixnu ipsw fetch KernelCache
+          echo "::warning::KernelCache fetched: $(du -sh out/ipsw 2>/dev/null | cut -f1) in out/ipsw"
 
       - name: Build the kernel only (stage kernel)
         if: github.event.inputs.stage != 'full'
@@ -162,6 +163,11 @@ jobs:
         run: |
           ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
           du -sh "out/$BOARD" out/ipsw 2>/dev/null || true
+          if ls "out/$BOARD/kernel"/* >/dev/null 2>&1; then
+            echo "::warning::stage kernel produced: $(ls "out/$BOARD/kernel" | tr '\n' ' ')"
+          else
+            echo "::warning::stage kernel produced NOTHING in out/$BOARD/kernel"
+          fi
 
       # ---- stage=full only below this line ----
 
@@ -204,7 +210,11 @@ jobs:
             ls -la "$d" 2>/dev/null || echo "(missing)"
           done
           du -sh out/droidvm out/ipsw 2>/dev/null || true
-          df -h "$GITHUB_WORKSPACE"
+          if [ -d out/droidvm/release ]; then
+            echo "::warning::stage full produced: $(ls out/droidvm/release | tr '\n' ' ')"
+          else
+            echo "::warning::stage full produced NO release directory"
+          fi
 
       - name: Pack and encrypt
         id: pack
