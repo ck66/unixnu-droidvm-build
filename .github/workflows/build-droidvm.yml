@@ -16,8 +16,8 @@
 # link cannot resolve _droidvm_gpu_sandbox_decides / _native_hid_pen_allocate / ... (runs 43208533681,
 # 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
 # compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
-# repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it the run
-# now reaches the plugin step: kernel 124 s, package 31 s, tools 255 s (run 43231649198).
+# repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it kernel
+# 124 s, package 31 s and tools 255 s pass and the run reaches the plugin step (43231649198).
 #
 # HOST TOOLS, each one learned from a failed run:
 #   gnu-sed          tools step builds toybox with gsed            (43225566396)
@@ -25,6 +25,10 @@
 #      the kernel scripts call `sed -i ''` and GNU sed rejects it   (43229956762)
 #   glslang          plugin step: "glslangValidator is required"    (43231649198)
 #   spirv-tools, vulkan-headers, vulkan-loader: the Mesa/Turnip build behind the same step
+#
+# GitHub runs `shell: bash` as `bash -eo pipefail`: any command that returns non-zero aborts the
+# step, so a diagnostic probe needs `|| true` (run 43237761867 died in the host-tools step on a
+# `sed -i ''` probe before env installed anything).
 #
 # Two more things learned the hard way:
 #
@@ -34,7 +38,7 @@
 #    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
 #    CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a while its
 #    shortened archive list never builds it:
-#      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (run 43213620917)
+#      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (43213620917)
 #    The supported path is mainline.yml's: a whole second device repository from
 #    scripts/make-reference-device.py (which also clears every *_ARCHIVE). That build takes ~8 min
 #    and needs only KernelCache, so it runs first, then the pipeline resumes from `kernel`.
@@ -144,7 +148,8 @@ jobs:
 
       # gnu-sed: toybox wants gsed. glslang: the plugin step builds Mesa/Turnip and needs
       # glslangValidator. Nothing is added to PATH except bison/flex: BSD sed must stay first,
-      # the kernel scripts call `sed -i ''`.
+      # the kernel scripts call `sed -i ''`. Every probe here ends in `|| true` because the shell
+      # runs with -e.
       - name: Install host tools
         run: |
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
@@ -160,8 +165,7 @@ jobs:
             printf '%-18s %s\n' "$tool" "${path:-MISSING}"
             [ -n "$path" ] || MISSING="$MISSING $tool"
           done
-          printf '%-18s %s\n' sed "$(command -v sed)"
-          printf '' | sed -i '' -e 's/x/y/' 2>/dev/null; echo "sed -i '' exit: $?"
+          printf '%-18s %s\n' sed "$(command -v sed) (BSD must come first)"
           if [ -n "$MISSING" ]; then echo "::warning::missing host tools:$MISSING"; else echo "::warning::host tools OK"; fi
 
       - name: Apply the overlay and derive the reference device
