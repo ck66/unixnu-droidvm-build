@@ -4,12 +4,16 @@
 # stage=full    run build-droidvm-all.py for the whole release set
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
-# The pipeline is: setup volumes policies data-base reference kernel package tools
-# plugin data trust payload images -- `kernel` needs the owner policies, which need the
-# OS/SystemOS volumes, so there is no shortcut around the ~8 GiB fetch.
+# Pipeline: setup volumes policies data-base reference kernel package tools plugin data trust
+# payload images. `reference` links a kernel of this board with the native storage/display/
+# owner-root drivers turned off; `kernel` then links the real one against it.
 #
-# Reporting hooks (the Actions log API needs admin rights):
-#   ::warning:: annotations, plus status/run-<id>.md committed back to the repo.
+# Notes that cost runs to learn:
+#   * `reference` builds into UniXNU/out-reference and does its own `ipsw fetch`, so without
+#     pre-seeding it re-downloads the ~8 GiB volumes a second time. The step below clones them.
+#   * The Actions log API needs admin rights, so the report commits status/run-<id>.md back.
+#     It dumps full.log WHOLE: a previous version only grepped error lines and lost the
+#     "failed (N): <command>" line that names the step that actually broke.
 
 name: build droidvm release
 
@@ -127,7 +131,9 @@ jobs:
       - name: Cache the extracted IPSW members
         uses: actions/cache@v4
         with:
-          path: UniXNU/out/ipsw
+          path: |
+            UniXNU/out/ipsw
+            UniXNU/out-reference/ipsw
           key: ipsw-${{ env.IPSW_BUILD }}
 
       - name: Introspect (stage kernel)
@@ -149,8 +155,29 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$chip"
+
+          # step_reference builds into UniXNU/out-reference and fetches the IPSW again. Clone the
+          # members already extracted into UniXNU/out/ipsw so the ~8 GiB is not paid twice.
+          SRC="$(cd .. && pwd)/UniXNU/out/ipsw"
+          DST="$(cd .. && pwd)/UniXNU/out-reference/ipsw"
+          if [ -d "$SRC" ]; then
+            for b in "$SRC"/*/; do
+              [ -d "$b" ] || continue
+              n="$(basename "$b")"
+              mkdir -p "$DST/$n"
+              for f in "$b"*; do
+                [ -f "$f" ] || continue
+                dest="$DST/$n/$(basename "$f")"
+                [ -e "$dest" ] && continue
+                cp -c "$f" "$dest" 2>/dev/null || cp "$f" "$dest"
+              done
+            done
+            echo "pre-seeded $DST: $(du -sh "$DST" 2>/dev/null | cut -f1)"
+          fi
+
           args=(--unique-chip-id "$chip")
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          if [ -d "$SRC/$IPSW_BUILD" ]; then args+=(--ipsw-cache "$SRC/$IPSW_BUILD"); fi
           echo "running: python3 scripts/build-droidvm-all.py ${args[*]}"
           python3 scripts/build-droidvm-all.py "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/full.log"
 
@@ -158,7 +185,7 @@ jobs:
         if: always() && env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         run: |
-          for d in out/droidvm/release out/droidvm/build-all; do
+          for d in out/droidvm/release out/droidvm/build-all out/droidvm/tree/build/reference-candidate; do
             echo "== $d"
             ls -la "$d" 2>/dev/null || echo "(missing)"
           done
@@ -217,18 +244,41 @@ jobs:
             echo '```'
             sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
             echo '```'
-            for f in "$RUNNER_TEMP/steps.log" "$RUNNER_TEMP/introspect.log"; do
-              if [ -s "$f" ]; then
-                echo "## $(basename "$f")"
-                echo '```'
-                cat "$f"
-                echo '```'
+            echo "## full.log (whole)"
+            echo '```'
+            if [ -s "$RUNNER_TEMP/full.log" ]; then
+              sz=$(wc -c < "$RUNNER_TEMP/full.log")
+              echo "size: $sz bytes"
+              if [ "$sz" -lt 250000 ]; then
+                cat "$RUNNER_TEMP/full.log"
+              else
+                head -c 120000 "$RUNNER_TEMP/full.log"
+                echo
+                echo "... (middle truncated by the report) ..."
+                tail -c 120000 "$RUNNER_TEMP/full.log"
               fi
+            else
+              echo "(no full.log)"
+            fi
+            echo '```'
+            echo "## log inventory"
+            echo '```'
+            for d in UniXNU-droidvm/out/droidvm/build-all/logs UniXNU/out/droidvm/build-all/logs; do
+              [ -d "$d" ] || continue
+              echo "== $d"
+              find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -30
             done
-            echo "## progress stamps"
             echo '```'
-            ls -la UniXNU-droidvm/out/droidvm/build-all 2>&1 | head -30
-            echo '```'
+            echo "## biggest log tails"
+            for d in UniXNU-droidvm/out/droidvm/build-all/logs UniXNU/out/droidvm/build-all/logs; do
+              [ -d "$d" ] || continue
+              find "$d" -name '*.log' -size +0 2>/dev/null | while read -r f; do printf '%s %s\n' "$(wc -c < "$f")" "$f"; done | sort -rn | head -3 | while read -r s f; do
+                echo "### $(basename "$f") ($s bytes)"
+                echo '```'
+                tail -n 80 "$f"
+                echo '```'
+              done
+            done
             echo "## verdict"
             echo '```'
             if [ -d "UniXNU-droidvm/out/droidvm/release" ]; then
@@ -236,16 +286,7 @@ jobs:
             else
               echo "release MISSING"
             fi
-            du -sh "UniXNU-droidvm/out/droidvm" "UniXNU/out/ipsw" 2>/dev/null
-            echo '```'
-            echo "## error lines"
-            echo '```'
-            {
-              grep -rIn -E "(^|[^a-z])error:|fatal error|FAILED|No such file|Undefined symbols|ld: symbol|Traceback" \
-                "$RUNNER_TEMP" --include=*.log 2>/dev/null \
-                | grep -v 'compile.log:' | head -40
-            } > "$RUNNER_TEMP/errs.txt" 2>&1
-            if [ -s "$RUNNER_TEMP/errs.txt" ]; then cat "$RUNNER_TEMP/errs.txt"; else echo "(none)"; fi
+            du -sh "UniXNU-droidvm/out/droidvm" "UniXNU/out/ipsw" "UniXNU/out-reference" 2>/dev/null
             echo '```'
           } > "$OUT"
           echo "report is $(wc -c < "$OUT") bytes"
