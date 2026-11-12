@@ -5,19 +5,36 @@
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
 #
-# Two things learned the hard way, both now hard-coded:
+# THE DEVICE REPOSITORY IS PINNED ON PURPOSE.
 #
-# 1. The overlay (Droid-VM/macOS-DroidVM/overlay/droidvm) is mandatory. Without it the kernel
-#    link fails on _native_adreno_fences / _native_hid_pen_allocate / _droidvm_page_info /
-#    _droidvm_gpu_sandbox_decides ... from libNativeLegacyDisplay.late.a (run 43208533681).
+# wip/hackintosh has moved on to the iPadOS 27 board (ipados27/): every commit since 2026-11-03 is
+# "ipados27: ...". The root board (iPadOS 17.7.11) still exists and is the only one with
+# scripts/build-droidvm-all.py, but package/ is SHARED with the 27 board and now references symbols
+# that only the 27 board's patches and scripts define -- droidvm_gpu_sandbox_decides
+# (ipados27/patches/xnu-12377/droidvm-gpu-sandbox-first.patch), native_hid_pen_allocate and
+# droidvm_trackpad_hid_allocate (ipados27/scripts/build-droidvm-hid-input.py). The root board has no
+# patches/xnu at all, so the kernel link cannot resolve them. Runs 43208533681, 43213620917 and
+# 43217065598 all died there:
 #
-# 2. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.
-#    It derives the reference config by copying droidvm_defconfig and flipping flags to n, so it
-#    keeps CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a, while
-#    its shortened archive list never builds that library:
+#   "_native_adreno_fences", "_native_hid_pen_allocate", "_droidvm_page_info",
+#   "_droidvm_gpu_sandbox_decides" ... referenced from libNativeLegacyDisplay.late.a
+#
+# b0fe9c80 (2026-10-28 22:06) is the last commit where both halves hold: build-droidvm-all.py exists
+# (added the same evening) and package/HidInputProbe.cpp + package/DroidVMGpu.cpp reference none of
+# those symbols. So that is the pin: the last self-consistent root board with a release pipeline.
+# Its board.toml also still lists every builder make-reference-device.py expects to drop.
+#
+# Two more things learned the hard way:
+#
+# 1. The overlay (Droid-VM/macOS-DroidVM/overlay/droidvm) is mandatory: its drivers supply the
+#    virtio-pci transport the app's crosvm needs (`--block` is virtio-pci there).
+# 2. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on: it derives
+#    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
+#    CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a while its
+#    shortened archive list never builds it:
 #      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (run 43213620917)
-#    The supported path is the one mainline.yml uses: a whole second device repository from
-#    scripts/make-reference-device.py, which also clears every *_ARCHIVE. That build takes ~8 min
+#    The supported path is mainline.yml's: a whole second device repository from
+#    scripts/make-reference-device.py (which also clears every *_ARCHIVE). That build takes ~8 min
 #    and needs only KernelCache, so it runs first, then the pipeline resumes from `kernel`.
 #
 # Reporting hooks (the Actions log API needs admin rights):
@@ -39,8 +56,8 @@ on:
         description: UniXNU ref (Droid-VM fork)
         default: wip/droidvm
       device_ref:
-        description: UniXNU-droidvm ref
-        default: wip/hackintosh
+        description: UniXNU-droidvm ref; the default is the pinned self-consistent commit
+        default: b0fe9c80bf8bd26268a9fc2dc13d94de60ef1327
       xcode:
         description: Xcode on the image; empty = runner default
         default: ""
@@ -62,7 +79,7 @@ env:
   IPSW_BUILD: "21H461"
   STAGE: ${{ github.event.inputs.stage || (contains(github.event.head_commit.message, '[full]') && 'full' || 'kernel') }}
   UNIXNU_REF: ${{ github.event.inputs.unixnu_ref || 'wip/droidvm' }}
-  DEVICE_REF: ${{ github.event.inputs.device_ref || 'wip/hackintosh' }}
+  DEVICE_REF: ${{ github.event.inputs.device_ref || 'b0fe9c80bf8bd26268a9fc2dc13d94de60ef1327' }}
   XCODE: ${{ github.event.inputs.xcode || '' }}
   ONLY: ${{ github.event.inputs.only || '' }}
   CHIP_DEFAULT: "0123456789abcdef"
@@ -140,6 +157,8 @@ jobs:
 
       - name: Apply the overlay and derive the reference device
         run: |
+          git -C UniXNU-droidvm log --oneline -1 | tee "$RUNNER_TEMP/overlay.log"
+          git -C UniXNU log --oneline -1 | tee -a "$RUNNER_TEMP/overlay.log"
           mkdir -p UniXNU-droidvm/patches/xnu
           cp ci/overlay/$BOARD/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
           mkdir -p UniXNU-droidvm/drivers
@@ -147,7 +166,7 @@ jobs:
           cp -R ci/overlay/$BOARD/scripts/. UniXNU-droidvm/scripts/
           cp -n UniXNU/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
           cp -R UniXNU-droidvm device-ref
-          python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig" 2>&1 | tee "$RUNNER_TEMP/overlay.log"
+          python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig" 2>&1 | tee -a "$RUNNER_TEMP/overlay.log"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig" 2>&1 | tee -a "$RUNNER_TEMP/overlay.log"
           echo "--- overlay drivers ---" | tee -a "$RUNNER_TEMP/overlay.log"
           ls ci/overlay/$BOARD/drivers | tee -a "$RUNNER_TEMP/overlay.log"
@@ -290,13 +309,13 @@ jobs:
             echo '```'
             sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
             echo '```'
-            echo "## overlay + reference device"
+            echo "## pinned checkouts, overlay, reference device"
             echo '```'
             cat "$RUNNER_TEMP/overlay.log" 2>/dev/null
             echo '```'
             echo "## reference candidate"
             echo '```'
-            tail -n 25 "$RUNNER_TEMP/ref-kernel.log" 2>/dev/null
+            tail -n 20 "$RUNNER_TEMP/ref-kernel.log" 2>/dev/null
             ls -l "$RUNNER_TEMP/ref" 2>/dev/null
             echo '```'
             echo "## reference candidate in tree"
