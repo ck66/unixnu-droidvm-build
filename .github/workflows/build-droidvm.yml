@@ -1,15 +1,17 @@
 # build-droidvm: UniXNU-droidvm release set on a GitHub macOS runner
 #
-#   stage=kernel   fetch KernelCache only, build the kernel.   tens of MB, no secrets needed.
+#   stage=kernel   list the droidvm build steps (temporary: the probe only inspects)
 #   stage=full     fetch the OS/SystemOS volumes, build the whole release set.
 #
-# Triggered two ways: Run workflow, or a push touching trigger/.
-#
-# Reporting hooks (the Actions log API needs admin rights):
-#   * ::warning:: annotations -- rendered server-side, readable anonymously
-#   * status/run-<id>.md committed back -- readable through the contents API
-# The report picks the LARGEST non-empty logs plus every error line, not the first N by name:
-# the first attempt tailed empty compile.log files and showed nothing.
+# History of failures, kept because they are the whole reason this file looks like this:
+#   * run 43194508321 / 43196953886  -- prepare-xnu-source.py hit 403 rate limit: needs GITHUB_TOKEN
+#   * run 43201353668               -- `unixnu build kernel` links with 10 undefined `native_*`
+#                                      symbols and audit-storage-interface-static.py wants a reference
+#                                      kernel.macho that does not exist yet. board.toml says a build
+#                                      from scratch must link such a kernel first and copy it to
+#                                      build/reference-candidate/. That bootstrap is what
+#                                      build-droidvm-all.py orchestrates, so calling `unixnu build
+#                                      kernel` directly skips it.
 
 name: build droidvm release
 
@@ -17,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: kernel = toolchain probe only; full = the whole release set
+        description: kernel = list steps only; full = the whole release set
         type: choice
         options:
           - kernel
@@ -36,7 +38,7 @@ on:
         description: 16 hex digits; only used by stage=full. Empty = use the secret.
         default: ""
       only:
-        description: Optional --only STEP,... for a partial full run
+        description: Optional --only STEP,... passed to build-droidvm-all.py
         default: ""
   push:
     paths:
@@ -98,9 +100,6 @@ jobs:
           uname -m
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
-          xcrun -f mig
-          clang --version | head -n 1
-          df -h "$GITHUB_WORKSPACE"
           XCODE_VER="$(xcodebuild -version | tr '\n' ' ')"
           SDK_VER="$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)"
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
@@ -132,42 +131,24 @@ jobs:
           path: UniXNU/out/ipsw
           key: ipsw-${{ env.IPSW_BUILD }}
 
-      - name: Configure (defconfig + feeds)
-        working-directory: UniXNU
+      - name: List the droidvm build steps (stage kernel)
+        if: github.event.inputs.stage != 'full'
+        working-directory: UniXNU-droidvm
         run: |
-          ./unixnu defconfig droidvm_defconfig -D ../UniXNU-droidvm
-          ./unixnu fetch
+          python3 scripts/build-droidvm-all.py --list 2>&1 | tee "$RUNNER_TEMP/steps.log"
 
-      - name: Fetch KernelCache only (stage kernel)
+      - name: Introspect the device config (stage kernel)
         if: github.event.inputs.stage != 'full'
         working-directory: UniXNU
         run: |
-          ./unixnu ipsw fetch KernelCache
-          echo "::warning::KernelCache step done: $(du -sh out/ipsw 2>/dev/null | cut -f1) under out/ipsw"
-
-      - name: Build the kernel only (stage kernel)
-        id: kernel
-        if: github.event.inputs.stage != 'full'
-        working-directory: UniXNU
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          JOBS="$(sysctl -n hw.ncpu)"
-          set -o pipefail 2>/dev/null || true
-          ./unixnu build kernel -j "$JOBS" 2>&1 | tee "$RUNNER_TEMP/pass1.log" || echo "first pass stopped as expected on a clean tree"
-          ./unixnu build kernel -j "$JOBS" 2>&1 | tee "$RUNNER_TEMP/pass2.log"
-
-      - name: Report what stage 1 produced
-        if: always() && github.event.inputs.stage != 'full'
-        working-directory: UniXNU
-        run: |
-          ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
-          du -sh "out/$BOARD" out/ipsw 2>/dev/null || true
-          if ls "out/$BOARD/kernel"/* >/dev/null 2>&1; then
-            echo "::warning::stage kernel produced: $(ls "out/$BOARD/kernel" | tr '\n' ' ')"
-          else
-            echo "::warning::stage kernel produced NOTHING in out/$BOARD/kernel"
-          fi
+          {
+            echo "== ls UniXNU-droidvm/scripts"
+            ls -1 ../UniXNU-droidvm/scripts | head -80
+            echo "== board.toml [kernel] archives"
+            sed -n '/^\[kernel\]/,/^\[/p' ../UniXNU-droidvm/board.toml | head -60
+            echo "== reference-candidate references"
+            grep -rn "reference-candidate" ../UniXNU-droidvm/scripts | head -20
+          } 2>&1 | tee "$RUNNER_TEMP/introspect.log"
 
       # ---- stage=full only below this line ----
 
@@ -210,7 +191,6 @@ jobs:
             echo "== $d"
             ls -la "$d" 2>/dev/null || echo "(missing)"
           done
-          du -sh out/droidvm out/ipsw 2>/dev/null || true
           if [ -d out/droidvm/release ]; then
             echo "::warning::stage full produced: $(ls out/droidvm/release | tr '\n' ' ')"
           else
@@ -229,7 +209,6 @@ jobs:
             exit 1
           fi
           tar -czf "$RUNNER_TEMP/droidvm-release.tgz" -C out/droidvm release
-          ls -lh "$RUNNER_TEMP/droidvm-release.tgz"
           if [ -z "$ARTIFACT_KEY" ]; then
             echo "::error::ARTIFACT_KEY secret is not set; refusing to upload unencrypted Apple binaries"
             exit 1
@@ -245,18 +224,6 @@ jobs:
           name: droidvm-release-enc
           path: ${{ runner.temp }}/droidvm-release.tgz.enc
           compression-level: 0
-          retention-days: 7
-
-      - name: Upload the build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: droidvm-logs
-          path: |
-            UniXNU-droidvm/out/droidvm/**/logs/*.log
-            UniXNU/out/**/logs/*.log
-            ${{ runner.temp }}/*.log
-          if-no-files-found: ignore
           retention-days: 7
 
       - name: Publish a run report into the repo
@@ -278,6 +245,14 @@ jobs:
             echo '```'
             sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
             echo '```'
+            for f in "$RUNNER_TEMP/steps.log" "$RUNNER_TEMP/introspect.log"; do
+              if [ -s "$f" ]; then
+                echo "## $(basename "$f")"
+                echo '```'
+                cat "$f"
+                echo '```'
+              fi
+            done
             echo "## verdict"
             echo '```'
             if [ -d "UniXNU/out/$BOARD/kernel" ] && [ -n "$(ls -A "UniXNU/out/$BOARD/kernel" 2>/dev/null)" ]; then
@@ -290,23 +265,12 @@ jobs:
             echo "## error lines"
             echo '```'
             {
-              grep -rIn -E "(^|[^a-z])error:|fatal error|FAILED|No such file|not found|undefined symbol|Traceback" \
-                UniXNU/out UniXNU-droidvm/out "$RUNNER_TEMP" --include=*.log 2>/dev/null \
-                | grep -v '/feeds/' | grep -v 'compile.log:' | head -60
+              grep -rIn -E "(^|[^a-z])error:|fatal error|FAILED|No such file|Undefined symbols|ld: symbol|Traceback" \
+                UniXNU/out "$RUNNER_TEMP" --include=*.log 2>/dev/null \
+                | grep -v '/feeds/' | grep -v 'compile.log:' | head -40
             } > "$RUNNER_TEMP/errs.txt" 2>&1
-            if [ -s "$RUNNER_TEMP/errs.txt" ]; then cat "$RUNNER_TEMP/errs.txt"; else echo "(no error lines matched)"; fi
+            if [ -s "$RUNNER_TEMP/errs.txt" ]; then cat "$RUNNER_TEMP/errs.txt"; else echo "(none)"; fi
             echo '```'
-            echo "## largest non-empty logs"
-            find UniXNU/out "$RUNNER_TEMP" -name '*.log' -size +0 2>/dev/null \
-              | grep -v '/feeds/' \
-              | while read -r f; do printf '%s %s\n' "$(wc -c < "$f")" "$f"; done \
-              | sort -rn | head -4 \
-              | while read -r sz f; do
-                  echo "### $f ($sz bytes)"
-                  echo '```'
-                  tail -n 100 "$f"
-                  echo '```'
-                done
           } > "$OUT"
           echo "report is $(wc -c < "$OUT") bytes"
           git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}" repo-status
