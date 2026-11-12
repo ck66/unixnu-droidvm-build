@@ -1,0 +1,153 @@
+# probe: build ONLY the reference candidate kernel, the way Droid-VM/macOS-DroidVM/mainline.yml does it.
+#
+# Why a separate workflow:
+#   build-droidvm-all.py step_reference rewrites configs/droidvm_defconfig in place (flags -> n, and it deletes
+#   the NATIVE_VIRTIO_BLOCK / VERIFIED_ROOT archive lines). The proven CI path instead derives a whole second
+#   device repository with scripts/make-reference-device.py, which additionally:
+#     * drops the storage/display/GPU/verified-root archive builders from [kernel] archives, and
+#     * clears EVERY CONFIG_XNU_*_ARCHIVE="" string, because "unixnu checks every *_ARCHIVE of the
+#       configuration after the builders ran, whether its option is on or not".
+#   That last point is exactly the kind of thing that leaves native_* symbols undefined.
+#
+# Runs only for a commit whose message contains [probe], so it can be fired without starting the full pipeline.
+
+name: probe reference kernel
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "trigger/**"
+
+permissions:
+  contents: write
+
+env:
+  BOARD: droidvm
+  IPSW_BUILD: "21H461"
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  HOMEBREW_NO_ENV_HINTS: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[probe]')
+    runs-on: macos-26
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out the ci harness (overlay + scripts)
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/macOS-DroidVM
+          ref: main
+          path: ci
+          persist-credentials: false
+
+      - name: Check out UniXNU and the device repository
+        run: |
+          git clone --filter=blob:none https://github.com/Droid-VM/UniXNU.git UniXNU
+          git -C UniXNU checkout wip/droidvm
+          git -C UniXNU submodule update --init --recursive --filter=blob:none
+          git clone --filter=blob:none https://github.com/Droid-VM/UniXNU-droidvm.git device
+          git -C device checkout wip/hackintosh
+          git -C device submodule update --init --recursive --filter=blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          brew install llvm lld cmake ninja unifdef mtools dtc
+          echo "::warning::toolchain | $(xcodebuild -version | tr '\n' ' ') | iPhoneOS SDK $(xcrun --sdk iphoneos --show-sdk-version) | $(uname -m)"
+
+      - name: Apply the overlay (patches, drivers, scripts)
+        run: |
+          mkdir -p device/patches/xnu
+          cp ci/overlay/$BOARD/patches/xnu/*.patch device/patches/xnu/
+          mkdir -p device/drivers
+          cp -R ci/overlay/$BOARD/drivers/. device/drivers/
+          cp -R ci/overlay/$BOARD/scripts/. device/scripts/
+          cp -n UniXNU/patches/xnu/*.patch device/patches/xnu/
+          ls device/patches/xnu; ls device/drivers; ls device/scripts | head -40
+
+      - name: Derive the reference device
+        run: |
+          cp -R device device-ref
+          python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig" | tee "$RUNNER_TEMP/device-ref.log"
+          echo "--- device-ref configs/droidvm_defconfig tail ---" | tee -a "$RUNNER_TEMP/device-ref.log"
+          tail -30 device-ref/configs/droidvm_defconfig | tee -a "$RUNNER_TEMP/device-ref.log"
+
+      - name: Cache the extracted IPSW members
+        uses: actions/cache@v4
+        with:
+          path: UniXNU/out/ipsw
+          key: ipsw-${{ env.IPSW_BUILD }}
+
+      - name: Configure for the reference device and fetch
+        working-directory: UniXNU
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./unixnu defconfig "${BOARD}_defconfig" -D ../device-ref 2>&1 | tee "$RUNNER_TEMP/defconfig.log"
+          ./unixnu fetch 2>&1 | tee "$RUNNER_TEMP/fetch.log"
+          ./unixnu ipsw fetch 2>&1 | tee "$RUNNER_TEMP/ipsw.log"
+
+      - name: Build the reference kernel
+        working-directory: UniXNU
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee "$RUNNER_TEMP/kernel.log"
+
+      - name: Report
+        if: always()
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/report.md"
+          {
+            echo "# probe reference kernel $RUN_ID"
+            echo
+            echo "## toolchain"
+            echo '```'
+            sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
+            echo '```'
+            echo "## device-ref"
+            echo '```'
+            cat "$RUNNER_TEMP/device-ref.log" 2>/dev/null
+            echo '```'
+            echo "## verdict"
+            echo '```'
+            ls -la UniXNU/out/$BOARD/kernel 2>&1 | head -20
+            du -sh UniXNU/out/$BOARD UniXNU/out/ipsw 2>/dev/null
+            echo '```'
+            echo "## kernel.log tail"
+            echo '```'
+            tail -n 120 "$RUNNER_TEMP/kernel.log" 2>/dev/null
+            echo '```'
+            echo "## undefined symbols / errors"
+            echo '```'
+            grep -nE "Undefined symbols|ld: symbol|_native_|error:|fatal error|FAILED|Traceback|No such file" "$RUNNER_TEMP/kernel.log" 2>/dev/null | head -60
+            echo '```'
+          } > "$OUT"
+          echo "report is $(wc -c < "$OUT") bytes"
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}" repo-status
+          cd repo-status || exit 0
+          mkdir -p status
+          cp "$OUT" "status/probe-${RUN_ID}.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "status/probe-${RUN_ID}.md"
+          git commit -m "probe report ${RUN_ID}" || exit 0
+          git push || echo "push failed"
