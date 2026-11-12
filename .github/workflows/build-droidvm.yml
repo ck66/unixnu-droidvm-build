@@ -4,14 +4,13 @@
 # reads) is only worth fetching once the cheap risk -- whether this Xcode can build XNU at
 # all -- is cleared.
 #
-#   stage=kernel   fetch KernelCache only, build the kernel.      ~30-60 min, tens of MB
+#   stage=kernel   fetch KernelCache only, build the kernel.   tens of MB, no secrets needed.
 #   stage=full     fetch the OS/SystemOS volumes, build the whole release set.
+#                  needs ARTIFACT_KEY and a 16-hex-digit chip id.
 #
 # `unixnu ipsw fetch` never downloads an IPSW as a whole: it reads the ZIP directory and only
 # the configured members with HTTP range requests, and caches them in out/ipsw/<build>/.
 # The caches below keep that work across runs, so a failed run does not re-download it.
-#
-# Secrets: ARTIFACT_KEY (required for upload), UNIXNU_UNIQUE_CHIP_ID (16 hex digits).
 
 name: build droidvm release
 
@@ -33,7 +32,7 @@ on:
         description: Xcode on the image (/Applications/Xcode_<ver>.app); empty = default
         default: ""
       unique_chip_id:
-        description: 16 hex digits; leave empty to use the UNIXNU_UNIQUE_CHIP_ID secret
+        description: 16 hex digits; only used by stage=full. Empty = use the secret.
         default: ""
       only:
         description: Optional --only STEP,... for a partial full run
@@ -109,7 +108,7 @@ jobs:
             printf '%-10s %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
           done
 
-      # Sources are ~ a few hundred MB and identical between runs.
+      # Sources are a few hundred MB and identical between runs.
       - name: Cache the Apple source feed
         uses: actions/cache@v4
         with:
@@ -123,24 +122,6 @@ jobs:
         with:
           path: UniXNU/out/ipsw
           key: ipsw-${{ env.IPSW_BUILD }}
-
-      - name: Resolve the chip id
-        id: chip
-        env:
-          SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
-          INPUT_CHIP_ID: ${{ inputs.unique_chip_id }}
-        run: |
-          chip="${INPUT_CHIP_ID:-$SECRET_CHIP_ID}"
-          if [ -z "$chip" ]; then
-            echo "::error::need a 16-hex-digit chip id: set the UNIXNU_UNIQUE_CHIP_ID secret or the input"
-            exit 1
-          fi
-          if ! echo "$chip" | grep -Eq '^[0-9a-fA-F]{16}$'; then
-            echo "::error::chip id must be exactly 16 hex digits"
-            exit 1
-          fi
-          echo "::add-mask::$chip"
-          echo "chip=$chip" >> "$GITHUB_OUTPUT"
 
       - name: Configure (defconfig + feeds)
         working-directory: UniXNU
@@ -170,7 +151,27 @@ jobs:
           ls -la "out/$BOARD/kernel" 2>/dev/null || echo "(no kernel output)"
           du -sh "out/$BOARD" out/ipsw 2>/dev/null || true
 
-      # Stage 2: the whole thing, including the OS/SystemOS volumes (~8 GiB).
+      # ---- stage=full only below this line ----
+
+      - name: Resolve the chip id (stage: full)
+        id: chip
+        if: inputs.stage == 'full'
+        env:
+          SECRET_CHIP_ID: ${{ secrets.UNIXNU_UNIQUE_CHIP_ID }}
+          INPUT_CHIP_ID: ${{ inputs.unique_chip_id }}
+        run: |
+          chip="${INPUT_CHIP_ID:-$SECRET_CHIP_ID}"
+          if [ -z "$chip" ]; then
+            echo "::error::need a 16-hex-digit chip id: set the UNIXNU_UNIQUE_CHIP_ID secret or the input"
+            exit 1
+          fi
+          if ! echo "$chip" | grep -Eq '^[0-9a-fA-F]{16}$'; then
+            echo "::error::chip id must be exactly 16 hex digits"
+            exit 1
+          fi
+          echo "::add-mask::$chip"
+          echo "chip=$chip" >> "$GITHUB_OUTPUT"
+
       - name: Build the release set (stage: full)
         if: inputs.stage == 'full'
         working-directory: UniXNU-droidvm
@@ -184,7 +185,7 @@ jobs:
           python3 scripts/build-droidvm-all.py "${args[@]}"
 
       - name: Show what came out
-        if: always()
+        if: always() && inputs.stage == 'full'
         working-directory: UniXNU-droidvm
         run: |
           for d in out/droidvm/release out/droidvm/build-all; do
