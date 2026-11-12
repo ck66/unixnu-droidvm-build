@@ -5,24 +5,26 @@
 #
 # Stage selection from a push: the commit message carries [full] for the full run.
 #
-# THE DEVICE REPOSITORY IS PINNED ON PURPOSE.
+# BOTH REPOSITORIES ARE PINNED, AS A PAIR.
 #
-# wip/hackintosh has moved on to the iPadOS 27 board (ipados27/): every commit since 2026-11-03 is
-# "ipados27: ...". The root board (iPadOS 17.7.11) still exists and is the only one with
-# scripts/build-droidvm-all.py, but package/ is SHARED with the 27 board and now references symbols
-# that only the 27 board's patches and scripts define -- droidvm_gpu_sandbox_decides
-# (ipados27/patches/xnu-12377/droidvm-gpu-sandbox-first.patch), native_hid_pen_allocate and
-# droidvm_trackpad_hid_allocate (ipados27/scripts/build-droidvm-hid-input.py). The root board has no
-# patches/xnu at all, so the kernel link cannot resolve them. Runs 43208533681, 43213620917 and
-# 43217065598 all died there:
+# wip/hackintosh has moved on to the iPadOS 27 board: every commit since 2026-11-03 is "ipados27: ...".
+# The root board (iPadOS 17.7.11) still exists and is the only one with scripts/build-droidvm-all.py,
+# but package/ is SHARED with the 27 board and now references symbols only the 27 board defines --
+# droidvm_gpu_sandbox_decides (ipados27/patches/xnu-12377/droidvm-gpu-sandbox-first.patch),
+# native_hid_pen_allocate / droidvm_trackpad_hid_allocate (ipados27/scripts/build-droidvm-hid-input.py),
+# native_adreno_fences (ipados27/scripts/build-droidvm-legacy-display.py). The root board has no
+# patches/xnu at all, so the kernel link cannot resolve them (runs 43208533681, 43213620917,
+# 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip compiles
+# drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
+# repository does not know (run 43220998711: "cannot initialize return object of type 'IOService *'
+# with an rvalue of type 'NativeLegacyDisplay *'", 76 errors).
 #
-#   "_native_adreno_fences", "_native_hid_pen_allocate", "_droidvm_page_info",
-#   "_droidvm_gpu_sandbox_decides" ... referenced from libNativeLegacyDisplay.late.a
-#
-# b0fe9c80 (2026-10-28 22:06) is the last commit where both halves hold: build-droidvm-all.py exists
-# (added the same evening) and package/HidInputProbe.cpp + package/DroidVMGpu.cpp reference none of
-# those symbols. So that is the pin: the last self-consistent root board with a release pipeline.
-# Its board.toml also still lists every builder make-reference-device.py expects to drop.
+# 2026-10-29 05:50 is the pair the author committed together, both mentioning the GopFramebuffer
+# merge of upstream feat/ipados27-gpu-parity:
+#   device b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13  "Display: GopFramebuffer's half-float offers ..."
+#   UniXNU 56023cdc363249d201328e9e147f7b05690eba4e  "GPU parity ... GopFramebuffer merged",
+#          "for this board's iPadOS 17 guest (its iPadOS 27 / arm64e port is left for when it reaches main)"
+# That device commit still has no ipados27 symbol references and still has build-droidvm-all.py.
 #
 # Two more things learned the hard way:
 #
@@ -53,11 +55,11 @@ on:
           - full
         default: kernel
       unixnu_ref:
-        description: UniXNU ref (Droid-VM fork)
-        default: wip/droidvm
+        description: UniXNU ref; the default is the pinned half of the matched pair
+        default: 56023cdc363249d201328e9e147f7b05690eba4e
       device_ref:
-        description: UniXNU-droidvm ref; the default is the pinned self-consistent commit
-        default: b0fe9c80bf8bd26268a9fc2dc13d94de60ef1327
+        description: UniXNU-droidvm ref; the default is the pinned half of the matched pair
+        default: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
       xcode:
         description: Xcode on the image; empty = runner default
         default: ""
@@ -78,8 +80,8 @@ env:
   BOARD: droidvm
   IPSW_BUILD: "21H461"
   STAGE: ${{ github.event.inputs.stage || (contains(github.event.head_commit.message, '[full]') && 'full' || 'kernel') }}
-  UNIXNU_REF: ${{ github.event.inputs.unixnu_ref || 'wip/droidvm' }}
-  DEVICE_REF: ${{ github.event.inputs.device_ref || 'b0fe9c80bf8bd26268a9fc2dc13d94de60ef1327' }}
+  UNIXNU_REF: ${{ github.event.inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
+  DEVICE_REF: ${{ github.event.inputs.device_ref || 'b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13' }}
   XCODE: ${{ github.event.inputs.xcode || '' }}
   ONLY: ${{ github.event.inputs.only || '' }}
   CHIP_DEFAULT: "0123456789abcdef"
@@ -345,9 +347,9 @@ jobs:
               find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -25
             fi
             echo '```'
-            echo "## kernel.log errors"
+            echo "## archive-15 / display build errors"
             echo '```'
-            grep -nE "Undefined symbols|ld: library|_native_|_droidvm_|ld: symbol|error:" "$d/kernel.log" 2>/dev/null | head -40
+            grep -nE "error:|Undefined symbols|ld: library|cannot initialize" UniXNU/out/droidvm/logs/archive-15-build-native-legacy-display.log 2>/dev/null | head -25
             echo '```'
             echo "## verdict"
             echo '```'
