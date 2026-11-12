@@ -1,7 +1,7 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43229956762：装了 gnu-sed 但把 gnubin 放进 PATH，GNU sed 抢在 BSD sed 前面，
-# 内核脚本的 `sed -i ''` 报错，参考内核几秒就挂。本次只装 gsed，不动 PATH。
+# run 43231649198（10-29 配对 + gsed）：kernel 124s、package 31s、tools 255s 全过，
+# plugin 卡在 glslangValidator is required。已补 glslang / spirv-tools / vulkan-*。
 
-run: 2026-11-12 21:53 gsed installed, PATH untouched
+run: 2026-11-12 22:30 with glslang and the Vulkan toolchain
