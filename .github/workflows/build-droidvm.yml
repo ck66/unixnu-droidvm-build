@@ -16,13 +16,15 @@
 # link cannot resolve _droidvm_gpu_sandbox_decides / _native_hid_pen_allocate / ... (runs 43208533681,
 # 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
 # compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
-# repository does not know (run 43220998711, 76 errors). The pair above is the fix, and with it the
-# kernel (152 s) and package steps pass (run 43225566396).
+# repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it the run
+# now reaches the plugin step: kernel 124 s, package 31 s, tools 255 s (run 43231649198).
 #
-# HOST TOOLS: gnu-sed must be installed because the tools step builds toybox with gsed (run
-# 43225566396). Do NOT put gnu-sed's or coreutils' libexec/gnubin on PATH: that shadows BSD sed, and
-# the kernel build scripts call `sed -i ''`, which GNU sed rejects -- run 43229956762 died seconds into
-# the reference kernel build for exactly that reason. brew links `gsed` on its own; that is enough.
+# HOST TOOLS, each one learned from a failed run:
+#   gnu-sed          tools step builds toybox with gsed            (43225566396)
+#   -- but never put gnu-sed's or coreutils' libexec/gnubin on PATH: BSD sed must stay first,
+#      the kernel scripts call `sed -i ''` and GNU sed rejects it   (43229956762)
+#   glslang          plugin step: "glslangValidator is required"    (43231649198)
+#   spirv-tools, vulkan-headers, vulkan-loader: the Mesa/Turnip build behind the same step
 #
 # Two more things learned the hard way:
 #
@@ -140,23 +142,26 @@ jobs:
           SDK_VER="$(xcrun --sdk iphoneos --show-sdk-version 2>/dev/null)"
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
-      # gnu-sed is required (toybox wants gsed). Nothing is added to PATH: BSD sed must stay first,
-      # the kernel scripts call `sed -i ''`. bison and flex only add bison/yacc/flex/lex.
+      # gnu-sed: toybox wants gsed. glslang: the plugin step builds Mesa/Turnip and needs
+      # glslangValidator. Nothing is added to PATH except bison/flex: BSD sed must stay first,
+      # the kernel scripts call `sed -i ''`.
       - name: Install host tools
         run: |
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
-                       gettext texinfo autoconf automake libtool gperf nasm
+                       gettext texinfo autoconf automake libtool gperf nasm \
+                       glslang spirv-tools vulkan-headers vulkan-loader
           for formula in bison flex; do
             if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula")/bin" >> "$GITHUB_PATH"; fi
           done
           MISSING=""
-          for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild gsed pkg-config meson bison flex; do
+          for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild gsed pkg-config \
+                      meson bison flex glslangValidator spirv-val; do
             path="$(command -v "$tool" || true)"
-            printf '%-10s %s\n' "$tool" "${path:-MISSING}"
+            printf '%-18s %s\n' "$tool" "${path:-MISSING}"
             [ -n "$path" ] || MISSING="$MISSING $tool"
           done
-          printf 'sed      %s\n' "$(command -v sed)"
-          sed -i '' -e 's/^/x/; s/^x//' /dev/null 2>/dev/null && echo 'bsd sed syntax OK' || echo '::warning::sed -i "" failed (is GNU sed first on PATH?)'
+          printf '%-18s %s\n' sed "$(command -v sed)"
+          printf '' | sed -i '' -e 's/x/y/' 2>/dev/null; echo "sed -i '' exit: $?"
           if [ -n "$MISSING" ]; then echo "::warning::missing host tools:$MISSING"; else echo "::warning::host tools OK"; fi
 
       - name: Apply the overlay and derive the reference device
@@ -317,13 +322,6 @@ jobs:
             echo '```'
             cat "$RUNNER_TEMP/overlay.log" 2>/dev/null
             echo '```'
-            echo "## reference candidate"
-            echo '```'
-            tail -n 30 "$RUNNER_TEMP/ref.log" 2>/dev/null
-            echo '--- kernel ---'
-            tail -n 30 "$RUNNER_TEMP/ref-kernel.log" 2>/dev/null
-            ls -l "$RUNNER_TEMP/ref" 2>/dev/null
-            echo '```'
             echo "## reference candidate in tree"
             echo '```'
             ls -l UniXNU-droidvm/out/droidvm/tree/build/reference-candidate 2>&1
@@ -351,14 +349,15 @@ jobs:
               find "$d" -name '*.log' 2>/dev/null | while read -r f; do printf '%10s %s\n' "$(wc -c < "$f")" "$(basename "$f")"; done | sort -rn | head -25
             fi
             echo '```'
-            echo "## last build log tails"
-            for name in tool-toybox tool-gfxprobe tool-lsdiag tool-ipatool plugin kernel package; do
-              f="$d/$name.log"
-              [ -s "$f" ] || continue
-              echo "### $name"
-              echo '```'
-              tail -n 20 "$f"
-              echo '```'
+            echo "## tail of the step logs"
+            for name in mesa-venv plugin mesa turnip metal2vulkan data trust payload images kernel; do
+              for f in "$d"/*"$name"*.log; do
+                [ -s "$f" ] || continue
+                echo "### $(basename "$f")"
+                echo '```'
+                tail -n 25 "$f"
+                echo '```'
+              done
             done
             echo "## verdict"
             echo '```'
