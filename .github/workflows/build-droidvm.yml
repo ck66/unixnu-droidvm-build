@@ -1,20 +1,13 @@
 # build-droidvm: UniXNU-droidvm release set on a GitHub macOS runner
 #
-# Two stages, because the expensive part (the iPadOS system volumes, ~8 GiB of HTTP range
-# reads) is only worth fetching once the cheap risk -- whether this Xcode can build XNU at
-# all -- is cleared.
-#
 #   stage=kernel   fetch KernelCache only, build the kernel.   tens of MB, no secrets needed.
 #   stage=full     fetch the OS/SystemOS volumes, build the whole release set.
-#                  needs ARTIFACT_KEY and a 16-hex-digit chip id.
 #
-# Triggered two ways, and they mean the same thing:
-#   * Run workflow (workflow_dispatch), stage chosen in the form
-#   * a push touching trigger/ -- stage defaults to kernel
+# Triggered two ways: Run workflow, or a push touching trigger/.
 #
-# The ::warning:: lines are deliberate. GitHub renders step annotations server-side, so a
-# reader without a GitHub login (or without working DOM access to the Actions page) can still
-# see the toolchain version and whether the stage produced anything. Keep them.
+# Two deliberate reporting hooks, because the Actions log API needs admin rights:
+#   * ::warning:: annotations -- rendered server-side, readable anonymously
+#   * status/run-<id>.md committed back to the repo -- readable through the contents API
 
 name: build droidvm release
 
@@ -48,7 +41,7 @@ on:
       - "trigger/**"
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   BOARD: droidvm
@@ -147,7 +140,7 @@ jobs:
         working-directory: UniXNU
         run: |
           ./unixnu ipsw fetch KernelCache
-          echo "::warning::KernelCache fetched: $(du -sh out/ipsw 2>/dev/null | cut -f1) in out/ipsw"
+          echo "::warning::KernelCache step done: $(du -sh out/ipsw 2>/dev/null | cut -f1) under out/ipsw"
 
       - name: Build the kernel only (stage kernel)
         if: github.event.inputs.stage != 'full'
@@ -256,3 +249,51 @@ jobs:
             UniXNU/out/**/logs/*.log
           if-no-files-found: ignore
           retention-days: 7
+
+      # Write a report back into the repo. The Actions log API needs admin rights, but the
+      # contents API of a public repo does not -- this is how a run becomes readable.
+      - name: Publish a run report into the repo
+        if: always()
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          OUT="$RUNNER_TEMP/report.md"
+          {
+            echo "# run $RUN_ID"
+            echo
+            echo "- stage: $STAGE"
+            echo "- refs: UniXNU@$UNIXNU_REF  device@$DEVICE_REF"
+            echo
+            echo "## toolchain"
+            echo '```'
+            sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
+            echo '```'
+            echo "## out/ipsw"
+            echo '```'
+            ls -la UniXNU/out/ipsw 2>&1 | head -40
+            echo '```'
+            echo "## out/$BOARD"
+            echo '```'
+            ls -laR "UniXNU/out/$BOARD" 2>&1 | head -80
+            echo '```'
+            echo "## log tails"
+            find UniXNU/out -name '*.log' -size -2000k 2>/dev/null | head -6 | while read -r f; do
+              echo "### $f"
+              echo '```'
+              tail -n 60 "$f"
+              echo '```'
+            done
+          } > "$OUT"
+          echo "report is $(wc -c < "$OUT") bytes"
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}" repo-status
+          cd repo-status || exit 0
+          mkdir -p status
+          cp "$OUT" "status/run-${RUN_ID}.md"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "status/run-${RUN_ID}.md"
+          git commit -m "report for run ${RUN_ID}" || exit 0
+          git push || echo "push failed"
