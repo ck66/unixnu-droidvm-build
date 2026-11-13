@@ -1,7 +1,7 @@
 # 每改一次这个文件就是一次运行。
 # [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
 #
-# run 43239173186（已到 plugin 末尾）：Turnip iOS/host 都编译成功，host 自检缺 plugin_smoke，
-# 因为 gen-turnip-smoke-shaders.py 要 glslc，而 glslang 只给 glslangValidator。已装 shaderc。
+# run 43331679292：kernel 108s / package 47s / tools 252s / Turnip 两个目标 + smoke 全过，
+# plugin 里的 metal2vulkan Rust 桥报 can't find crate for core（缺 aarch64-apple-ios target）。已加。
 
-run: 2026-11-13 07:47 with shaderc (glslc)
+run: 2026-11-13 08:23 with the ios rust target
