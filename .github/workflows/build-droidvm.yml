@@ -17,16 +17,17 @@
 # 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
 # compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
 # repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it kernel
-# 126 s, package 43 s, tools 251 s and the whole Turnip build pass, and the run reaches the plugin
-# host check (43239173186).
+# 108 s, package 47 s, tools 252 s, the whole Turnip build and its smoke test pass, and the run reaches
+# the metal2vulkan Rust bridge (43331679292).
 #
 # HOST TOOLS, each one learned from a failed run:
 #   gnu-sed   tools step builds toybox with gsed                       (43225566396)
 #   -- but never put gnu-sed's or coreutils' libexec/gnubin on PATH: BSD sed must stay first,
 #      the kernel scripts call `sed -i ''` and GNU sed rejects it      (43229956762)
 #   glslang   the Mesa/Turnip build wants glslangValidator            (43231649198)
-#   shaderc   gen-turnip-smoke-shaders.py wants `glslc` (glslang does NOT provide it); without it
-#             the host check silently leaves no plugin_smoke        (43239173186)
+#   shaderc   gen-turnip-smoke-shaders.py wants `glslc` (glslang does NOT provide it)  (43239173186)
+#   rustup target aarch64-apple-ios: build-adreno-metal-bridge.py compiles the metal2vulkan bridge
+#             for iOS; without it rustc says "can't find crate for core"  (43331679292)
 #   spirv-tools, vulkan-headers, vulkan-loader: the rest of that build
 #
 # GitHub runs `shell: bash` as `bash -eo pipefail`: any command that returns non-zero aborts the
@@ -151,7 +152,8 @@ jobs:
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
       # shaderc gives glslc (gen-turnip-smoke-shaders.py needs it); glslang only gives glslangValidator.
-      # Nothing is added to PATH except bison/flex: BSD sed must stay first.
+      # rustup needs the iOS target for the metal2vulkan bridge. Nothing is added to PATH except
+      # bison/flex: BSD sed must stay first.
       - name: Install host tools
         run: |
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
@@ -160,9 +162,15 @@ jobs:
           for formula in bison flex; do
             if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula")/bin" >> "$GITHUB_PATH"; fi
           done
+          if command -v rustup >/dev/null 2>&1; then
+            rustup target add aarch64-apple-ios aarch64-apple-darwin
+            rustup target list --installed
+          else
+            echo "::warning::rustup is not on the image; the metal2vulkan bridge will fail"
+          fi
           MISSING=""
           for tool in cmake ninja unifdef ld.lld mformat mcopy dtc xcodebuild gsed pkg-config \
-                      meson bison flex glslangValidator glslc spirv-val; do
+                      meson bison flex glslangValidator glslc spirv-val cargo rustc; do
             path="$(command -v "$tool" || true)"
             printf '%-18s %s\n' "$tool" "${path:-MISSING}"
             [ -n "$path" ] || MISSING="$MISSING $tool"
@@ -357,8 +365,8 @@ jobs:
               echo "(no log directory: $d)"
             fi
             echo '```'
-            echo "## turnip / plugin logs"
-            for name in mesa-venv turnip-ios turnip-host turnip-host-check smoke plugin-smoke; do
+            echo "## turnip / plugin / later step logs"
+            for name in plugin bridge metal turnip-host-check data trust payload images; do
               for f in "$d"/*"$name"*.log; do
                 [ -s "$f" ] || continue
                 echo "### $(basename "$f") ($(wc -c < "$f") bytes)"
