@@ -1,0 +1,127 @@
+# build-edk2: the Gunyah UEFI firmware (edk2-gunyah), for the virtio-mmio devices.
+#
+# Why: the firmware the DroidVM APK ships (version 0.1.r49.735c9f6, built 2026-09-07) has a
+# VirtioGpuDxe that does not work on virtio-mmio -- it activates the device with queue size 0 and
+# crosvm answers "failed to activate device: ... split queue size 0 is not a power of 2", so EDK2
+# stops before BdsDxe and the payload never starts. The fix is already upstream in
+# Droid-VM/edk2-gunyah branch wip/hackintosh (GunyahPkg/Drivers/GunyahVirtioGpuDxe/Commands.c:
+# "MMIO requires QueueNum to be programmed explicitly ... SetQueueNum"); it is just not in the
+# binary the app carries.
+#
+# EDK2 cross-builds from x86_64 (GCC_AARCH64_PREFIX), no ARM runner needed; the whole thing is
+# ~10 minutes, which is why this exists next to the much heavier AOSP crosvm build.
+
+name: build edk2-gunyah (firmware)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'branch of Droid-VM/edk2-gunyah'
+        default: wip/hackintosh
+      build_type:
+        description: 'RELEASE keeps the footprint small; DEBUG prints more over serial'
+        type: choice
+        options: [RELEASE, DEBUG]
+        default: RELEASE
+      gpu:
+        description: 'on = normal firmware; off = drop GunyahVirtioGpuDxe (guest with no GPU device)'
+        type: choice
+        options: [on, off]
+        default: on
+      pci_cam:
+        description: 'PCI ECAM mode: the meta repo builds with PCI_CAM_MODE=FALSE'
+        type: choice
+        options: ['FALSE', 'TRUE']
+        default: 'FALSE'
+
+env:
+  EDK2_TARGET: ${{ inputs.build_type }}
+  GCC_AARCH64_PREFIX: aarch64-linux-gnu-
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  firmware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out edk2-gunyah with its edk2 submodule
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/edk2-gunyah
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+          fetch-depth: 1
+          path: edk2-gunyah
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          # iasl + uuid-dev are what the upstream workflow installs; the rest is BaseTools
+          # (python3, make) and the cross compiler named by GCC_AARCH64_PREFIX.
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            build-essential python3 iasl uuid-dev git \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          aarch64-linux-gnu-gcc --version | head -1
+          df -h /
+
+      - name: Show what this branch actually contains
+        working-directory: edk2-gunyah
+        run: |
+          echo "HEAD $(git rev-parse HEAD) on $(git rev-parse --abbrev-ref HEAD)"
+          echo "--- the virtio-gpu queue fix (should print the SetQueueNum line) ---"
+          grep -n "SetQueueNum\|QueueNum to be programmed" GunyahPkg/Drivers/GunyahVirtioGpuDxe/Commands.c || \
+            echo "NOT PRESENT on this ref: the firmware will be the broken-on-mmio variant"
+          echo "--- gpu driver in the DSC ---"
+          grep -n "GunyahVirtioGpu" GunyahPkg/GunyahKernel.dsc
+
+      - name: Drop the virtio-gpu driver (gpu=off)
+        if: inputs.gpu == 'off'
+        working-directory: edk2-gunyah
+        run: |
+          set -e
+          sed -i 's|^\([[:space:]]*GunyahPkg/Drivers/GunyahVirtioGpuDxe/GunyahVirtioGpu\.inf\)|# \1   # dropped: gpu=off|' GunyahPkg/GunyahKernel.dsc
+          grep -n "GunyahVirtioGpu" GunyahPkg/GunyahKernel.dsc || true
+          # A build that silently kept the driver is worse than one that fails.
+          ! grep -q '^[[:space:]]*GunyahPkg/Drivers/GunyahVirtioGpuDxe' GunyahPkg/GunyahKernel.dsc
+
+      - name: Build
+        working-directory: edk2-gunyah
+        run: |
+          set -euo pipefail
+          chmod +x ./build.sh
+          ./build.sh -DPCI_CAM_MODE=${{ inputs.pci_cam }} 2>&1 | tee ../build.log
+          ls -l edk2-gunyah.fd edk2-gunyah.vars.fd
+
+      - name: Report
+        if: always()
+        run: |
+          echo "=== df ==="; df -h /
+          if [ -f edk2-gunyah/edk2-gunyah.fd ]; then
+            ls -l edk2-gunyah/edk2-gunyah.fd
+            sha256sum edk2-gunyah/edk2-gunyah.fd
+          fi
+
+      - name: Upload the firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edk2-gunyah-${{ inputs.build_type }}-gpu-${{ inputs.gpu }}
+          path: |
+            edk2-gunyah/edk2-gunyah.fd
+            edk2-gunyah/edk2-gunyah.vars.fd
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload the build log when it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edk2-build-log-${{ github.run_id }}
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
