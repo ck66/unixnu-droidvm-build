@@ -10,6 +10,9 @@
 #
 # EDK2 cross-builds from x86_64 (GCC_AARCH64_PREFIX), no ARM runner needed; the whole thing is
 # ~10 minutes, which is why this exists next to the much heavier AOSP crosvm build.
+#
+# Two ways in: workflow_dispatch with inputs, or a push that touches trigger-edk2/ (the same
+# convention the payload workflow uses, so a run can be started from a repository write alone).
 
 name: build edk2-gunyah (firmware)
 
@@ -34,10 +37,18 @@ on:
         type: choice
         options: ['FALSE', 'TRUE']
         default: 'FALSE'
+  push:
+    # There is no token here for the dispatch API, so a push that touches this directory is how a
+    # run gets started by hand (same convention as the payload workflow).
+    paths:
+      - 'trigger-edk2/**'
 
 env:
-  EDK2_TARGET: ${{ inputs.build_type }}
+  EDK2_TARGET: ${{ inputs.build_type || 'RELEASE' }}
   GCC_AARCH64_PREFIX: aarch64-linux-gnu-
+  WANT_REF: ${{ inputs.ref || 'wip/hackintosh' }}
+  WANT_GPU: ${{ inputs.gpu || 'on' }}
+  WANT_PCI_CAM: ${{ inputs.pci_cam || 'FALSE' }}
 
 defaults:
   run:
@@ -53,7 +64,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Droid-VM/edk2-gunyah
-          ref: ${{ inputs.ref }}
+          ref: ${{ env.WANT_REF }}
           submodules: recursive
           fetch-depth: 1
           path: edk2-gunyah
@@ -80,7 +91,7 @@ jobs:
           grep -n "GunyahVirtioGpu" GunyahPkg/GunyahKernel.dsc
 
       - name: Drop the virtio-gpu driver (gpu=off)
-        if: inputs.gpu == 'off'
+        if: env.WANT_GPU == 'off'
         working-directory: edk2-gunyah
         run: |
           set -e
@@ -94,7 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./build.sh
-          ./build.sh -DPCI_CAM_MODE=${{ inputs.pci_cam }} 2>&1 | tee ../build.log
+          ./build.sh -DPCI_CAM_MODE=$WANT_PCI_CAM 2>&1 | tee ../build.log
           ls -l edk2-gunyah.fd edk2-gunyah.vars.fd
 
       - name: Report
@@ -110,7 +121,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: edk2-gunyah-${{ inputs.build_type }}-gpu-${{ inputs.gpu }}
+          name: edk2-gunyah-${{ env.EDK2_TARGET }}-gpu-${{ env.WANT_GPU }}
           path: |
             edk2-gunyah/edk2-gunyah.fd
             edk2-gunyah/edk2-gunyah.vars.fd
