@@ -1,0 +1,4 @@
+build the firmware with the virtio-mmio gpu queue fix (wip/hackintosh, RELEASE, gpu=on)
+
+why: the shipped r49 firmware activates virtio-gpu with queue size 0 on mmio, so EDK2 dies
+before BdsDxe and the iPadOS payload never starts. See .github/workflows/build-edk2.yml.
