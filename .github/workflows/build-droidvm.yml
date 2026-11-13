@@ -17,8 +17,8 @@
 # 43213620917, 43217065598). Pinning the device alone then broke the other way: UniXNU at its tip
 # compiles drivers/GopFramebuffer/NativeLegacyDisplay.cpp against a class hierarchy the October device
 # repository does not know (run 43220998711, 76 errors). The pair above is the fix; with it kernel
-# 108 s, package 47 s, tools 252 s, the whole Turnip build and its smoke test pass, and the run reaches
-# the metal2vulkan Rust bridge (43331679292).
+# 135 s, package 37 s, tools 336 s, the Turnip iOS/host builds and their smoke test pass, and the run
+# reaches the metal2vulkan bridge (43336523907).
 #
 # HOST TOOLS, each one learned from a failed run:
 #   gnu-sed   tools step builds toybox with gsed                       (43225566396)
@@ -26,8 +26,9 @@
 #      the kernel scripts call `sed -i ''` and GNU sed rejects it      (43229956762)
 #   glslang   the Mesa/Turnip build wants glslangValidator            (43231649198)
 #   shaderc   gen-turnip-smoke-shaders.py wants `glslc` (glslang does NOT provide it)  (43239173186)
-#   rustup target aarch64-apple-ios: build-adreno-metal-bridge.py compiles the metal2vulkan bridge
-#             for iOS; without it rustc says "can't find crate for core"  (43331679292)
+#   rustup target aarch64-apple-ios FOR TOOLCHAIN 1.98.0: build-adreno-metal-bridge.py runs
+#             `cargo +1.98.0`, so adding the target to the DEFAULT toolchain does nothing -- it
+#             still says "can't find crate for core"                  (43331679292, 43336523907)
 #   spirv-tools, vulkan-headers, vulkan-loader: the rest of that build
 #
 # GitHub runs `shell: bash` as `bash -eo pipefail`: any command that returns non-zero aborts the
@@ -152,19 +153,24 @@ jobs:
           echo "::warning::toolchain | ${XCODE_VER}| iPhoneOS SDK ${SDK_VER} | macOS $(sw_vers -productVersion) $(uname -m) | stage=${STAGE}"
 
       # shaderc gives glslc (gen-turnip-smoke-shaders.py needs it); glslang only gives glslangValidator.
-      # rustup needs the iOS target for the metal2vulkan bridge. Nothing is added to PATH except
-      # bison/flex: BSD sed must stay first.
+      # The metal2vulkan bridge runs `cargo +1.98.0`, so the iOS std has to be added TO THAT TOOLCHAIN;
+      # adding it to the default toolchain does nothing. Nothing is added to PATH except bison/flex.
       - name: Install host tools
         run: |
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
                        gettext texinfo autoconf automake libtool gperf nasm \
                        glslang shaderc spirv-tools vulkan-headers vulkan-loader
           for formula in bison flex; do
-            if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula")/bin" >> "$GITHUB_PATH"; fi
+            if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula"")/bin" >> "$GITHUB_PATH"; fi
           done
           if command -v rustup >/dev/null 2>&1; then
-            rustup target add aarch64-apple-ios aarch64-apple-darwin
-            rustup target list --installed
+            rustup toolchain install 1.98.0 --profile minimal --no-self-update || true
+            rustup target add --toolchain 1.98.0 aarch64-apple-ios aarch64-apple-darwin || true
+            rustup toolchain list | awk '{print $1}' | while read -r t; do
+              rustup target add --toolchain "$t" aarch64-apple-ios aarch64-apple-darwin 2>/dev/null || true
+            done
+            echo "--- toolchains ---"; rustup toolchain list
+            echo "--- 1.98.0 targets ---"; rustup target list --installed --toolchain 1.98.0
           else
             echo "::warning::rustup is not on the image; the metal2vulkan bridge will fail"
           fi
@@ -365,8 +371,8 @@ jobs:
               echo "(no log directory: $d)"
             fi
             echo '```'
-            echo "## turnip / plugin / later step logs"
-            for name in plugin bridge metal turnip-host-check data trust payload images; do
+            echo "## plugin / later step logs"
+            for name in plugin bridge data trust payload images kernel; do
               for f in "$d"/*"$name"*.log; do
                 [ -s "$f" ] || continue
                 echo "### $(basename "$f") ($(wc -c < "$f") bytes)"
