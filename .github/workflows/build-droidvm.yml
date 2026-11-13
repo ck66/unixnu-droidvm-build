@@ -160,9 +160,10 @@ jobs:
           brew install llvm lld mtools dtc gnu-sed pkg-config meson bison flex \
                        gettext texinfo autoconf automake libtool gperf nasm \
                        glslang shaderc spirv-tools vulkan-headers vulkan-loader
-          for formula in bison flex; do
-            if [ -d "$(brew --prefix "$formula")" ]; then echo "$(brew --prefix "$formula"")/bin" >> "$GITHUB_PATH"; fi
-          done
+          BISON_BIN="$(brew --prefix bison)/bin"
+          FLEX_BIN="$(brew --prefix flex)/bin"
+          [ -d "$BISON_BIN" ] && echo "$BISON_BIN" >> "$GITHUB_PATH"
+          [ -d "$FLEX_BIN" ] && echo "$FLEX_BIN" >> "$GITHUB_PATH"
           if command -v rustup >/dev/null 2>&1; then
             rustup toolchain install 1.98.0 --profile minimal --no-self-update || true
             rustup target add --toolchain 1.98.0 aarch64-apple-ios aarch64-apple-darwin || true
