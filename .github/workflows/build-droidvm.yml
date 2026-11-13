@@ -251,10 +251,15 @@ jobs:
       - name: Place the reference candidate in the tree (stage full)
         if: env.STAGE == 'full'
         run: |
-          ref="UniXNU-droidvm/out/droidvm/tree/build/reference-candidate"
-          mkdir -p "$ref"
-          cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"
-          ls -l "$ref"
+          # The build tree lives under UniXNU/out/droidvm (the unixnu build root), not under the
+          # device checkout, so place the candidate in both trees.
+          for ref in "UniXNU/out/droidvm/tree/build/reference-candidate" \
+                     "UniXNU-droidvm/out/droidvm/tree/build/reference-candidate"; do
+            mkdir -p "$ref"
+            cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"
+            echo "== $ref"
+            ls -l "$ref"
+          done
 
       - name: Pipeline from kernel to images (stage full)
         if: env.STAGE == 'full'
@@ -280,15 +285,18 @@ jobs:
         if: always() && env.STAGE == 'full'
         working-directory: UniXNU-droidvm
         run: |
-          for d in out/droidvm/release out/droidvm/build-all out/droidvm/tree/build/reference-candidate; do
+          for d in ../UniXNU/out/droidvm/release out/droidvm/release \
+                   ../UniXNU/out/droidvm/build-all out/droidvm/build-all; do
             echo "== $d"
             ls -la "$d" 2>/dev/null || echo "(missing)"
           done
-          if [ -d out/droidvm/release ]; then
-            echo "::warning::stage full produced: $(ls out/droidvm/release | tr '\n' ' ')"
+          if [ -d ../UniXNU/out/droidvm/release ]; then
+            echo "::warning::stage full produced: $(ls ../UniXNU/out/droidvm/release | tr '\n' ' ')"
+            du -sh ../UniXNU/out/droidvm/release
           else
-            echo "::warning::stage full produced NO release directory"
+            echo "::warning::stage full produced NO release directory under ../UniXNU/out/droidvm"
           fi
+          df -h "$RUNNER_TEMP" || true
 
       - name: Pack and encrypt (stage full)
         id: pack
@@ -297,17 +305,33 @@ jobs:
         env:
           ARTIFACT_KEY: ${{ secrets.ARTIFACT_KEY }}
         run: |
-          if [ ! -d out/droidvm/release ]; then
-            echo "::warning::no release directory to pack -- skipping the artifact"
-            exit 0
+          # build-droidvm-all.py keeps everything under UniXNU/out/droidvm (the unixnu build
+          # root); the device checkout only holds the scripts. Looking under out/droidvm here is
+          # what made run 43342876596 print "release MISSING" after a build that had in fact
+          # produced os.img (6.1 GB), systemos.img and the payload disk.
+          REL=""
+          for cand in ../UniXNU/out/droidvm/release out/droidvm/release; do
+            if [ -d "$cand" ] && [ -n "$(ls -A "$cand" 2>/dev/null)" ]; then REL="$cand"; break; fi
+          done
+          if [ -z "$REL" ]; then
+            echo "::error::no release directory with content (looked in ../UniXNU/out/droidvm/release)"
+            exit 1
           fi
-          tar -czf "$RUNNER_TEMP/droidvm-release.tgz" -C out/droidvm release
-          ls -lh "$RUNNER_TEMP/droidvm-release.tgz"
+          echo "release dir: $REL"
+          ls -la "$REL"
+          du -sh "$REL"
           if [ -z "$ARTIFACT_KEY" ]; then
             echo "::error::ARTIFACT_KEY secret is not set; refusing to upload unencrypted Apple binaries"
             exit 1
           fi
-          openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:ARTIFACT_KEY -in "$RUNNER_TEMP/droidvm-release.tgz" -out "$RUNNER_TEMP/droidvm-release.tgz.enc"
+          # Reclaim ~8 GB of IPSW members first: the release images are already extracted from them.
+          rm -rf ../UniXNU/out/ipsw 2>/dev/null || true
+          df -h "$RUNNER_TEMP" || true
+          # Stream tar straight into openssl: a 6 GB intermediate .tgz plus a 6 GB .enc would not
+          # both fit on the runner.
+          tar -czf - -C "$(dirname "$REL")" "$(basename "$REL")" \
+            | openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:ARTIFACT_KEY \
+                -out "$RUNNER_TEMP/droidvm-release.tgz.enc"
           ls -lh "$RUNNER_TEMP/droidvm-release.tgz.enc"
           echo "ok=1" >> "$GITHUB_OUTPUT"
 

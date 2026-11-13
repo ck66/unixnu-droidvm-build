@@ -1,7 +1,3 @@
-# 每改一次这个文件就是一次运行。
-# [full] → 完整流水线；[probe] → 参考内核探针；都不带 → 仅内省。
-#
-# run 43336523907：一路到 plugin，卡在 cargo +1.98.0 缺 aarch64-apple-ios std（我之前给默认工具链装没用）。
-# 本版显式给 1.98.0 装 target，并修了一处引号笔误。
-
-run: 2026-11-13 09:10 ios std for toolchain 1.98.0
+rerun at 2026-11-13T02:02:02Z
+reason: release/ lives under UniXNU/out/droidvm, not UniXNU-droidvm/out/droidvm;
+pack+upload now looks there, streams tar into openssl, and drops the IPSW cache first.
