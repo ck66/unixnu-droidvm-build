@@ -1,0 +1,64 @@
+# Compress the kernel release asset: 126 MB -> about 75 MB.
+#
+# The raw kernel.macho is what has to go on the phone, but the machine that fetches it is on a
+# slow link and a release asset cannot be swapped in place cheaply.  So the .xz is added beside
+# the raw file and both stay downloadable.
+#
+# Runs when "build kernel (guest)" succeeds.  workflow_run evaluates this file from the default
+# branch at the time that run completes, so it also applies to a build that was already in flight
+# when this workflow was added.
+
+name: compress the kernel release asset
+
+on:
+  workflow_run:
+    workflows: ["build kernel (guest)"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  xz:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Find the release that run published
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          echo "build run: $RUN_ID"
+          tag=$(gh release list -R "$GITHUB_REPOSITORY" --limit 30 \
+                  --json tagName,createdAt \
+                  --jq '[.[] | select(.tagName | startswith("kernel-"))] | sort_by(.createdAt) | reverse | .[0].tagName')
+          [ -n "$tag" ] || { echo '::error::no kernel-* release found'; exit 1; }
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "tag: $tag"
+          mkdir -p work
+          gh release download "$tag" -R "$GITHUB_REPOSITORY" -p 'kernel.macho' -D work
+          ls -l work
+          df -h /
+
+      - name: Compress
+        run: |
+          set -euo pipefail
+          xz -6 -T0 -k work/kernel.macho
+          ls -lh work
+          sha256sum work/kernel.macho | awk '{print $1"  kernel.macho"}' > work/kernel.macho.sha256
+          sha256sum work/kernel.macho.xz | awk '{print $1"  kernel.macho.xz"}' > work/kernel.macho.xz.sha256
+          cat work/kernel.macho.sha256 work/kernel.macho.xz.sha256
+
+      - name: Upload it beside the raw kernel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" work/kernel.macho.xz work/kernel.macho.xz.sha256 --clobber
+          gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.size)"'
