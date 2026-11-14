@@ -2,23 +2,32 @@ name: build kernel (guest)
 
 # The guest kernel alone (kernel.macho), with this repository's XNU patches.
 #
-# Why: the payload build produces the whole 6 GB release over hours.  A kernel question only
-# needs setup/volumes/policies/data-base, the built-in `reference` step (the storage/display ABI
-# audits inside `kernel` read that candidate) and `kernel` itself -- not the plugin, the images or
-# the payload disk.  DarwinBoot's device tree (kernel.macho.adt) is generated from the VM's FDT,
-# so a rebuilt kernel.macho can be dropped onto the boot disk alone.
+# Why: the payload build produces the whole 6 GB release over hours.  A kernel question only needs
+# the reference candidate, setup/volumes/policies/data-base (the kernel build attaches the OS volume
+# and reads the Data fixture) and `kernel` -- not the plugin, the images or the payload disk.
+# DarwinBoot's device tree (kernel.macho.adt) is generated from the VM's FDT, so a rebuilt
+# kernel.macho can be dropped onto the boot disk alone.
 #
 # patches/0001: a stale vm_map hole list is a lost hint, not a panic (validated on the phone).
 # patches/0002: the owner-cache mount reports stage/errno through a panic, behind
 #               owner-cache-diag=1 -- the only channel this kernel can be read through.
 #
+# Two things this workflow has been taught by failed runs:
+#
+# 1. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.  It derives
+#    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
+#    CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a while its
+#    shortened archive list never builds that library:
+#      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (43598709618)
+#    The supported path is the one below, from the payload workflow: a whole second device
+#    repository from make-reference-device.py (which also clears every *_ARCHIVE), built in
+#    UniXNU with the ordinary defconfig.
+# 2. That candidate has to be placed from the workspace root: the tree lives under
+#    UniXNU/out/droidvm, and a workspace-relative path inside a step whose working directory is
+#    UniXNU resolves to UniXNU/UniXNU/... (43597066885: "mkdir: UniXNU: Not a directory").
+#
 # Output: a GitHub Release per run (tag kernel-<date>-r<run_id>) holding kernel.macho and its
 # sha256.  A release asset has no 100 MB file limit and needs no token to download.
-#
-# The Data volume UUID is pinned between data-base and the reference/kernel steps:
-# apply_data_uuid() stamps the kernel with the freshly built fixture's UUID and every build makes
-# a new one, while the phone's data-store.img carries the UUID of the release this kernel is
-# meant to run with.
 
 on:
   workflow_dispatch:
@@ -120,18 +129,30 @@ jobs:
           done
           tail -4 UniXNU/profiles/arch/arm64/patches/xnu/series
 
-      # setup also downloads the IPSW (about 8 GB); volumes extracts the OS and SystemOS members
-      # (about 9 GiB) because the policies and the Data seed are built from them.
+      # The reference candidate: this board's kernel with the native storage / display / owner-root
+      # drivers off, built from device-ref.  The storage audit reads it while the real kernel links.
+      - name: Build the reference candidate
+        working-directory: UniXNU
+        run: |
+          set -o pipefail
+          ./unixnu defconfig "${BOARD}_defconfig" -D ../device-ref 2>&1 | tee "$RUNNER_TEMP/ref.log"
+          ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"
+          ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee "$RUNNER_TEMP/ref-kernel.log"
+          mkdir -p "$RUNNER_TEMP/ref"
+          cp "out/$BOARD/kernel/kernel.macho" "out/$BOARD/kernel/kernel.json" "$RUNNER_TEMP/ref/"
+          ls -l "$RUNNER_TEMP/ref"
+          echo "reference candidate: $(wc -c < "$RUNNER_TEMP/ref/kernel.macho") bytes"
+
       - name: Sources, volumes, policies, Data fixture
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
-          python3 scripts/build-droidvm-all.py --only setup,volumes,policies,data-base 2>&1 \
-            | tee "$RUNNER_TEMP/kernel-1.log"
+          python3 scripts/build-droidvm-all.py --to data-base 2>&1 | tee "$RUNNER_TEMP/kernel-1.log"
           df -h /
 
-      # Keep the kernel's Data UUID equal to the one on the phone's data-store.img.  Runs before
-      # `reference` and `kernel` so both stamp the same UUID.
+      # Keep the kernel's Data UUID equal to the one on the phone's data-store.img (apply_data_uuid
+      # stamps whatever UUID the freshly built fixture has, and every build makes a new one).
       - name: Pin the Data volume UUID
         run: |
           set -euo pipefail
@@ -146,17 +167,23 @@ jobs:
           json.dump(data, open(path, 'w'), indent=2)
           PY
 
-      # `reference` is the candidate the storage-ABI and display audits inside `kernel` read.  It
-      # is this board's kernel with those drivers configured off, built in out-reference/ and
-      # copied to tree/build/reference-candidate.  It has to be the pipeline's own step: a
-      # reference built from the ordinary defconfig still contains the storage drivers, which is
-      # exactly what the audit is comparing against.
-      - name: Reference candidate and the kernel
+      # From the workspace root: the tree lives under UniXNU/out/droidvm, and the candidate is read
+      # from there while the real kernel links.
+      - name: Place the reference candidate in the tree
+        run: |
+          set -euo pipefail
+          for ref in "UniXNU/out/droidvm/tree/build/reference-candidate" \
+                     "UniXNU-droidvm/out/droidvm/tree/build/reference-candidate"; do
+            mkdir -p "$ref"
+            cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"
+            echo "== $ref"; ls -l "$ref"
+          done
+
+      - name: Build the kernel
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
-          python3 scripts/build-droidvm-all.py --only reference,kernel 2>&1 \
-            | tee "$RUNNER_TEMP/kernel-2.log"
+          python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
           df -h /
 
       - name: Self-check
@@ -166,8 +193,6 @@ jobs:
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
           echo "data uuid strings: $(strings "$K" | grep -c "$DATA_VOLUME_UUID" || true)"
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
-          echo "--- reference candidate ---"
-          ls -l UniXNU/out/droidvm/tree/build/reference-candidate || true
           df -h /
 
       # A release asset has no 100 MB file limit and downloads without a token, which is what the
