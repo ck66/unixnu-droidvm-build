@@ -1,0 +1,9 @@
+attempt 7: git writes the patch, the build's own patch loop applies it.
+
+run 43603023239 proved the anchored edits land (audit: 0001 comment 1, panic 0, 0002 diagnostic 1) but
+then the build failed: "patch failed: bsd/kern/kern_exec.c:183 / patch does not apply".
+build-xnu-4k-baseline.sh applies patches/xnu/*.patch itself and first reverses the zzy*/zzz* late
+patches, so a source edit sitting in that context belongs to no patch and breaks the re-apply.
+
+Now: apply the edits, let `git diff` write zzzz-droidvm-hole-and-diag.patch (hunk counts cannot be
+wrong), revert the worktree, and let the build apply it last, in name order.
