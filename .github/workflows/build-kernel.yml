@@ -12,7 +12,7 @@ name: build kernel (guest)
 # patches/0002: the owner-cache mount reports stage/errno through a panic, behind
 #               owner-cache-diag=1 -- the only channel this kernel can be read through.
 #
-# Two things this workflow has been taught by failed runs:
+# Three things this workflow has been taught by failed runs:
 #
 # 1. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.  It derives
 #    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
@@ -25,6 +25,9 @@ name: build kernel (guest)
 # 2. That candidate has to be placed from the workspace root: the tree lives under
 #    UniXNU/out/droidvm, and a workspace-relative path inside a step whose working directory is
 #    UniXNU resolves to UniXNU/UniXNU/... (43597066885: "mkdir: UniXNU: Not a directory").
+# 3. gh cannot publish from the workspace root either -- this repository is checked out at self/,
+#    so there is no .git there: "failed to run git: fatal: not a git repository" (43600590879).
+#    Every gh call therefore passes -R "$GITHUB_REPOSITORY".
 #
 # Output: a GitHub Release per run (tag kernel-<date>-r<run_id>) holding kernel.macho and its
 # sha256.  A release asset has no 100 MB file limit and needs no token to download.
@@ -179,6 +182,26 @@ jobs:
             echo "== $ref"; ls -l "$ref"
           done
 
+      # 43600590879 built a kernel whose `strings | grep 'DroidVM owner-cache'` was 0: either the
+      # patches never reached the prepared source, or the output is not compiled from it.  Print
+      # both sides of that question before the build, so one run answers it.
+      - name: Audit the patches against the prepared source
+        if: always()
+        run: |
+          set +e
+          W=UniXNU/out/droidvm/tree/.cache/xnu-work
+          echo "=== xnu-patches.list (tail) ==="
+          tail -6 UniXNU/out/droidvm/xnu-patches.list 2>/dev/null
+          echo "=== 'kernel: patch' lines recorded by the tree step ==="
+          grep -h 'kernel: patch' UniXNU/out/droidvm/build-all/logs/*.log 2>/dev/null | tail -8
+          echo "=== markers in the prepared source ==="
+          echo "0001 vm_map_store_rb.c: $(grep -c 'DroidVM: the hole list is a hint' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
+          echo "0002 kern_exec.c:       $(grep -c 'DroidVM owner-cache' "$W/bsd/kern/kern_exec.c" 2>/dev/null)"
+          echo "=== the work tree ==="
+          git -C "$W" log --oneline -1 2>/dev/null
+          git -C "$W" status --short 2>/dev/null | head -12
+          ls -l "$W/bsd/kern/kern_exec.c" 2>/dev/null
+
       - name: Build the kernel
         working-directory: UniXNU-droidvm
         run: |
@@ -195,6 +218,18 @@ jobs:
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
           df -h /
 
+      # Insurance: an artifact does not depend on the release call behaving, so a good build is not
+      # thrown away by a publish failure (43600590879 was).
+      - name: Keep the built kernel as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-macho-${{ github.run_id }}
+          path: UniXNU/out/droidvm/kernel/kernel.macho
+          if-no-files-found: ignore
+          retention-days: 14
+          compression-level: 0
+
       # A release asset has no 100 MB file limit and downloads without a token, which is what the
       # machine that installs this kernel on the phone needs.
       - name: Publish the kernel as a release asset
@@ -210,7 +245,9 @@ jobs:
           printf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"
           notes="guest kernel.macho, $(date -u '+%F %T UTC'), run ${RUN_ID}, sha256 ${sum}"
           echo "tag=$TAG sha256=$sum"
-          gh release create "$TAG" --title "$TAG" --notes "$notes" \
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" --notes "$notes" \
             "$K" "$RUNNER_TEMP/kernel.macho.sha256" \
-            || gh release upload "$TAG" --clobber "$K" "$RUNNER_TEMP/kernel.macho.sha256"
-          gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.size) \(.url)"'
+            || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber \
+                 "$K" "$RUNNER_TEMP/kernel.macho.sha256"
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[] | "\(.name) \(.size) \(.url)"'
