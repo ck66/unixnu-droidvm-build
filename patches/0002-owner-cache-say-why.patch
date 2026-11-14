@@ -26,19 +26,20 @@ The check is behind a boot argument so an ordinary build of this patch is inert.
 diff --git a/bsd/kern/kern_exec.c b/bsd/kern/kern_exec.c
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -186,6 +186,30 @@
+@@ -186,6 +186,31 @@
  			native_owner_cache_dyld_flags = dyld_flags;
  		}
  	#endif
  		native_owner_cache_authorized = cache_authorized;
 +		/*
 +		 * DroidVM: report the refusal instead of leaving the guest to fail later
-+		 * with dyld's "no dyld cache".  Gated on owner-cache-diag=1, so an
-+		 * ordinary build of this patch boots exactly as before.
++		 * with dyld's "no dyld cache".  Gated on owner-cache-diag=1 so an ordinary
++		 * build of this patch boots exactly as before.
 +		 */
 +		if (error) {
 +			extern volatile int native_owner_root_apple_autherr;
 +			extern volatile int native_owner_root_decision;
++			extern int PE_parse_boot_argn(const char *, void *, int);
 +			int diag = 0;
 +
 +			if (PE_parse_boot_argn("owner-cache-diag", &diag, sizeof(diag)) && diag) {
