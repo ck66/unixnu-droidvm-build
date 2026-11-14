@@ -1,23 +1,29 @@
 #!/usr/bin/env python3
-"""Apply this repository's two XNU changes to a prepared source tree.
+"""Apply this repository's XNU changes to a prepared source tree.
 
-Why not a patch file: a hand-written unified diff has to agree with its own hunk counts and with the
-exact context of the file it lands on.  When it does not, one tool says "corrupt patch" and another
+Why not a hand-written patch file: a unified diff has to agree with its own hunk counts and with the
+exact context of the file it lands on.  When it does not, one tool says "corrupt patch" while another
 silently skips it -- and a build that skips it still succeeds, which is how 43600590879 produced a
 126 MB kernel with `strings | grep 'DroidVM owner-cache'` = 0.
 
-Both edits therefore anchor on text that occurs exactly once in the file, and each one asserts its
-own result: the anchor must be found, and the expected marker must be present afterwards.
+The edits anchor on text that occurs once and assert their own result: the anchor must be found and
+the marker must be present afterwards.  The script is idempotent; the workflow runs it, lets
+`git diff` write the patch (so hunk counts are git's problem), and reverts the tree so the build
+applies that patch with all the others.
 
   0001  osfmk/vm/vm_map_store_rb.c
         A hole list that has drifted from the RB tree is a lost hint, not a reason to panic a guest
         that is otherwise fully up.  Replaces the panic statement with `return;`.  (Verified on the
         phone as a 4-byte edit: read_bytes 205 MB -> 778 MB, four vCPUs busy, exec launchd reached.)
 
-  0002  bsd/kern/kern_exec.c
-        The owner chain returns an errno and the caller goes on to exec init against whatever root
-        it has, so the guest only fails later with dyld's "no dyld cache".  Behind the boot argument
-        owner-cache-diag=1, turn that errno into a panic carrying stage/errno/device.
+  0002  bsd/kern/kern_exec.c -- native_owner_cache_prepare()
+        Reports the owner-cache refusal through a panic when booted with owner-cache-diag=1.
+        43606725375 showed it never fired, i.e. that chain reports success.
+
+  0003  bsd/kern/kern_exec.c -- after native_cryptex_os_view()
+        Reports the cryptex OS view stages unconditionally.  The owner chain succeeding while dyld
+        still says "no dyld cache" puts the failure downstream: the root's /System/Cryptexes/OS only
+        reaches the SystemOS volume through this view, and none of its stages are fatal upstream.
 
 usage: apply-xnu-changes.py <xnu source tree>
 """
@@ -99,6 +105,51 @@ def edit_002(text):
     return text[:match.end()] + block + text[match.end():], True
 
 
+def edit_003(text):
+    """Return the text with a diagnostic panic after the cryptex OS view is built."""
+    anchor = 'native_cryptex_os_view(p, scratch);'
+    first = text.find(anchor)
+    if first < 0:
+        return text, False
+    line_start = text.rfind('\n', 0, first) + 1
+    ind = text[line_start:first]
+    o = ind + '\t'
+    block = (
+        f'{ind}{anchor}\n'
+        f'{ind}/*\n'
+        f'{ind} * DroidVM: the owner chain reported success yet dyld still says "no dyld cache", so the\n'
+        f'{ind} * failure is downstream of it.  This is where the cryptex OS view is built (the root\'s\n'
+        f'{ind} * /System/Cryptexes/OS only reaches the SystemOS volume through it), and none of the\n'
+        f'{ind} * stages here are fatal upstream.  Report them all.\n'
+        f'{ind} */\n'
+        f'{ind}{{\n'
+        f'{o}extern volatile int native_cryptex_os_stage, native_cryptex_os_status;\n'
+        f'{o}extern volatile int native_gpu_addon_stage, native_gpu_addon_status;\n'
+        f'{o}extern volatile int native_gpu_addon2_stage, native_gpu_addon2_status;\n'
+        f'{o}extern volatile int native_gpu_addon3_stage, native_gpu_addon3_status;\n'
+        f'{o}extern volatile int native_owner_cache_stage, native_owner_cache_status;\n'
+        f'{o}extern volatile int native_owner_cache_mount_status;\n'
+        f'{o}extern volatile int native_owner_data_stage, native_owner_data_status;\n'
+        f'{o}extern volatile int native_staged_apps_stage, native_staged_view_stage, native_staged_view_status;\n'
+        f'{o}extern volatile int native_owner_boot_manifest_status;\n'
+        f'{o}extern char native_owner_cache_device_path[64];\n'
+        f'{o}/* Unconditional on purpose: a gated panic left "did the owner chain succeed, or did the\n'
+        f'{o} * boot argument not parse?" open (43606725375), and this build exists only to answer it. */\n'
+        f'{o}panic("DroidVM cryptex: stage=%d status=%d addon=%d/%d addon2=%d/%d addon3=%d/%d "\n'
+        f'{o}    "owner=%d/%d/%d data=%d/%d staged=%d/%d/%d manifest=%d path=%s",\n'
+        f'{o}    native_cryptex_os_stage, native_cryptex_os_status,\n'
+        f'{o}    native_gpu_addon_stage, native_gpu_addon_status,\n'
+        f'{o}    native_gpu_addon2_stage, native_gpu_addon2_status,\n'
+        f'{o}    native_gpu_addon3_stage, native_gpu_addon3_status,\n'
+        f'{o}    native_owner_cache_stage, native_owner_cache_status, native_owner_cache_mount_status,\n'
+        f'{o}    native_owner_data_stage, native_owner_data_status,\n'
+        f'{o}    native_staged_apps_stage, native_staged_view_stage, native_staged_view_status,\n'
+        f'{o}    native_owner_boot_manifest_status, native_owner_cache_device_path);\n'
+        f'{ind}}}\n'
+    )
+    return text[:line_start] + block + text[first + len(anchor):], True
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -118,7 +169,7 @@ def main():
         check('panic gone', 'Illegal action: h1:' not in new, 'the panic is still there')
         path.write_text(new)
 
-    print('0002 bsd/kern/kern_exec.c')
+    print('0002 bsd/kern/kern_exec.c (owner cache)')
     path, text = read(tree, 'bsd/kern/kern_exec.c')
     if 'DroidVM owner-cache' in text:
         print('  ok    already applied')
@@ -129,9 +180,20 @@ def main():
         if applied:
             path.write_text(new)
 
+    print('0003 bsd/kern/kern_exec.c (cryptex view)')
+    path, text = read(tree, 'bsd/kern/kern_exec.c')
+    if 'DroidVM cryptex:' in text:
+        print('  ok    already applied')
+    else:
+        new, applied = edit_003(text)
+        check('cryptex anchor found', applied, 'no "native_cryptex_os_view(p, scratch);"')
+        check('cryptex panic present', 'DroidVM cryptex:' in new, 'replacement did not land')
+        if applied:
+            path.write_text(new)
+
     if FAILED:
         sys.exit('apply-xnu-changes: ' + ', '.join(FAILED))
-    print('both changes are in the source the compiler will read')
+    print('all changes are in the source the compiler will read')
 
 
 if __name__ == '__main__':
