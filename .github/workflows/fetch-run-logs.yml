@@ -1,0 +1,68 @@
+# fetch run logs: commit the tail of a workflow run's log into this repository.
+#
+# Actions logs need a token to download and the machine that debugs this project has none, so
+# the log is published where anything can read it: as a file in this repo.  The tail is kept
+# because a failed kernel build's log runs to tens of megabytes and the interesting part is at
+# the end of the failing step.
+#
+# Two ways in: automatically after a "build kernel (guest)" run finishes, or by pushing an id
+# into trigger-logs/run_id.txt (which is how an already-finished run is fetched).
+
+name: fetch run logs
+
+on:
+  workflow_run:
+    workflows: ["build kernel (guest)"]
+    types: [completed]
+  push:
+    paths:
+      - 'trigger-logs/**'
+
+permissions:
+  contents: write
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  logs:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Which run
+        id: pick
+        run: |
+          set -euo pipefail
+          if [ -n "${{ github.event.workflow_run.id }}" ]; then
+            run="${{ github.event.workflow_run.id }}"
+          else
+            run="$(tr -d '[:space:]' < trigger-logs/run_id.txt)"
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "fetching run $run"
+
+      - name: Fetch the log
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.pick.outputs.run }}
+        run: |
+          set -uo pipefail
+          mkdir -p logs
+          gh run view "$RUN_ID" -R "${{ github.repository }}" --log > "logs/run-$RUN_ID.log" || true
+          echo "full log bytes: $(wc -c < "logs/run-$RUN_ID.log" || echo 0)"
+          tail -c 300000 "logs/run-$RUN_ID.log" > "logs/run-$RUN_ID.tail.log" 2>/dev/null || true
+          ls -l logs
+
+      - name: Commit it
+        env:
+          RUN_ID: ${{ steps.pick.outputs.run }}
+        run: |
+          set -uo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add logs
+          git commit -m "logs: run $RUN_ID" || echo "nothing to commit"
+          git push
