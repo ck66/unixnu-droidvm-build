@@ -1,0 +1,195 @@
+name: build kernel (guest)
+
+# The guest kernel alone (kernel.macho), with this repository's XNU patches.
+#
+# Why: the payload build produces the whole 6 GB release over hours, and iterating on a kernel
+# question through it is far too slow.  The kernel step needs the sources, the IPSW attachment
+# and the Data fixture -- not the plugin, the images or the payload disk -- and DarwinBoot gets
+# its device tree from kernel.macho.adt, which is generated from the VM's FDT and does not depend
+# on the kernel binary.  So a rebuilt kernel.macho can be dropped onto the existing boot disk.
+#
+# The patches in ./patches are applied by appending them to each arch profile's XNU series:
+#   0001  a stale vm_map hole list is a lost hint, not a panic
+#   0002  the owner-cache mount reports stage/errno through a panic, behind a boot argument
+#
+# The Data volume UUID is pinned: apply_data_uuid() stamps the kernel with whatever UUID the
+# freshly built fixture has and every build makes a new one, while the phone's existing
+# data-store.img carries the UUID of the release this kernel is meant to run with.
+
+on:
+  workflow_dispatch:
+    inputs:
+      unixnu_ref:
+        default: 56023cdc363249d201328e9e147f7b05690eba4e
+      device_ref:
+        default: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+  push:
+    paths:
+      - 'trigger-kernel/**'
+
+permissions:
+  contents: write
+
+env:
+  BOARD: droidvm
+  UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
+  DEVICE_REF: ${{ inputs.device_ref || 'b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13' }}
+  DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+  GITHUB_TOKEN: ${{ github.token }}
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALL_CLEANUP: 1
+  HOMEBREW_NO_ENV_HINTS: 1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  kernel:
+    runs-on: macos-26
+    timeout-minutes: 300
+
+    steps:
+      - name: Check out this repository (patches)
+        uses: actions/checkout@v4
+        with:
+          path: self
+
+      - name: Check out the ci harness
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/macOS-DroidVM
+          ref: main
+          path: ci
+          persist-credentials: false
+
+      - name: Check out UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/UniXNU
+          ref: ${{ env.UNIXNU_REF }}
+          path: UniXNU
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Check out the device repository
+        uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/UniXNU-droidvm
+          ref: ${{ env.DEVICE_REF }}
+          path: UniXNU-droidvm
+          submodules: recursive
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Toolchain
+        run: |
+          sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
+          brew install llvm dtc mtools gnu-sed pkg-config meson bison flex \
+                       gettext texinfo autoconf automake libtool gperf nasm xz
+          for d in "$(brew --prefix bison)/bin" "$(brew --prefix flex)/bin"; do
+            [ -d "$d" ] && echo "$d" >> "$GITHUB_PATH"
+          done
+          df -h /
+
+      # Same overlay the payload workflow applies: the board's own XNU patches, the drivers the
+      # kernel links, and the archive list in the defconfig.
+      - name: Apply the overlay
+        run: |
+          set -euo pipefail
+          mkdir -p UniXNU-droidvm/patches/xnu UniXNU-droidvm/drivers
+          cp ci/overlay/$BOARD/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/ || true
+          cp -R ci/overlay/$BOARD/drivers/. UniXNU-droidvm/drivers/
+          cp -R ci/overlay/$BOARD/scripts/. UniXNU-droidvm/scripts/
+          cp -n UniXNU/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/ || true
+          cp -R UniXNU-droidvm device-ref
+          python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
+          python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
+          grep -n 'EXTRA_LD_ARCHIVES' UniXNU-droidvm/configs/${BOARD}_defconfig
+
+      # Our patches go where the arch profile reads the series:
+      # profiles/arch/<arch>/patches/xnu/series, whose entries are relative paths into the
+      # UniXNU checkout's patches/xnu.
+      - name: Add this repository's XNU patches to the series
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for p in self/patches/*.patch; do
+            base=$(basename "$p")
+            cp "$p" "UniXNU/patches/xnu/$base"
+            for series in UniXNU/profiles/arch/*/patches/xnu/series; do
+              echo "../../../../../patches/xnu/$base" >> "$series"
+              echo "series $series += $base"
+            done
+          done
+          echo '--- tail of the arm64 series ---'
+          tail -4 UniXNU/profiles/arch/arm64/patches/xnu/series
+
+      - name: Sources and fixture (setup, volumes, policies, data-base)
+        working-directory: UniXNU-droidvm
+        run: |
+          set -o pipefail
+          python3 scripts/build-droidvm-all.py --only setup,volumes,policies,data-base 2>&1 \
+            | tee "$RUNNER_TEMP/kernel-1.log"
+
+      # Keep the kernel's Data UUID equal to the one on the phone's data-store.img.
+      - name: Pin the Data volume UUID
+        run: |
+          set -euo pipefail
+          seed=UniXNU/out/droidvm/tree/build/owner-data-fixture/seed.json
+          ls -l "$seed"
+          python3 - "$seed" "$DATA_VOLUME_UUID" <<'PY'
+          import json, sys
+          path, uuid = sys.argv[1], sys.argv[2]
+          data = json.load(open(path))
+          print('fixture uuid', data.get('volume_uuid'), '->', uuid)
+          data['volume_uuid'] = uuid
+          json.dump(data, open(path, 'w'), indent=2)
+          PY
+          cat "$seed"
+
+      - name: Build the kernel
+        working-directory: UniXNU-droidvm
+        run: |
+          set -o pipefail
+          python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
+
+      - name: Self-check
+        if: always()
+        run: |
+          K=UniXNU/out/droidvm/kernel/kernel.macho
+          ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
+          echo "data uuid strings: $(strings "$K" | grep -c "$DATA_VOLUME_UUID" || true)"
+          echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
+          df -h /
+
+      - name: Publish the kernel into this repository
+        run: |
+          set -euo pipefail
+          K=UniXNU/out/droidvm/kernel/kernel.macho
+          mkdir -p kernel
+          name="kernel-$(date -u +%Y%m%d)-r${{ github.run_id }}.macho"
+          cp "$K" "kernel/$name"
+          shasum -a 256 "kernel/$name" | awk '{print $1}' > "kernel/$name.sha256"
+          xz -9 -T0 -k "kernel/$name"
+          ls -lh "kernel/$name" "kernel/$name.xz"
+          cat "kernel/$name.sha256"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add kernel
+          git commit -m "kernel: patched diagnostic build (run ${{ github.run_id }})"
+          git push
+
+      - name: Keep the logs when it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-logs-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/kernel-*.log
+            UniXNU/out/droidvm/build-all/logs/
+          if-no-files-found: ignore
+          retention-days: 7
