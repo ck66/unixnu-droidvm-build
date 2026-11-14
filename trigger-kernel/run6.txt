@@ -1,0 +1,6 @@
+attempt 6: the two XNU edits are applied by scripts/apply-xnu-changes.py on the prepared source.
+
+Why: the hand-written diffs in patches/ were both "corrupt patch" (hunk counts drift), so git apply
+never landed them -- and the build still succeeded, which is how 43600590879 shipped a kernel with
+`strings | grep 'DroidVM owner-cache'` = 0. The script anchors on unique text, asserts its own
+result, and is idempotent. The patches/ files are gone; the series is no longer touched.
