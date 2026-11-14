@@ -1,6 +1,6 @@
 name: build kernel (guest)
 
-# The guest kernel alone (kernel.macho), with this repository's XNU patches.
+# The guest kernel alone (kernel.macho), with this repository's XNU changes.
 #
 # Why: the payload build produces the whole 6 GB release over hours.  A kernel question only needs
 # the reference candidate, setup/volumes/policies/data-base (the kernel build attaches the OS volume
@@ -8,11 +8,15 @@ name: build kernel (guest)
 # DarwinBoot's device tree (kernel.macho.adt) is generated from the VM's FDT, so a rebuilt
 # kernel.macho can be dropped onto the boot disk alone.
 #
-# patches/0001: a stale vm_map hole list is a lost hint, not a panic (validated on the phone).
-# patches/0002: the owner-cache mount reports stage/errno through a panic, behind
-#               owner-cache-diag=1 -- the only channel this kernel can be read through.
+# scripts/apply-xnu-changes.py: two edits to the prepared XNU source, anchored on text that occurs
+# once -- 0001 a stale vm_map hole list is a lost hint instead of a panic (validated on the phone),
+# 0002 the owner-cache mount reports stage/errno through a panic when booted with owner-cache-diag=1.
 #
-# Three things this workflow has been taught by failed runs:
+# They are applied by script, not by `git apply`.  A hand-written unified diff has to agree with its
+# own hunk counts, and when it does not one tool says "corrupt patch" while another silently skips
+# it: 43600590879 built a 126 MB kernel with `strings | grep 'DroidVM owner-cache'` = 0 that way.
+#
+# Two things this workflow has been taught by failed runs:
 #
 # 1. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.  It derives
 #    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
@@ -25,9 +29,6 @@ name: build kernel (guest)
 # 2. That candidate has to be placed from the workspace root: the tree lives under
 #    UniXNU/out/droidvm, and a workspace-relative path inside a step whose working directory is
 #    UniXNU resolves to UniXNU/UniXNU/... (43597066885: "mkdir: UniXNU: Not a directory").
-# 3. gh cannot publish from the workspace root either -- this repository is checked out at self/,
-#    so there is no .git there: "failed to run git: fatal: not a git repository" (43600590879).
-#    Every gh call therefore passes -R "$GITHUB_REPOSITORY".
 #
 # Output: a GitHub Release per run (tag kernel-<date>-r<run_id>) holding kernel.macho and its
 # sha256.  A release asset has no 100 MB file limit and needs no token to download.
@@ -118,19 +119,9 @@ jobs:
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
 
-      - name: Add this repository's XNU patches to the series
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-          for p in self/patches/*.patch; do
-            base=$(basename "$p")
-            cp "$p" "UniXNU/patches/xnu/$base"
-            for series in UniXNU/profiles/arch/*/patches/xnu/series; do
-              echo "../../../../../patches/xnu/$base" >> "$series"
-              echo "$series += $base"
-            done
-          done
-          tail -4 UniXNU/profiles/arch/arm64/patches/xnu/series
+      # The series is deliberately not touched: a `patches/xnu/series` entry is applied with
+      # `git apply`, which rejects a hand-written diff whose hunk counts drift ("corrupt patch").
+      # The two edits live in scripts/apply-xnu-changes.py and run on the prepared source below.
 
       # The reference candidate: this board's kernel with the native storage / display / owner-root
       # drivers off, built from device-ref.  The storage audit reads it while the real kernel links.
@@ -182,30 +173,38 @@ jobs:
             echo "== $ref"; ls -l "$ref"
           done
 
+      # The tree is prepared by the step above (unixnu tree assembles it and applies the series to
+      # .cache/xnu-work).  These two edits anchor on unique text and assert their own result, so a
+      # silent no-op is impossible: the step fails instead.
+      - name: Apply this repository's XNU changes to the prepared source
+        run: |
+          set -o pipefail
+          python3 self/scripts/apply-xnu-changes.py \
+            UniXNU/out/droidvm/tree/.cache/xnu-work 2>&1 | tee "$RUNNER_TEMP/apply.log"
+
       # 43600590879 built a kernel whose `strings | grep 'DroidVM owner-cache'` was 0: either the
-      # patches never reached the prepared source, or the output is not compiled from it.  Print
-      # both sides of that question before the build, so one run answers it.
-      - name: Audit the patches against the prepared source
+      # edits never reached the prepared source, or the output is not compiled from it.  Print both
+      # sides of that question before the build, so one run answers it.
+      - name: Audit the source the compiler will read
         if: always()
         run: |
           set +e
           W=UniXNU/out/droidvm/tree/.cache/xnu-work
-          echo "=== xnu-patches.list (tail) ==="
-          tail -6 UniXNU/out/droidvm/xnu-patches.list 2>/dev/null
-          echo "=== 'kernel: patch' lines recorded by the tree step ==="
-          grep -h 'kernel: patch' UniXNU/out/droidvm/build-all/logs/*.log 2>/dev/null | tail -8
           echo "=== markers in the prepared source ==="
-          echo "0001 vm_map_store_rb.c: $(grep -c 'DroidVM: the hole list is a hint' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
-          echo "0002 kern_exec.c:       $(grep -c 'DroidVM owner-cache' "$W/bsd/kern/kern_exec.c" 2>/dev/null)"
+          echo "0001 comment:      $(grep -c 'DroidVM: the hole list is a hint' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
+          echo "0001 panic left:   $(grep -c 'Illegal action: h1:' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
+          echo "0002 diagnostic:   $(grep -c 'DroidVM owner-cache' "$W/bsd/kern/kern_exec.c" 2>/dev/null)"
           echo "=== the work tree ==="
           git -C "$W" log --oneline -1 2>/dev/null
           git -C "$W" status --short 2>/dev/null | head -12
-          ls -l "$W/bsd/kern/kern_exec.c" 2>/dev/null
 
       - name: Build the kernel
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
+          # Idempotent: re-applies the two edits if this step's own prepare pass re-created the tree.
+          python3 "$GITHUB_WORKSPACE/self/scripts/apply-xnu-changes.py" \
+            "$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/.cache/xnu-work"
           python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
           df -h /
 
@@ -245,6 +244,8 @@ jobs:
           printf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"
           notes="guest kernel.macho, $(date -u '+%F %T UTC'), run ${RUN_ID}, sha256 ${sum}"
           echo "tag=$TAG sha256=$sum"
+          # -R: this repository is checked out at self/, so the workspace root is not a git
+          # repository and gh cannot infer the remote from it ("fatal: not a git repository").
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" --notes "$notes" \
             "$K" "$RUNNER_TEMP/kernel.macho.sha256" \
             || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber \
