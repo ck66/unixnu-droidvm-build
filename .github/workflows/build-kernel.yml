@@ -12,6 +12,9 @@ name: build kernel (guest)
 # patches/0002: the owner-cache mount reports stage/errno through a panic, behind
 #               owner-cache-diag=1 -- the only channel this kernel can be read through.
 #
+# Output: a GitHub Release per run (tag kernel-<date>-r<run_id>) holding kernel.macho and its
+# sha256.  A release asset has no 100 MB file limit and needs no token to download.
+#
 # The Data volume UUID is pinned: apply_data_uuid() stamps the kernel with the freshly built
 # fixture's UUID and every build makes a new one, while the phone's data-store.img carries the
 # UUID of the release this kernel is meant to run with.
@@ -169,19 +172,22 @@ jobs:
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
           df -h /
 
-      - name: Publish the kernel into this repository
+      # A release asset has no 100 MB file limit and downloads without a token, which is what the
+      # machine that installs this kernel on the phone needs.
+      - name: Publish the kernel as a release asset
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           K=UniXNU/out/droidvm/kernel/kernel.macho
-          mkdir -p kernel
-          name="kernel-$(date -u +%Y%m%d)-r${{ github.run_id }}.macho"
-          cp "$K" "kernel/$name"
-          shasum -a 256 "kernel/$name" | awk '{print $1}' > "kernel/$name.sha256"
-          xz -9 -T0 -k "kernel/$name"
-          ls -lh "kernel/$name" "kernel/$name.xz"
-          cat "kernel/$name.sha256"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add kernel
-          git commit -m "kernel: patched diagnostic build (run ${{ github.run_id }})"
-          git push
+          TAG="kernel-$(date -u +%Y%m%d)-r${RUN_ID}"
+          sum=$(shasum -a 256 "$K" | awk '{print $1}')
+          printf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"
+          notes="guest kernel.macho, $(date -u '+%F %T UTC'), run ${RUN_ID}, sha256 ${sum}"
+          echo "tag=$TAG sha256=$sum"
+          gh release create "$TAG" --title "$TAG" --notes "$notes" \
+            "$K" "$RUNNER_TEMP/kernel.macho.sha256" \
+            || gh release upload "$TAG" --clobber "$K" "$RUNNER_TEMP/kernel.macho.sha256"
+          gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.size) \(.url)"'
