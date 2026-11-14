@@ -1,0 +1,11 @@
+attempt 9: build the kernel with 0003 -- report the cryptex OS view stages.
+
+What 43606725375 taught: the kernel booted with owner-cache-diag=1 and the owner-cache panic did not
+fire, so native_owner_cache_prepare() returns success; the guest still dies at exec launchd with
+"Library not loaded: /usr/lib/libSystem.B.dylib (no such file, no dyld cache)". The root's
+/System/Cryptexes/OS only reaches the SystemOS volume through native_cryptex_os_view(), whose five
+stages are all non-fatal upstream -- so that is where the answer is.
+
+0003 panics unconditionally after that view is built, printing cryptex stage/status, the three GPU
+addon stages, the owner cache/data/staged values and the device path. Unconditional because a gated
+panic cannot distinguish "the chain succeeded" from "the boot argument did not parse".
