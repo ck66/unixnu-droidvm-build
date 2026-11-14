@@ -1,0 +1,9 @@
+attempt 5: same build, plus an audit of the prepared source.
+
+run 43600590879 built the kernel (126,328,832 B) and self-check passed for the Data UUID but reported
+`diagnostic marker: 0` for patch 0002, and the release step then died on `gh`: "fatal: not a git
+repository" (the workspace root is not a repo; this repo is checked out at self/).
+
+So: gh now gets -R "$GITHUB_REPOSITORY"; the kernel is kept as an artifact before publishing; and a
+new step prints xnu-patches.list, the 'kernel: patch' lines, and greps both markers out of the
+prepared xnu-work source -- that decides whether the patch or the output is at fault.
