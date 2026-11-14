@@ -183,7 +183,9 @@ jobs:
         run: |
           set -euo pipefail
           W=UniXNU/out/droidvm/tree/.cache/xnu-work
-          P=UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch
+          # Absolute: `git -C $W apply` resolves the patch path against $W, not against this
+          # directory ("can't open patch ...: No such file or directory", 43604962584).
+          P="$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch"
           # Stage the already-patched tree so `git diff` shows only what this repository adds.
           git -C "$W" add -A
           python3 self/scripts/apply-xnu-changes.py "$W"
@@ -202,7 +204,7 @@ jobs:
         run: |
           set +e
           W=UniXNU/out/droidvm/tree/.cache/xnu-work
-          P=UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch
+          P="$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch"
           echo "=== the patch the build will apply ==="
           ls -l "$P" 2>/dev/null || echo missing
           git apply --stat "$P" 2>/dev/null
@@ -222,8 +224,10 @@ jobs:
           python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
           df -h /
 
+      # success(), not always(): a skipped build leaves the REFERENCE candidate's kernel at this path,
+      # and the check then passes on the wrong file (43604962584 reported success that way).
       - name: Self-check
-        if: always()
+        if: success()
         run: |
           K=UniXNU/out/droidvm/kernel/kernel.macho
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
@@ -234,7 +238,7 @@ jobs:
       # Insurance: an artifact does not depend on the release call behaving, so a good build is not
       # thrown away by a publish failure (43600590879 was).
       - name: Keep the built kernel as an artifact
-        if: always()
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: kernel-macho-${{ github.run_id }}
