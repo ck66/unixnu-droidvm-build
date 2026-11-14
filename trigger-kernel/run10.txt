@@ -1,0 +1,13 @@
+attempt 10: ask the VFS where the dyld shared cache actually is.
+
+43610287238's diagnostic came back:
+  DroidVM cryptex: stage=5 status=0 addon=5/0 addon2=5/0 addon3=1/2
+                   owner=6/0/0 data=4/-1 staged=0/5/0 manifest=0 path=/dev/disk4s1
+
+So the cryptex OS view finished all five stages, including the one that proves a WebKit extension is
+reachable through /System/Cryptexes/OS, and the SystemOS device is /dev/disk4s1.  The dyld cache in
+systemos.img is `dyld_v1   arm64`, the right architecture.  Yet dyld reports "no dyld cache".
+
+So this build makes 0003 also call vnode_lookup() for the cache at the three places dyld might use
+(/System/Library/Caches/..., /System/Cryptexes/OS/System/Library/Caches/..., and
+/private/preboot/Cryptexes/OS/System/Library/Caches/...) and prints the three errnos.
