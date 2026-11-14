@@ -1,0 +1,7 @@
+attempt 4: reference candidate from device-ref, built in UniXNU (as the payload workflow does).
+
+attempt 3's failure was the pipeline's own `reference` step: it keeps
+CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a while its shortened
+archive list never builds it -- `ld: library '.../libVirtioPciDrivers.a' not found`. The payload
+workflow documents this and builds the candidate from a device-ref checkout instead, placed into
+tree/build/reference-candidate from the workspace root.
