@@ -1,0 +1,7 @@
+attempt 8: the patch path is absolute, so `git -C $W apply --reverse` can find it.
+
+attempt 7 did everything right -- `git diff` wrote 2654 bytes, `2 files changed, 27 insertions(+),
+10 deletions(-)` -- and then died on "can't open patch 'UniXNU/out/.../zzzz-....patch': No such file or
+directory", because `git -C $W apply` resolves the patch path against $W.  Also: self-check and the
+artifact are now success()-only, since a skipped build left the reference candidate's kernel at the
+path the check reads.
