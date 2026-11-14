@@ -1,0 +1,7 @@
+attempt 3: use the pipeline's own `reference` step, then kernel.
+
+attempt 2 failed only in my own hand-written placement of the reference candidate
+(`mkdir: UniXNU: Not a directory`); the reference kernel itself built fine. build-droidvm-all.py
+already has a `reference` step that builds it from droidvm_reference_defconfig (storage, display and
+owner-root drivers off) and copies it to tree/build/reference-candidate, which is what the audits
+read. Use that instead.
