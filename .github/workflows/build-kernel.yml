@@ -8,13 +8,15 @@ name: build kernel (guest)
 # DarwinBoot's device tree (kernel.macho.adt) is generated from the VM's FDT, so a rebuilt
 # kernel.macho can be dropped onto the boot disk alone.
 #
-# scripts/apply-xnu-changes.py: two edits to the prepared XNU source, anchored on text that occurs
-# once -- 0001 a stale vm_map hole list is a lost hint instead of a panic (validated on the phone),
-# 0002 the owner-cache mount reports stage/errno through a panic when booted with owner-cache-diag=1.
+# scripts/apply-xnu-changes.py: two edits to the XNU source, anchored on text that occurs once --
+# 0001 a stale vm_map hole list is a lost hint instead of a panic (validated on the phone as a 4-byte
+# edit), 0002 the owner-cache mount reports stage/errno through a panic under owner-cache-diag=1.
 #
-# They are applied by script, not by `git apply`.  A hand-written unified diff has to agree with its
-# own hunk counts, and when it does not one tool says "corrupt patch" while another silently skips
-# it: 43600590879 built a 126 MB kernel with `strings | grep 'DroidVM owner-cache'` = 0 that way.
+# The patch itself is written by git, never by hand.  A hand-written diff has to agree with its own
+# hunk counts, and when it does not one tool says "corrupt patch" while another silently skips it:
+# 43600590879 built a 126 MB kernel with `strings | grep 'DroidVM owner-cache'` = 0 exactly that way.
+# So the script makes the edits, git turns them into zzzz-droidvm-hole-and-diag.patch, the worktree is
+# reverted, and the build applies that patch with all the others.
 #
 # Two things this workflow has been taught by failed runs:
 #
@@ -119,10 +121,6 @@ jobs:
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
 
-      # The series is deliberately not touched: a `patches/xnu/series` entry is applied with
-      # `git apply`, which rejects a hand-written diff whose hunk counts drift ("corrupt patch").
-      # The two edits live in scripts/apply-xnu-changes.py and run on the prepared source below.
-
       # The reference candidate: this board's kernel with the native storage / display / owner-root
       # drivers off, built from device-ref.  The storage audit reads it while the real kernel links.
       - name: Build the reference candidate
@@ -173,38 +171,54 @@ jobs:
             echo "== $ref"; ls -l "$ref"
           done
 
-      # The tree is prepared by the step above (unixnu tree assembles it and applies the series to
-      # .cache/xnu-work).  These two edits anchor on unique text and assert their own result, so a
-      # silent no-op is impossible: the step fails instead.
-      - name: Apply this repository's XNU changes to the prepared source
+      # The build applies patches/xnu/*.patch itself (build-xnu-4k-baseline.sh), and it first reverses
+      # the zzy*/zzz* late patches so their shared context stays applicable.  Editing the source here
+      # instead made a later patch stop matching -- 43603023239 died with
+      # "patch failed: bsd/kern/kern_exec.c:183 / patch does not apply".
+      #
+      # So the edit becomes a patch that GIT writes (hunk counts and context cannot be wrong that way)
+      # and the worktree is reverted, so the build applies it in name order like every other patch.
+      # The zzzz- prefix sorts after every zzy*/zzz* late patch, which is what its context assumes.
+      - name: Turn this repository's XNU changes into a patch
         run: |
-          set -o pipefail
-          python3 self/scripts/apply-xnu-changes.py \
-            UniXNU/out/droidvm/tree/.cache/xnu-work 2>&1 | tee "$RUNNER_TEMP/apply.log"
+          set -euo pipefail
+          W=UniXNU/out/droidvm/tree/.cache/xnu-work
+          P=UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch
+          # Stage the already-patched tree so `git diff` shows only what this repository adds.
+          git -C "$W" add -A
+          python3 self/scripts/apply-xnu-changes.py "$W"
+          git -C "$W" diff > "$P"
+          git -C "$W" reset -q
+          echo "--- the patch git produced ---"
+          git apply --stat "$P" || { echo "::error::git cannot read the patch it just wrote"; exit 1; }
+          git -C "$W" apply --reverse --check "$P"
+          git -C "$W" apply --reverse "$P"
+          echo "worktree reverted; the build applies $(basename "$P") itself"
 
-      # 43600590879 built a kernel whose `strings | grep 'DroidVM owner-cache'` was 0: either the
-      # edits never reached the prepared source, or the output is not compiled from it.  Print both
-      # sides of that question before the build, so one run answers it.
-      - name: Audit the source the compiler will read
+      # Two questions, both answered here: is the patch in the set the build reads, and is the source
+      # back to the state the build expects (markers absent, because applying it is the build's job)?
+      - name: Audit the patch and the source
         if: always()
         run: |
           set +e
           W=UniXNU/out/droidvm/tree/.cache/xnu-work
-          echo "=== markers in the prepared source ==="
-          echo "0001 comment:      $(grep -c 'DroidVM: the hole list is a hint' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
-          echo "0001 panic left:   $(grep -c 'Illegal action: h1:' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
-          echo "0002 diagnostic:   $(grep -c 'DroidVM owner-cache' "$W/bsd/kern/kern_exec.c" 2>/dev/null)"
+          P=UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch
+          echo "=== the patch the build will apply ==="
+          ls -l "$P" 2>/dev/null || echo missing
+          git apply --stat "$P" 2>/dev/null
+          echo "=== source markers, before the build applies it (expect 0) ==="
+          echo "0001 comment:    $(grep -c 'DroidVM: the hole list is a hint' "$W/osfmk/vm/vm_map_store_rb.c" 2>/dev/null)"
+          echo "0002 diagnostic: $(grep -c 'DroidVM owner-cache' "$W/bsd/kern/kern_exec.c" 2>/dev/null)"
           echo "=== the work tree ==="
           git -C "$W" log --oneline -1 2>/dev/null
-          git -C "$W" status --short 2>/dev/null | head -12
+          git -C "$W" status --short 2>/dev/null | wc -l
 
       - name: Build the kernel
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
-          # Idempotent: re-applies the two edits if this step's own prepare pass re-created the tree.
-          python3 "$GITHUB_WORKSPACE/self/scripts/apply-xnu-changes.py" \
-            "$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/.cache/xnu-work"
+          # No pre-apply here: the patch made above is applied by the build script's own loop, in
+          # name order, after it has reversed and re-applied the zzy*/zzz* late patches.
           python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
           df -h /
 
