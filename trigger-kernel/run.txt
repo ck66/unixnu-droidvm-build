@@ -1,6 +1,2 @@
-build the guest kernel with patches/0001 (stale hole list) and patches/0002 (owner-cache diagnostic).
-
-why: the guest reaches exec launchd and then fails with dyld's "no dyld cache" because the
-SystemOS volume was never mounted; the owner chain returns an errno silently. 0002 turns that
-into a panic message carrying stage/errno/device, which is the only channel this kernel can be
-read through. Boot the result with owner-cache-diag=1.
+build the guest kernel with patches/0001 and patches/0002 (second attempt: build the reference
+candidate first, which is what the storage-ABI audit inside the kernel build reads).
