@@ -71,7 +71,6 @@ jobs:
       - name: Toolchain
         run: |
           set -euo pipefail
-          sw_vers; uname -m; xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version
           brew install llvm dtc mtools gnu-sed pkg-config meson bison flex xz
           echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"
@@ -94,14 +93,12 @@ jobs:
           set -euo pipefail
           cd UniXNU-droidvm
           git fetch --depth=1 origin "$DISPLAY_REF"
-          for f in package/DroidVMVirtioGpuDisplay.cpp package/DroidVMVirtioGpu.h package/DroidVMVirtioGpu.cpp; do
-            if git cat-file -e "FETCH_HEAD:$f" 2>/dev/null; then
-              git show "FETCH_HEAD:$f" > "$f"; echo "took $f"
-            else
-              echo "$f not in that ref; left as pinned"
-            fi
-          done
+          files=$(git ls-tree --name-only FETCH_HEAD package/ | grep -E '/DroidVMVirtioGpu[^/]*$' || true)
+          echo "candidates: $files"
+          for f in $files; do git show "FETCH_HEAD:$f" > "$f"; echo "took $f"; done
           grep -c 'present_pipeline' package/DroidVMVirtioGpuDisplay.cpp
+          grep -c 'droidvm_virtgpu_compositor' package/DroidVMVirtioGpu3D.cpp
+          cd ..
 
       - name: Add the display pump entry
         run: |
@@ -114,7 +111,6 @@ jobs:
               print('pump already present')
               raise SystemExit(0)
           timer = '\n'.join([
-              '    // DroidVM: no external entry ever starts the swap pump on iPadOS.',
               '    IOTimerEventSource *droidvmPump=nullptr;',
               '    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {static_cast<NativeLegacyDisplay *>(owner)->kickSwapQueue();}',
               '    void startDroidvmPump() {',
@@ -207,18 +203,18 @@ jobs:
           for f in UniXNU/out/droidvm/logs/*.log UniXNU/out/droidvm/build-all/logs/*.log; do
             [ -f "$f" ] || continue
             echo "=== $f ==="
-            tail -40 "$f"
+            tail -30 "$f"
           done
 
       - name: Self-check
         if: always()
         run: |
-          set -euo pipefail
+          set +e
           K=UniXNU/out/droidvm/kernel/kernel.macho
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
-          echo "pipeline marker: $(strings "$K" | grep -c 'droidvm_virtio_present_pipeline' || true)"
-          echo "compositor symbol: $(strings "$K" | grep -c 'droidvm_virtgpu_compositor' || true)"
-          echo "pump symbol: $(strings "$K" | grep -ci 'droidvmPump' || true)"
+          echo "pipeline marker: $(strings "$K" | grep -c 'droidvm_virtio_present_pipeline')"
+          echo "compositor symbol: $(strings "$K" | grep -c 'droidvm_virtgpu_compositor')"
+          echo "pump symbol: $(strings "$K" | grep -ci 'droidvmPump')"
 
       - name: Keep the built kernel as an artifact
         if: always()
