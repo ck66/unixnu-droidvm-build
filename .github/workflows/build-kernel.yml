@@ -86,15 +86,6 @@ jobs:
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
 
-      # MEASURED 2026-11-16 on the phone: iPadOS userland DOES come up (launchd,
-      # runningboardd, backboardd pid 56 and SpringBoard pid 28 after ~7 minutes),
-      # yet not a single swap ever reaches the port: _native_legacy_swap_request,
-      # _native_legacy_swap_surface, _native_legacy_transfer_request and
-      # _native_legacy_frame_count all stay 0 and native_legacy_swap_validation_calls
-      # is 0. In this source kickSwapQueue() is only reached from fenceTick /
-      # latchTick / retireSwap, i.e. nothing external ever starts the pump. This
-      # step adds a 16 ms timer that calls it, so the hypothesis "the pump is
-      # never started" gets a measurable answer (frame_count/transfer_calls).
       - name: Add the display pump entry
         run: |
           set -euo pipefail
@@ -105,19 +96,20 @@ jobs:
           if 'droidvmPump' in text:
               print('pump already present')
               raise SystemExit(0)
-          timer = '''    // DroidVM: the swap pump had no external entry on iPadOS. A 16 ms timer calls
-    // the queue so a queued swap is kicked even when no fence or latch starts it.
-    IOTimerEventSource *droidvmPump=nullptr;
-    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {static_cast<NativeLegacyDisplay *>(owner)->kickSwapQueue();}
-    void startDroidvmPump() {
-        if(droidvmPump)return;
-        droidvmPump=IOTimerEventSource::timerEventSource(this,droidvmPumpFired);
-        if(!droidvmPump)return;
-        IOWorkLoop *loop=getWorkLoop();
-        if(!loop || loop->addEventSource(droidvmPump)!=kIOReturnSuccess){OSSafeReleaseNULL(droidvmPump);return;}
-        droidvmPump->setTimeoutMS(16);
-    }
-'''
+          timer = '\n'.join([
+              '    // DroidVM: no external entry ever starts the swap pump on iPadOS.',
+              '    IOTimerEventSource *droidvmPump=nullptr;',
+              '    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {static_cast<NativeLegacyDisplay *>(owner)->kickSwapQueue();}',
+              '    void startDroidvmPump() {',
+              '        if(droidvmPump)return;',
+              '        droidvmPump=IOTimerEventSource::timerEventSource(this,droidvmPumpFired);',
+              '        if(!droidvmPump)return;',
+              '        IOWorkLoop *loop=getWorkLoop();',
+              '        if(!loop || loop->addEventSource(droidvmPump)!=kIOReturnSuccess){OSSafeReleaseNULL(droidvmPump);return;}',
+              '        droidvmPump->setTimeoutMS(16);',
+              '    }',
+              '',
+          ])
           anchor = '    void kickSwapQueue() override {'
           assert anchor in text, 'kickSwapQueue anchor not found'
           text = text.replace(anchor, timer + anchor, 1)
