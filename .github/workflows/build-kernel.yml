@@ -86,46 +86,48 @@ jobs:
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
 
-      # MEASURED 2026-11-16 on the phone: the component revision pinned by this
-      # UniXNU ref (GopFramebuffer 19ef3a75, 2026-10-30) predates the display
-      # version that publishes the display attributes / IOMFBUUID / NativeDisplayEDID
-      # and attaches the IODisplay (54bd1cf6 and later).  The built kernel has no
-      # attachDisplayObject / announcePoweredByFirmware / NativeDisplayEDID symbol
-      # and no IOMFBUUID string at all, so the guest boots with "Current Display"
-      # empty, backboardd's IOMFB client gets kIOReturnUnsupported for 12 selectors,
-      # its one swap never completes and the compositor never presents.  Bump that
-      # one pin; every other component stays exactly as pinned.
-      - name: Bump the display component to the display-attribute revision
-        env:
-          GOP_REV: b0d812d578efa2acb005b66f73168891719af09a
+      # MEASURED 2026-11-16 on the phone: iPadOS userland DOES come up (launchd,
+      # runningboardd, backboardd pid 56 and SpringBoard pid 28 after ~7 minutes),
+      # yet not a single swap ever reaches the port: _native_legacy_swap_request,
+      # _native_legacy_swap_surface, _native_legacy_transfer_request and
+      # _native_legacy_frame_count all stay 0 and native_legacy_swap_validation_calls
+      # is 0. In this source kickSwapQueue() is only reached from fenceTick /
+      # latchTick / retireSwap, i.e. nothing external ever starts the pump. This
+      # step adds a 16 ms timer that calls it, so the hypothesis "the pump is
+      # never started" gets a measurable answer (frame_count/transfer_calls).
+      - name: Add the display pump entry
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, re, pathlib
-          rev = os.environ['GOP_REV']
-          hits = 0
-          for name in ('UniXNU/components.toml', 'device-ref/components.toml', 'UniXNU-droidvm/components.toml'):
-              path = pathlib.Path(name)
-              if not path.exists():
-                  continue
-              text = path.read_text()
-              new, n = re.subn(r'([Rr]evision\s*=\s*")[0-9a-f]{40}(")',
-                               lambda m: m.group(1) + rev + m.group(2), text)
-              if n:
-                  text = re.sub(r'(id\s*=\s*"GopFramebuffer"(?:(?!\[\[component\]\])[\s\S])*?revision\s*=\s*")[0-9a-f]{40}(")',
-                                lambda m: m.group(1) + rev + m.group(2), text, count=1)
-                  path.write_text(text)
-                  hits += 1
-                  print(name, 'updated')
-          if hits == 0:
-              raise SystemExit('no components.toml with a GopFramebuffer pin was found')
-          for name in ('UniXNU/components.toml', 'device-ref/components.toml'):
-              path = pathlib.Path(name)
-              if path.exists():
-                  block = path.read_text().split('id = "GopFramebuffer"')[1][:600]
-                  line = [l for l in block.splitlines() if 'revision' in l][:1]
-                  print(name, line)
+          import pathlib
+          path = pathlib.Path('UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp')
+          text = path.read_text()
+          if 'droidvmPump' in text:
+              print('pump already present')
+              raise SystemExit(0)
+          timer = '''    // DroidVM: the swap pump had no external entry on iPadOS. A 16 ms timer calls
+    // the queue so a queued swap is kicked even when no fence or latch starts it.
+    IOTimerEventSource *droidvmPump=nullptr;
+    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {static_cast<NativeLegacyDisplay *>(owner)->kickSwapQueue();}
+    void startDroidvmPump() {
+        if(droidvmPump)return;
+        droidvmPump=IOTimerEventSource::timerEventSource(this,droidvmPumpFired);
+        if(!droidvmPump)return;
+        IOWorkLoop *loop=getWorkLoop();
+        if(!loop || loop->addEventSource(droidvmPump)!=kIOReturnSuccess){OSSafeReleaseNULL(droidvmPump);return;}
+        droidvmPump->setTimeoutMS(16);
+    }
+'''
+          anchor = '    void kickSwapQueue() override {'
+          assert anchor in text, 'kickSwapQueue anchor not found'
+          text = text.replace(anchor, timer + anchor, 1)
+          call = '        startVsync();startDirect();return true;'
+          assert call in text, 'start() anchor not found'
+          text = text.replace(call, '        startVsync();startDirect();startDroidvmPump();return true;', 1)
+          path.write_text(text)
+          print('pump added')
           PY
+          grep -n 'droidvmPump' UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp | head
 
       - name: Build the reference candidate
         working-directory: UniXNU
@@ -212,12 +214,14 @@ jobs:
       - name: Self-check
         if: success()
         run: |
+          set -euo pipefail
           K=UniXNU/out/droidvm/kernel/kernel.macho
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
           echo "data uuid strings: $(strings "$K" | grep -c "$DATA_VOLUME_UUID" || true)"
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
-          echo "display attach symbol: $(strings "$K" | grep -c 'attachDisplayObject' || true)"
-          echo "display uuid property: $(strings "$K" | grep -c 'IOMFBUUID' || true)"
+          n=$(strings "$K" | grep -c 'droidvmPump' || true)
+          echo "pump symbol hits: $n"
+          test "$n" -gt 0 || { echo "::error::the display pump is not in the kernel"; exit 1; }
           df -h /
 
       - name: Keep the built kernel as an artifact
