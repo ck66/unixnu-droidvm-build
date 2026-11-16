@@ -1,40 +1,5 @@
 name: build kernel (guest)
 
-# The guest kernel alone (kernel.macho), with this repository's XNU changes.
-#
-# Why: the payload build produces the whole 6 GB release over hours.  A kernel question only needs
-# the reference candidate, setup/volumes/policies/data-base (the kernel build attaches the OS volume
-# and reads the Data fixture) and `kernel` -- not the plugin, the images or the payload disk.
-# DarwinBoot's device tree (kernel.macho.adt) is generated from the VM's FDT, so a rebuilt
-# kernel.macho can be dropped onto the boot disk alone.
-#
-# scripts/apply-xnu-changes.py: two edits to the XNU source, anchored on text that occurs once --
-# 0001 a stale vm_map hole list is a lost hint instead of a panic (validated on the phone as a 4-byte
-# edit), 0002 the owner-cache mount reports stage/errno through a panic under owner-cache-diag=1.
-#
-# The patch itself is written by git, never by hand.  A hand-written diff has to agree with its own
-# hunk counts, and when it does not one tool says "corrupt patch" while another silently skips it:
-# 43600590879 built a 126 MB kernel with `strings | grep 'DroidVM owner-cache'` = 0 exactly that way.
-# So the script makes the edits, git turns them into zzzz-droidvm-hole-and-diag.patch, the worktree is
-# reverted, and the build applies that patch with all the others.
-#
-# Two things this workflow has been taught by failed runs:
-#
-# 1. build-droidvm-all.py's own `reference` step cannot be used once the overlay is on.  It derives
-#    the reference config by copying droidvm_defconfig and flipping flags to n, so it keeps
-#    CONFIG_XNU_EXTRA_LD_ARCHIVES pointing at build/virtio-pci/libVirtioPciDrivers.a while its
-#    shortened archive list never builds that library:
-#      ld: library '.../tree/build/virtio-pci/libVirtioPciDrivers.a' not found   (43598709618)
-#    The supported path is the one below, from the payload workflow: a whole second device
-#    repository from make-reference-device.py (which also clears every *_ARCHIVE), built in
-#    UniXNU with the ordinary defconfig.
-# 2. That candidate has to be placed from the workspace root: the tree lives under
-#    UniXNU/out/droidvm, and a workspace-relative path inside a step whose working directory is
-#    UniXNU resolves to UniXNU/UniXNU/... (43597066885: "mkdir: UniXNU: Not a directory").
-#
-# Output: a GitHub Release per run (tag kernel-<date>-r<run_id>) holding kernel.macho and its
-# sha256.  A release asset has no 100 MB file limit and needs no token to download.
-
 on:
   workflow_dispatch:
     inputs:
@@ -121,8 +86,47 @@ jobs:
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
 
-      # The reference candidate: this board's kernel with the native storage / display / owner-root
-      # drivers off, built from device-ref.  The storage audit reads it while the real kernel links.
+      # MEASURED 2026-11-16 on the phone: the component revision pinned by this
+      # UniXNU ref (GopFramebuffer 19ef3a75, 2026-10-30) predates the display
+      # version that publishes the display attributes / IOMFBUUID / NativeDisplayEDID
+      # and attaches the IODisplay (54bd1cf6 and later).  The built kernel has no
+      # attachDisplayObject / announcePoweredByFirmware / NativeDisplayEDID symbol
+      # and no IOMFBUUID string at all, so the guest boots with "Current Display"
+      # empty, backboardd's IOMFB client gets kIOReturnUnsupported for 12 selectors,
+      # its one swap never completes and the compositor never presents.  Bump that
+      # one pin; every other component stays exactly as pinned.
+      - name: Bump the display component to the display-attribute revision
+        env:
+          GOP_REV: b0d812d578efa2acb005b66f73168891719af09a
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, pathlib
+          rev = os.environ['GOP_REV']
+          hits = 0
+          for name in ('UniXNU/components.toml', 'device-ref/components.toml', 'UniXNU-droidvm/components.toml'):
+              path = pathlib.Path(name)
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              new, n = re.subn(r'([Rr]evision\s*=\s*")[0-9a-f]{40}(")',
+                               lambda m: m.group(1) + rev + m.group(2), text)
+              if n:
+                  text = re.sub(r'(id\s*=\s*"GopFramebuffer"(?:(?!\[\[component\]\])[\s\S])*?revision\s*=\s*")[0-9a-f]{40}(")',
+                                lambda m: m.group(1) + rev + m.group(2), text, count=1)
+                  path.write_text(text)
+                  hits += 1
+                  print(name, 'updated')
+          if hits == 0:
+              raise SystemExit('no components.toml with a GopFramebuffer pin was found')
+          for name in ('UniXNU/components.toml', 'device-ref/components.toml'):
+              path = pathlib.Path(name)
+              if path.exists():
+                  block = path.read_text().split('id = "GopFramebuffer"')[1][:600]
+                  line = [l for l in block.splitlines() if 'revision' in l][:1]
+                  print(name, line)
+          PY
+
       - name: Build the reference candidate
         working-directory: UniXNU
         run: |
@@ -143,8 +147,6 @@ jobs:
           python3 scripts/build-droidvm-all.py --to data-base 2>&1 | tee "$RUNNER_TEMP/kernel-1.log"
           df -h /
 
-      # Keep the kernel's Data UUID equal to the one on the phone's data-store.img (apply_data_uuid
-      # stamps whatever UUID the freshly built fixture has, and every build makes a new one).
       - name: Pin the Data volume UUID
         run: |
           set -euo pipefail
@@ -159,8 +161,6 @@ jobs:
           json.dump(data, open(path, 'w'), indent=2)
           PY
 
-      # From the workspace root: the tree lives under UniXNU/out/droidvm, and the candidate is read
-      # from there while the real kernel links.
       - name: Place the reference candidate in the tree
         run: |
           set -euo pipefail
@@ -171,22 +171,11 @@ jobs:
             echo "== $ref"; ls -l "$ref"
           done
 
-      # The build applies patches/xnu/*.patch itself (build-xnu-4k-baseline.sh), and it first reverses
-      # the zzy*/zzz* late patches so their shared context stays applicable.  Editing the source here
-      # instead made a later patch stop matching -- 43603023239 died with
-      # "patch failed: bsd/kern/kern_exec.c:183 / patch does not apply".
-      #
-      # So the edit becomes a patch that GIT writes (hunk counts and context cannot be wrong that way)
-      # and the worktree is reverted, so the build applies it in name order like every other patch.
-      # The zzzz- prefix sorts after every zzy*/zzz* late patch, which is what its context assumes.
       - name: Turn this repository's XNU changes into a patch
         run: |
           set -euo pipefail
           W=UniXNU/out/droidvm/tree/.cache/xnu-work
-          # Absolute: `git -C $W apply` resolves the patch path against $W, not against this
-          # directory ("can't open patch ...: No such file or directory", 43604962584).
           P="$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch"
-          # Stage the already-patched tree so `git diff` shows only what this repository adds.
           git -C "$W" add -A
           python3 self/scripts/apply-xnu-changes.py "$W"
           git -C "$W" diff > "$P"
@@ -197,8 +186,6 @@ jobs:
           git -C "$W" apply --reverse "$P"
           echo "worktree reverted; the build applies $(basename "$P") itself"
 
-      # Two questions, both answered here: is the patch in the set the build reads, and is the source
-      # back to the state the build expects (markers absent, because applying it is the build's job)?
       - name: Audit the patch and the source
         if: always()
         run: |
@@ -219,13 +206,9 @@ jobs:
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
-          # No pre-apply here: the patch made above is applied by the build script's own loop, in
-          # name order, after it has reversed and re-applied the zzy*/zzz* late patches.
           python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
           df -h /
 
-      # success(), not always(): a skipped build leaves the REFERENCE candidate's kernel at this path,
-      # and the check then passes on the wrong file (43604962584 reported success that way).
       - name: Self-check
         if: success()
         run: |
@@ -233,10 +216,10 @@ jobs:
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
           echo "data uuid strings: $(strings "$K" | grep -c "$DATA_VOLUME_UUID" || true)"
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
+          echo "display attach symbol: $(strings "$K" | grep -c 'attachDisplayObject' || true)"
+          echo "display uuid property: $(strings "$K" | grep -c 'IOMFBUUID' || true)"
           df -h /
 
-      # Insurance: an artifact does not depend on the release call behaving, so a good build is not
-      # thrown away by a publish failure (43600590879 was).
       - name: Keep the built kernel as an artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -247,8 +230,6 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-      # A release asset has no 100 MB file limit and downloads without a token, which is what the
-      # machine that installs this kernel on the phone needs.
       - name: Publish the kernel as a release asset
         if: success()
         env:
@@ -262,8 +243,6 @@ jobs:
           printf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"
           notes="guest kernel.macho, $(date -u '+%F %T UTC'), run ${RUN_ID}, sha256 ${sum}"
           echo "tag=$TAG sha256=$sum"
-          # -R: this repository is checked out at self/, so the workspace root is not a git
-          # repository and gh cannot infer the remote from it ("fatal: not a git repository").
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" --notes "$notes" \
             "$K" "$RUNNER_TEMP/kernel.macho.sha256" \
             || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber \
