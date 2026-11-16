@@ -1,5 +1,4 @@
 name: build kernel (guest)
-
 on:
   workflow_dispatch:
     inputs:
@@ -12,10 +11,8 @@ on:
   push:
     paths:
       - 'trigger-kernel/**'
-
 permissions:
   contents: write
-
 env:
   BOARD: droidvm
   UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
@@ -23,31 +20,23 @@ env:
   DISPLAY_REF: ${{ inputs.display_ref || '3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff' }}
   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
   GITHUB_TOKEN: ${{ github.token }}
-  HOMEBREW_NO_AUTO_UPDATE: 1
-  HOMEBREW_NO_INSTALL_CLEANUP: 1
-  HOMEBREW_NO_ENV_HINTS: 1
-
 defaults:
   run:
     shell: bash
-
 jobs:
   kernel:
     runs-on: macos-26
     timeout-minutes: 300
-
     steps:
       - uses: actions/checkout@v4
         with:
           path: self
-
       - uses: actions/checkout@v4
         with:
           repository: Droid-VM/macOS-DroidVM
           ref: main
           path: ci
           persist-credentials: false
-
       - uses: actions/checkout@v4
         with:
           repository: Droid-VM/UniXNU
@@ -55,7 +44,6 @@ jobs:
           path: UniXNU
           submodules: recursive
           persist-credentials: false
-
       - uses: actions/checkout@v4
         with:
           repository: Droid-VM/UniXNU-droidvm
@@ -63,19 +51,15 @@ jobs:
           path: UniXNU-droidvm
           submodules: recursive
           persist-credentials: false
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - name: Toolchain
         run: |
           set -euo pipefail
           brew install llvm dtc mtools gnu-sed pkg-config meson bison flex xz
           echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
           echo "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"
-          df -h /
-
       - name: Apply the overlay
         run: |
           set -euo pipefail
@@ -87,7 +71,6 @@ jobs:
           cp -R UniXNU-droidvm device-ref
           python3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"
           python3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"
-
       - name: Take the display driver from the iPadOS branch
         run: |
           set -euo pipefail
@@ -96,10 +79,27 @@ jobs:
           files=$(git ls-tree --name-only FETCH_HEAD package/ | grep -E '/DroidVMVirtioGpu[^/]*$' || true)
           echo "candidates: $files"
           for f in $files; do git show "FETCH_HEAD:$f" > "$f"; echo "took $f"; done
+          python3 - <<'PY'
+          import pathlib
+          p = pathlib.Path('package/DroidVMVirtioGpu3D.cpp')
+          t = p.read_text()
+          n = 0
+          for old, new in (
+              ('if (!gSurfaceUses || gSurfaceUseCount == MaxSurfaceUses)',
+               'if (gSurfaceUseCount == MaxSurfaceUses)'),
+              ('if (gSurfaceUses)',
+               'if (reinterpret_cast<uintptr_t>(gSurfaceUses) != 0)'),
+          ):
+              c = t.count(old)
+              if c:
+                  t = t.replace(old, new)
+                  n += c
+                  print('fixed', c, old)
+          p.write_text(t)
+          print('warnings fixed:', n)
+          PY
           grep -c 'present_pipeline' package/DroidVMVirtioGpuDisplay.cpp
-          grep -c 'droidvm_virtgpu_compositor' package/DroidVMVirtioGpu3D.cpp
           cd ..
-
       - name: Add the display pump entry
         run: |
           set -euo pipefail
@@ -134,7 +134,6 @@ jobs:
               path.write_text(text)
               print('pump added')
           PY
-
       - name: Build the reference candidate
         working-directory: UniXNU
         run: |
@@ -145,15 +144,11 @@ jobs:
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee "$RUNNER_TEMP/ref-kernel.log"
           mkdir -p "$RUNNER_TEMP/ref"
           cp "out/$BOARD/kernel/kernel.macho" "out/$BOARD/kernel/kernel.json" "$RUNNER_TEMP/ref/"
-          ls -l "$RUNNER_TEMP/ref"
-
       - name: Sources, volumes, policies, Data fixture
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
           python3 scripts/build-droidvm-all.py --to data-base 2>&1 | tee "$RUNNER_TEMP/kernel-1.log"
-          df -h /
-
       - name: Pin the Data volume UUID
         run: |
           set -euo pipefail
@@ -162,11 +157,10 @@ jobs:
           import json, sys
           path, uuid = sys.argv[1], sys.argv[2]
           data = json.load(open(path))
-          print('fixture uuid', data.get('volume_uuid'), '->', uuid)
           data['volume_uuid'] = uuid
           json.dump(data, open(path, 'w'), indent=2)
+          print('uuid', uuid)
           PY
-
       - name: Place the reference candidate in the tree
         run: |
           set -euo pipefail
@@ -175,7 +169,6 @@ jobs:
             mkdir -p "$ref"
             cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"
           done
-
       - name: Turn this repository's XNU changes into a patch
         run: |
           set -euo pipefail
@@ -185,17 +178,14 @@ jobs:
           python3 self/scripts/apply-xnu-changes.py "$W"
           git -C "$W" diff > "$P"
           git -C "$W" reset -q
-          git apply --stat "$P" || { echo "::error::git cannot read the patch it just wrote"; exit 1; }
+          git apply --stat "$P" || { echo "::error::bad patch"; exit 1; }
           git -C "$W" apply --reverse --check "$P"
           git -C "$W" apply --reverse "$P"
-
       - name: Build the kernel
         working-directory: UniXNU-droidvm
         run: |
           set -o pipefail
           python3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"
-          df -h /
-
       - name: Archive logs on failure
         if: failure()
         run: |
@@ -203,9 +193,8 @@ jobs:
           for f in UniXNU/out/droidvm/logs/*.log UniXNU/out/droidvm/build-all/logs/*.log; do
             [ -f "$f" ] || continue
             echo "=== $f ==="
-            tail -30 "$f"
+            grep -E "error:|undefined|referenced from" "$f" | head -20
           done
-
       - name: Self-check
         if: always()
         run: |
@@ -215,7 +204,6 @@ jobs:
           echo "pipeline marker: $(strings "$K" | grep -c 'droidvm_virtio_present_pipeline')"
           echo "compositor symbol: $(strings "$K" | grep -c 'droidvm_virtgpu_compositor')"
           echo "pump symbol: $(strings "$K" | grep -ci 'droidvmPump')"
-
       - name: Keep the built kernel as an artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -225,7 +213,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
           compression-level: 0
-
       - name: Publish the kernel as a release asset
         if: success()
         env:
@@ -238,7 +225,6 @@ jobs:
           sum=$(shasum -a 256 "$K" | awk '{print $1}')
           printf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"
           gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" \
-            --notes "guest kernel.macho, run ${RUN_ID}, sha256 ${sum}" \
+            --notes "run ${RUN_ID} sha256 ${sum}" \
             "$K" "$RUNNER_TEMP/kernel.macho.sha256" \
-            || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber \
-                 "$K" "$RUNNER_TEMP/kernel.macho.sha256"
+            || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber "$K" "$RUNNER_TEMP/kernel.macho.sha256"
