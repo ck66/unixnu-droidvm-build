@@ -204,20 +204,20 @@ jobs:
           df -h /
 
       - name: Self-check
-        if: success()
+        if: always()
         run: |
           set -euo pipefail
           K=UniXNU/out/droidvm/kernel/kernel.macho
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
           echo "data uuid strings: $(strings "$K" | grep -c "$DATA_VOLUME_UUID" || true)"
           echo "diagnostic marker: $(strings "$K" | grep -c 'DroidVM owner-cache' || true)"
-          n=$(strings "$K" | grep -c 'droidvmPump' || true)
+          n=$(strings "$K" | grep -ci 'DroidvmPump' || true)
           echo "pump symbol hits: $n"
           test "$n" -gt 0 || { echo "::error::the display pump is not in the kernel"; exit 1; }
           df -h /
 
       - name: Keep the built kernel as an artifact
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kernel-macho-${{ github.run_id }}
