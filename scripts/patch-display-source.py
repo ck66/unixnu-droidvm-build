@@ -56,19 +56,30 @@ extern volatile uint64_t droidvm_probe_base_swap_ticks;
 extern volatile uint64_t droidvm_probe_base_swap_validated;
 extern volatile uint64_t droidvm_probe_base_swap_ptr;
 extern volatile uint64_t droidvm_probe_tick_count;
+extern volatile uint64_t droidvm_probe_ready_ticks;
+extern volatile uint64_t droidvm_probe_w[10];
 }
 volatile uint64_t droidvm_probe_base_swap_ticks=0;
 volatile uint64_t droidvm_probe_base_swap_validated=0;
 volatile uint64_t droidvm_probe_base_swap_ptr=0;
 volatile uint64_t droidvm_probe_tick_count=0;
+volatile uint64_t droidvm_probe_ready_ticks=0;
+volatile uint64_t droidvm_probe_w[10]={0};
 '''
 
-# pendingSwapRequest() is the accessor kickOnce() itself uses; kLegacyCurrentSwap
-# is a file-scope constant declared later in the file than this insertion point.
 PROBE_MEMBERS = '''    IOTimerEventSource *droidvmPump=nullptr;
     static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {
         auto *self=static_cast<NativeLegacyDisplay *>(owner);
         droidvm_probe_tick_count=droidvm_probe_tick_count+1;
+        // The swap queue of the legacy family, at the offsets the original
+        // submit path uses (measured from the original binary: current +4872,
+        // ready head +4880, ready tail +4888, pending +4896). Original submit
+        // moves pending -> ready before calling virtual slot 276, which is the
+        // kickSwapQueue we override, so a swap that arrived and was not taken
+        // stays visible here.
+        const unsigned char *base=reinterpret_cast<const unsigned char *>(self);
+        memcpy((void *)droidvm_probe_w,base+4864,sizeof(uint64_t)*10);
+        if(droidvm_probe_w[2] || droidvm_probe_w[4])droidvm_probe_ready_ticks=droidvm_probe_ready_ticks+1;
         const OriginalLegacySwapRequest *cur=self->pendingSwapRequest();
         if(cur){
             droidvm_probe_base_swap_ticks=droidvm_probe_base_swap_ticks+1;
