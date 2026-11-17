@@ -91,8 +91,7 @@ jobs:
           ):
               c = t.count(old)
               if c:
-                  t = t.replace(old, new)
-                  n += c
+                  t = t.replace(old, new); n += c
           p.write_text(t)
           print('warnings fixed:', n)
           PY
@@ -108,24 +107,24 @@ jobs:
           if 'droidvm_probe_base_swap_ticks' in text:
               print('probe already present')
               raise SystemExit(0)
-          # Two globals we can read from the host: how many timer ticks saw a
-          # non-null base-class current swap, and the last pointer seen.
-          head = (
-              'extern "C" {volatile uint64_t droidvm_probe_base_swap_ticks;\n'
-              '             volatile uint64_t droidvm_probe_base_swap_ptr;\n'
-              '             volatile uint64_t droidvm_probe_tick_count;}\n'
-              'volatile uint64_t droidvm_probe_base_swap_ticks=0;\n'
-              'volatile uint64_t droidvm_probe_base_swap_ptr=0;\n'
-              'volatile uint64_t droidvm_probe_tick_count=0;\n'
-          )
+          # stdint first: the globals below need uint64_t before any IOKit header.
+          head = ''
+          head += '#include <stdint.h>\n'
+          head += 'extern "C" {volatile uint64_t droidvm_probe_base_swap_ticks;\n'
+          head += '             volatile uint64_t droidvm_probe_base_swap_ptr;\n'
+          head += '             volatile uint64_t droidvm_probe_tick_count;}\n'
+          head += 'volatile uint64_t droidvm_probe_base_swap_ticks=0;\n'
+          head += 'volatile uint64_t droidvm_probe_base_swap_ptr=0;\n'
+          head += 'volatile uint64_t droidvm_probe_tick_count=0;\n'
           text = head + text
+          # pendingSwapRequest() is the base-class accessor kickOnce already uses;
+          # kLegacyCurrentSwap is a file-scope constant declared too late to use here.
           block = '\n'.join([
               '    IOTimerEventSource *droidvmPump=nullptr;',
               '    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {',
               '        auto *self=static_cast<NativeLegacyDisplay *>(owner);',
               '        droidvm_probe_tick_count=droidvm_probe_tick_count+1;',
-              '        const unsigned char *cur=nullptr;',
-              '        memcpy(&cur,reinterpret_cast<unsigned char *>(self)+kLegacyCurrentSwap,sizeof(cur));',
+              '        const void *cur=self->pendingSwapRequest();',
               '        if(cur){droidvm_probe_base_swap_ticks=droidvm_probe_base_swap_ticks+1;',
               '                droidvm_probe_base_swap_ptr=(uint64_t)(uintptr_t)cur;}',
               '        self->kickSwapQueue();',
@@ -211,6 +210,7 @@ jobs:
             echo "=== $f ==="
             grep -E "error:|undefined|referenced from" "$f" | head -20
           done
+          true
       - name: Self-check
         if: always()
         run: |
