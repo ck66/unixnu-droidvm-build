@@ -78,83 +78,14 @@ jobs:
           git fetch --depth=1 origin "$DISPLAY_REF"
           files=$(git ls-tree --name-only FETCH_HEAD package/ | grep -E '/DroidVMVirtioGpu[^/]*$' || true)
           for f in $files; do git show "FETCH_HEAD:$f" > "$f"; echo "took $f"; done
-          python3 - <<'PY'
-          import pathlib
-          p = pathlib.Path('package/DroidVMVirtioGpu3D.cpp')
-          t = p.read_text()
-          n = 0
-          for old, new in (
-              ('if (!gSurfaceUses || gSurfaceUseCount == MaxSurfaceUses)',
-               'if (gSurfaceUseCount == MaxSurfaceUses)'),
-              ('if (gSurfaceUses)',
-               'if (reinterpret_cast<uintptr_t>(gSurfaceUses) != 0)'),
-          ):
-              c = t.count(old)
-              if c:
-                  t = t.replace(old, new); n += c
-          p.write_text(t)
-          print('warnings fixed:', n)
-          PY
           cd ..
-
-      - name: Probe the base class swap queue and pump
+      # All source patching lives in scripts/patch-display-source.py so a change
+      # no longer needs this workflow to be rewritten (and re-validated).
+      - name: Patch the display source (pump, probe, -Werror fixes)
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import pathlib
-          path = pathlib.Path('UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp')
-          text = path.read_text()
-          if 'droidvm_probe_base_swap_ticks' in text:
-              print('probe already present')
-              raise SystemExit(0)
-          # stdint first: the globals below need uint64_t before any IOKit header.
-          head = ''
-          head += '#include <stdint.h>\n'
-          # 'volatile uint64_t x;' is already a *definition* in C++, so the
-          # declarations must say extern or the initialised definitions below
-          # are redefinitions (that is what broke run 44073411882).
-          head += 'extern "C" {\n'
-          head += 'extern volatile uint64_t droidvm_probe_base_swap_ticks;\n'
-          head += 'extern volatile uint64_t droidvm_probe_base_swap_ptr;\n'
-          head += 'extern volatile uint64_t droidvm_probe_tick_count;\n'
-          head += '}\n'
-          head += 'volatile uint64_t droidvm_probe_base_swap_ticks=0;\n'
-          head += 'volatile uint64_t droidvm_probe_base_swap_ptr=0;\n'
-          head += 'volatile uint64_t droidvm_probe_tick_count=0;\n'
-          text = head + text
-          # pendingSwapRequest() is the base-class accessor kickOnce already uses;
-          # kLegacyCurrentSwap is a file-scope constant declared too late to use here.
-          block = '\n'.join([
-              '    IOTimerEventSource *droidvmPump=nullptr;',
-              '    static void droidvmPumpFired(OSObject *owner,IOTimerEventSource *) {',
-              '        auto *self=static_cast<NativeLegacyDisplay *>(owner);',
-              '        droidvm_probe_tick_count=droidvm_probe_tick_count+1;',
-              '        const void *cur=self->pendingSwapRequest();',
-              '        if(cur){droidvm_probe_base_swap_ticks=droidvm_probe_base_swap_ticks+1;',
-              '                droidvm_probe_base_swap_ptr=(uint64_t)(uintptr_t)cur;}',
-              '        self->kickSwapQueue();',
-              '    }',
-              '    void startDroidvmPump() {',
-              '        if(droidvmPump)return;',
-              '        droidvmPump=IOTimerEventSource::timerEventSource(this,droidvmPumpFired);',
-              '        if(!droidvmPump)return;',
-              '        IOWorkLoop *loop=getWorkLoop();',
-              '        if(!loop || loop->addEventSource(droidvmPump)!=kIOReturnSuccess){OSSafeReleaseNULL(droidvmPump);return;}',
-              '        droidvmPump->setTimeoutMS(16);',
-              '    }',
-              '',
-          ])
-          anchor = '    void kickSwapQueue() override {'
-          if anchor not in text:
-              print('anchor missing; probe skipped')
-              raise SystemExit(0)
-          text = text.replace(anchor, block + anchor, 1)
-          call = '        startVsync();startDirect();return true;'
-          if call in text:
-              text = text.replace(call, '        startVsync();startDirect();startDroidvmPump();return true;', 1)
-          path.write_text(text)
-          print('probe + pump added')
-          PY
+          python3 self/scripts/patch-display-source.py
+          grep -n 'droidvmPump->setTimeoutMS' UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp | head -3
       - name: Build the reference candidate
         working-directory: UniXNU
         run: |
@@ -222,8 +153,8 @@ jobs:
           set +e
           K=UniXNU/out/droidvm/kernel/kernel.macho
           ls -l "$K" || { echo "::error::no kernel built"; exit 1; }
-          echo "probe ticks:  $(strings "$K" | grep -c 'droidvm_probe_base_swap_ticks')"
-          echo "probe ptr:    $(strings "$K" | grep -c 'droidvm_probe_base_swap_ptr')"
+          echo "nm probe symbols:"
+          nm "$K" 2>/dev/null | grep -E 'droidvm_probe_' | head -6
           echo "pipeline:     $(strings "$K" | grep -c 'droidvm_virtio_present_pipeline')"
       - name: Keep the built kernel as an artifact
         if: always()
