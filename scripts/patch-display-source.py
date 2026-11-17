@@ -57,14 +57,18 @@ extern volatile uint64_t droidvm_probe_base_swap_validated;
 extern volatile uint64_t droidvm_probe_base_swap_ptr;
 extern volatile uint64_t droidvm_probe_tick_count;
 extern volatile uint64_t droidvm_probe_ready_ticks;
+extern volatile uint64_t droidvm_probe_kick_calls;
 extern volatile uint64_t droidvm_probe_w[10];
+extern volatile uint64_t droidvm_probe_w2[8];
 }
 volatile uint64_t droidvm_probe_base_swap_ticks=0;
 volatile uint64_t droidvm_probe_base_swap_validated=0;
 volatile uint64_t droidvm_probe_base_swap_ptr=0;
 volatile uint64_t droidvm_probe_tick_count=0;
 volatile uint64_t droidvm_probe_ready_ticks=0;
+volatile uint64_t droidvm_probe_kick_calls=0;
 volatile uint64_t droidvm_probe_w[10]={0};
+volatile uint64_t droidvm_probe_w2[8]={0};
 '''
 
 PROBE_MEMBERS = '''    IOTimerEventSource *droidvmPump=nullptr;
@@ -79,6 +83,11 @@ PROBE_MEMBERS = '''    IOTimerEventSource *droidvmPump=nullptr;
         // stays visible here.
         const unsigned char *base=reinterpret_cast<const unsigned char *>(self);
         memcpy((void *)droidvm_probe_w,base+4864,sizeof(uint64_t)*10);
+        // Same object, the fields the ABI names: +5208/+5212 are the boot
+        // dimensions startHardware installed, +5236/+5240 the logical state.
+        // If these do not read 1024/1366 the object or the offsets are wrong and
+        // the empty queue above means nothing.
+        memcpy((void *)droidvm_probe_w2,base+5200,sizeof(uint64_t)*8);
         if(droidvm_probe_w[2] || droidvm_probe_w[4])droidvm_probe_ready_ticks=droidvm_probe_ready_ticks+1;
         const OriginalLegacySwapRequest *cur=self->pendingSwapRequest();
         if(cur){
@@ -137,6 +146,18 @@ def patch_display(root):
     if anchor not in text:
         fail('kickSwapQueue anchor missing: the pinned display source changed')
     text = text.replace(anchor, PROBE_MEMBERS + anchor, 1)
+
+    # Count entries into our override. The pump only calls it when a swap is
+    # pending, and the pending probe never fires, so any non-zero count here is
+    # the original submit path calling virtual slot 276 directly.
+    kick_body = '    void kickSwapQueue() override {\n        armVsync();'
+    if kick_body not in text:
+        fail('armVsync() anchor missing: cannot count kickSwapQueue entries')
+    text = text.replace(
+        kick_body,
+        '    void kickSwapQueue() override {\n'
+        '        droidvm_probe_kick_calls=droidvm_probe_kick_calls+1;\n'
+        '        armVsync();', 1)
 
     call = '        startVsync();startDirect();return true;'
     if call not in text:
