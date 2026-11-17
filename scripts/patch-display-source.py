@@ -82,13 +82,15 @@ PROBE_MEMBERS = '''    IOTimerEventSource *droidvmPump=nullptr;
         // kickSwapQueue we override, so a swap that arrived and was not taken
         // stays visible here.
         const unsigned char *base=reinterpret_cast<const unsigned char *>(self);
-        memcpy((void *)droidvm_probe_w,base+4864,sizeof(uint64_t)*10);
-        // Same object, the fields the ABI names: +5208/+5212 are the boot
-        // dimensions startHardware installed, +5236/+5240 the logical state.
-        // If these do not read 1024/1366 the object or the offsets are wrong and
-        // the empty queue above means nothing.
-        memcpy((void *)droidvm_probe_w2,base+5200,sizeof(uint64_t)*8);
-        if(droidvm_probe_w[2] || droidvm_probe_w[4])droidvm_probe_ready_ticks=droidvm_probe_ready_ticks+1;
+        // Offsets taken from this build's own generated ABI
+        // (scripts/build-native-legacy-display.py): current +5472, queue head
+        // +5480 (that is what pendingSwapRequest() reads), queue tail +5488,
+        // boot dimensions +5808/+5812, instance extent 0x18a0. The 4872/4880
+        // numbers belong to the iOS 16.5 class (extent 0x1660) and read as
+        // zeros here -- run 44112922634 measured that mistake.
+        memcpy((void *)droidvm_probe_w,base+5464,sizeof(uint64_t)*10);
+        memcpy((void *)droidvm_probe_w2,base+5792,sizeof(uint64_t)*4);
+        if(droidvm_probe_w[2] || droidvm_probe_w[1])droidvm_probe_ready_ticks=droidvm_probe_ready_ticks+1;
         const OriginalLegacySwapRequest *cur=self->pendingSwapRequest();
         if(cur){
             droidvm_probe_base_swap_ticks=droidvm_probe_base_swap_ticks+1;
