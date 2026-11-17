@@ -110,9 +110,14 @@ jobs:
           # stdint first: the globals below need uint64_t before any IOKit header.
           head = ''
           head += '#include <stdint.h>\n'
-          head += 'extern "C" {volatile uint64_t droidvm_probe_base_swap_ticks;\n'
-          head += '             volatile uint64_t droidvm_probe_base_swap_ptr;\n'
-          head += '             volatile uint64_t droidvm_probe_tick_count;}\n'
+          # 'volatile uint64_t x;' is already a *definition* in C++, so the
+          # declarations must say extern or the initialised definitions below
+          # are redefinitions (that is what broke run 44073411882).
+          head += 'extern "C" {\n'
+          head += 'extern volatile uint64_t droidvm_probe_base_swap_ticks;\n'
+          head += 'extern volatile uint64_t droidvm_probe_base_swap_ptr;\n'
+          head += 'extern volatile uint64_t droidvm_probe_tick_count;\n'
+          head += '}\n'
           head += 'volatile uint64_t droidvm_probe_base_swap_ticks=0;\n'
           head += 'volatile uint64_t droidvm_probe_base_swap_ptr=0;\n'
           head += 'volatile uint64_t droidvm_probe_tick_count=0;\n'
