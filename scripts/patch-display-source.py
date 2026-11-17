@@ -175,9 +175,65 @@ def patch_display(root):
     print('  re-arm line present:  ', 'self->droidvmPump->setTimeoutMS(16)' in body)
 
 
+
+PROBE_SHAPE_HEAD = """// Plain types on purpose: this block is prepended before any #include, so
+// uint32_t / uint64_t are not declared yet at this point.
+extern "C" volatile unsigned int native_legacy_sel_shape[96][6];
+extern "C" volatile unsigned long long native_legacy_lie_mask;
+static unsigned long long droidvm_lie_loaded;
+volatile unsigned int native_legacy_sel_shape[96][6];
+volatile unsigned long long native_legacy_lie_mask;
+"""
+
+PROBE_SHAPE_OLD = """        if(selector<kSelectors){++stat->selector_calls[selector];if(status)++stat->selector_fails[selector];stat->selector_status[selector]=(uint32_t)status;}
+    }
+    return status;
+}"""
+
+PROBE_SHAPE_NEW = """        if(selector<kSelectors){++stat->selector_calls[selector];if(status)++stat->selector_fails[selector];stat->selector_status[selector]=(uint32_t)status;}
+    }
+    if(selector<96) {
+        native_legacy_sel_shape[selector][0]=native_legacy_sel_shape[selector][0]+1;
+        if(args) {
+            native_legacy_sel_shape[selector][1]=(uint32_t)args->scalarInputCount;
+            native_legacy_sel_shape[selector][2]=(uint32_t)args->scalarOutputCount;
+            native_legacy_sel_shape[selector][3]=(uint32_t)args->structureInputSize;
+            native_legacy_sel_shape[selector][4]=(uint32_t)args->structureOutputSize;
+        }
+        native_legacy_sel_shape[selector][5]=(uint32_t)status;
+    }
+    if(status==kIOReturnUnsupported && ((native_legacy_lie_mask>>(selector&63))&1ULL))status=kIOReturnSuccess;
+    return status;
+}"""
+
+
+def patch_probe(root):
+    path = root / 'UniXNU-droidvm/package/LegacyDisplayProbe.cpp'
+    if not path.exists():
+        fail('LegacyDisplayProbe.cpp not found at %s' % path)
+    text = path.read_text()
+    if 'native_legacy_sel_shape' in text:
+        print('selector-shape probe already present')
+        return
+    if PROBE_SHAPE_OLD not in text:
+        fail('wrappedExternal tail changed: cannot add the selector-shape probe')
+    text = text.replace(PROBE_SHAPE_OLD, PROBE_SHAPE_NEW, 1)
+    text = PROBE_SHAPE_HEAD + text
+    # lie mask, read once from the boot argument
+    prologue = '    ClientStat *stat=statFor(client);\n'
+    text = text.replace(
+        prologue,
+        prologue
+        + '    if(!droidvm_lie_loaded){droidvm_lie_loaded=1;uint64_t m=0;PE_parse_boot_argn("legacy-lie",&m,sizeof m);native_legacy_lie_mask=m;}\n',
+        1)
+    path.write_text(text)
+    print('selector-shape probe installed; lie mask from legacy-lie=<hex>')
+
+
 def main():
     patch_virtio_3d(ROOT)
     patch_display(ROOT)
+    patch_probe(ROOT)
 
 
 if __name__ == '__main__':
