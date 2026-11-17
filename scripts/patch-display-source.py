@@ -180,9 +180,11 @@ PROBE_SHAPE_HEAD = """// Plain types on purpose: this block is prepended before 
 // uint32_t / uint64_t are not declared yet at this point.
 extern "C" volatile unsigned int native_legacy_sel_shape[96][6];
 extern "C" volatile unsigned long long native_legacy_lie_mask;
+extern "C" volatile unsigned long long native_legacy_lie_mask_hi;
 static unsigned long long droidvm_lie_loaded;
 volatile unsigned int native_legacy_sel_shape[96][6];
 volatile unsigned long long native_legacy_lie_mask;
+volatile unsigned long long native_legacy_lie_mask_hi;
 """
 
 PROBE_SHAPE_OLD = """        if(selector<kSelectors){++stat->selector_calls[selector];if(status)++stat->selector_fails[selector];stat->selector_status[selector]=(uint32_t)status;}
@@ -202,7 +204,10 @@ PROBE_SHAPE_NEW = """        if(selector<kSelectors){++stat->selector_calls[sele
         }
         native_legacy_sel_shape[selector][5]=(uint32_t)status;
     }
-    if(status==kIOReturnUnsupported && ((native_legacy_lie_mask>>(selector&63))&1ULL))status=kIOReturnSuccess;
+    if(status==kIOReturnUnsupported) {
+        if(selector<64 && ((native_legacy_lie_mask>>selector)&1ULL))status=kIOReturnSuccess;
+        else if(selector>=64 && selector<96 && ((native_legacy_lie_mask_hi>>(selector-64))&1ULL))status=kIOReturnSuccess;
+    }
     return status;
 }"""
 
@@ -221,11 +226,13 @@ def patch_probe(root):
     text = PROBE_SHAPE_HEAD + text
     # lie mask, read once from the boot argument
     prologue = '    ClientStat *stat=statFor(client);\n'
-    text = text.replace(
-        prologue,
-        prologue
-        + '    if(!droidvm_lie_loaded){droidvm_lie_loaded=1;uint64_t m=0;PE_parse_boot_argn("legacy-lie",&m,sizeof m);native_legacy_lie_mask=m;}\n',
-        1)
+    lie_setup = (
+        '    if(!droidvm_lie_loaded){droidvm_lie_loaded=1;unsigned long long m=0,mhi=0;\n'
+        '        PE_parse_boot_argn("legacy-lie",&m,sizeof m);\n'
+        '        PE_parse_boot_argn("legacy-lie-hi",&mhi,sizeof mhi);\n'
+        '        native_legacy_lie_mask=m;native_legacy_lie_mask_hi=mhi;}\n'
+    )
+    text = text.replace(prologue, prologue + lie_setup, 1)
     path.write_text(text)
     print('selector-shape probe installed; lie mask from legacy-lie=<hex>')
 
