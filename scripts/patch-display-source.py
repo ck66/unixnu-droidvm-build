@@ -184,6 +184,7 @@ extern "C" {
 volatile unsigned int native_legacy_sel_shape[96][6];
 volatile unsigned int native_legacy_sel_in[96][16];
 volatile unsigned long long native_legacy_sel_scalar[96][4];
+volatile unsigned long long native_legacy_sel_out[96][4];
 volatile unsigned long long native_legacy_lie_mask;
 volatile unsigned long long native_legacy_lie_mask_hi;
 }
@@ -211,6 +212,11 @@ PROBE_SHAPE_NEW = """        if(selector<kSelectors){++stat->selector_calls[sele
                 memcpy((void *)native_legacy_sel_in[selector],args->structureInput,args->structureInputSize<64?args->structureInputSize:64);
             if(args->scalarInput)
                 memcpy((void *)native_legacy_sel_scalar[selector],args->scalarInput,(args->scalarInputCount<4?args->scalarInputCount:4)*8);
+            // What the client actually receives: without this the size and
+            // refresh the compositor reads back are unknown (selector 8 asked
+            // four times in run 44225411284 and nothing was composited).
+            if(args->scalarOutput && args->scalarOutputCount)
+                memcpy((void *)native_legacy_sel_out[selector],args->scalarOutput,(args->scalarOutputCount<4?args->scalarOutputCount:4)*8);
         }
     }
     if(status==kIOReturnUnsupported) {
