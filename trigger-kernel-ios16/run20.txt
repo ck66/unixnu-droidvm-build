@@ -1,0 +1,1 @@
+run20 2026-11-19: availability fallback injected into the build script
