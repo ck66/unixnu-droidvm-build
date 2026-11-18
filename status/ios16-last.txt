@@ -1,3 +1,34 @@
-run 44308160794
+run 44309089034
+xnu tree commit: 56023cd
+xnu version: 
 --- tail ---
---- what the resolver says about xnu ---
+             CC main.o
+13 warnings generated.
+             LD kextsymboltool
+             CC mkheaders.o
+             CC mkioconf.o
+             CC mkmakefile.o
+             CC lexer.yy.o
+/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/xnu-work/SETUP/config/mkmakefile.c:625:6: warning: variable 'lpos' set but not used [-Wunused-but-set-variable]
+  625 |         int lpos, len = 0; /* dvw: init to 0 */
+      |             ^
+1 warning generated.
+             LD config
+             CC setsegname.o
+       CODESIGN kextsymboltool
+       CODESIGN config
+             LD setsegname
+       CODESIGN setsegname
+             CC installfile.o
+             CC decomment.o
+             LD installfile
+             LD decomment
+             CC replacecontents.o
+       CODESIGN installfile
+       CODESIGN decomment
+             LD replacecontents
+       CODESIGN replacecontents
+make[1]: *** [build_setup_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
+make: *** [installhdrs] Error 2
+build-xnu-4k-baseline.sh: line 151: make -C .cache/xnu-work installhdrs SDKROOT=macosx ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" MAKEJOBS=-j"${JOBS:-4}" OBJROOT="$ROOT/build/xnu/obj" SYMROOT="$ROOT/build/xnu/sym" DSTROOT="$KERNEL_SDKROOT" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} failed
+unixnu: bash failed (2); full log: /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/logs/kernel-bootstrap.log
