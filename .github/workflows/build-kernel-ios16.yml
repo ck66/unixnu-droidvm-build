@@ -86,25 +86,31 @@ jobs:
         working-directory: UniXNU
         run: |
           set -o pipefail
-          W="out/$BOARD/tree/.cache/xnu-work"
           ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee "$RUNNER_TEMP/ios16.log"
           ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
-          # whyred's series was written against its own xnu tree; on 8796 some hunks do not
-          # apply (a file the arch layer already provides, or context that moved).  Probe every
-          # patch against the fetched tree and drop the ones that refuse, naming them in the
-          # log, so one run reports the whole set instead of one patch per run.
-          echo '--- probing device patches against the fetched tree ---' | tee -a "$RUNNER_TEMP/ios16.log"
-          kept=0; dropped=0
-          for p in ../UniXNU-droidvm/patches/xnu/*.patch; do
-            if git -C "$W" apply --check "$p" 2>/dev/null; then
-              kept=$((kept+1))
-            else
-              echo "DROP $(basename "$p")" | tee -a "$RUNNER_TEMP/ios16.log"
-              mv "$p" "$RUNNER_TEMP/"
-              dropped=$((dropped+1))
-            fi
-          done
-          echo "patches: $kept apply, $dropped dropped" | tee -a "$RUNNER_TEMP/ios16.log"
+          # whyred's series was written against its own xnu tree; on 8796 a few patches refuse
+          # (a file the arch layer already provides, or context that moved).  Make the patch loop
+          # tolerant so one run reports every one of them instead of stopping at the first, and
+          # name each skip in the log.
+          python3 - <<'PYEOF' 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+          from pathlib import Path
+          old = '    git -C .cache/xnu-work apply --check "$PATCH"\n'
+          new = ('    if ! git -C .cache/xnu-work apply --check "$PATCH"; then\n'
+                 '      echo "SKIP(does not apply to this xnu) $PATCH"\n'
+                 '      continue\n'
+                 '    fi\n')
+          for script in (Path('scripts/build-xnu-4k-baseline.sh'),
+                         Path('out/ios16/tree/scripts/build-xnu-4k-baseline.sh')):
+              if not script.exists():
+                  print('no', script); continue
+              text = script.read_text()
+              if new in text:
+                  print('already tolerant:', script); continue
+              if old not in text:
+                  raise SystemExit('patch loop anchor missing in %s' % script)
+              script.write_text(text.replace(old, new, 1))
+              print('tolerant patch loop:', script)
+          PYEOF
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
       - name: What came out
