@@ -144,6 +144,21 @@ jobs:
           ls -l "UniXNU/out/$BOARD/kernel/"
           shasum -a 256 "UniXNU/out/$BOARD/kernel/kernel.macho" | tee "$RUNNER_TEMP/sha.txt"
           grep -E "error:|undefined|referenced from|fatal" "$RUNNER_TEMP/ios16.log" | head -40
+      - name: Publish the last diagnostics into status/
+        if: always()
+        run: |
+          set +e
+          {
+            echo "run $GITHUB_RUN_ID"
+            grep -E "xnu tree commit|xnu version|SKIP\(|patches:|error:|fatal|No such" "$RUNNER_TEMP/ios16.log" | head -60
+            echo "--- tail ---"
+            tail -30 "$RUNNER_TEMP/ios16.log"
+          } > self/status/ios16-last.txt
+          git -C self config user.email "action@users.noreply.github.com"
+          git -C self config user.name "ios16 build"
+          git -C self add status/ios16-last.txt
+          git -C self commit -m "status: ios16 run $GITHUB_RUN_ID" || true
+          git -C self push || true
       - name: Archive logs
         if: always()
         uses: actions/upload-artifact@v4
