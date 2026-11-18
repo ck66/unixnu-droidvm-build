@@ -85,6 +85,10 @@ jobs:
           rm -rf UniXNU-droidvm/patches/xnu
           mkdir -p UniXNU-droidvm/patches/xnu
           cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
+          # The arch series was written against xnu-10063; the two hunks that 8796 cannot take
+          # even with reduced context are rewritten here (see ios16/PROGRESS.md §11). They sort
+          # before the originals ('-' < '.'), so they land first and the originals are skipped.
+          cp boards/ios16/patches/xnu-8796/*.patch UniXNU-droidvm/patches/xnu/
           echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD): $(ls UniXNU-droidvm/patches/xnu | wc -l)"
       - name: Point the xnu source at 8796 (device-level feed override)
         run: |
@@ -128,8 +132,16 @@ jobs:
           # name each skip in the log.
           python3 - <<'PYEOF' 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           from pathlib import Path
-          old = '    git -C .cache/xnu-work apply --check "$PATCH"\n'
-          new = ('    if ! git -C .cache/xnu-work apply --check "$PATCH"; then\n'
+          old = ('    git -C .cache/xnu-work apply --check "$PATCH"\n'
+                 '    git -C .cache/xnu-work apply "$PATCH"\n')
+          new = ('    # 8796 moved some context; try less of it before giving up on a patch.\n'
+                 '    applied=0\n'
+                 '    for fuzz in "" "-C1" "-C0"; do\n'
+                 '      if git -C .cache/xnu-work apply $fuzz --check "$PATCH"; then\n'
+                 '        git -C .cache/xnu-work apply $fuzz "$PATCH" && applied=1 && break\n'
+                 '      fi\n'
+                 '    done\n'
+                 '    if [ "$applied" = 0 ]; then\n'
                  '      echo "SKIP(does not apply to this xnu) $PATCH"\n'
                  '      continue\n'
                  '    fi\n')
