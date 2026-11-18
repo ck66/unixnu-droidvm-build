@@ -252,10 +252,93 @@ def patch_probe(root):
     print('selector-shape probe installed; lie mask from legacy-lie=<hex>')
 
 
+
+IOS_IDENTITY_OLD = """                valid=native_legacy_gop_mapping_observed(this,bootMapping,width,height);"""
+
+IOS_IDENTITY_NEW = """                valid=native_legacy_gop_mapping_observed(this,bootMapping,width,height);
+                // iOS: a display has to identify itself before its clients trust
+                // it (macOS's WindowServer reads IOMFBUUID and the EDID; QuartzCore
+                // on iOS asks the family for the same things). The macOS branch
+                // publishes these through native_legacy_ioav_* helpers that this
+                // build does not contain at all, so the same identity is assembled
+                // here directly: a valid EDID 1.3 with one detailed timing for the
+                // mode startHardware scans out, plus a stable UUID string.
+                if(valid && bootMapping) {
+                    uint8_t edid[128];
+                    bzero(edid,sizeof edid);
+                    edid[0]=0x00;edid[1]=0xff;edid[2]=0xff;edid[3]=0xff;edid[4]=0xff;edid[5]=0xff;edid[6]=0xff;edid[7]=0x00;
+                    edid[8]=0x30;edid[9]=0x0a;                 // manufacturer id "UNX"
+                    edid[10]=0x02;edid[11]=0x00;               // product code
+                    edid[12]=0x01;edid[13]=0x00;edid[14]=0x00;edid[15]=0x00;
+                    edid[16]=0x01;edid[17]=0x03;               // EDID 1.3
+                    edid[18]=0x80;                             // digital input
+                    edid[19]=0x46;edid[20]=0x27;               // sRGB, preferred timing, 8-bit
+                    edid[21]=0x8d;edid[22]=0x0e;edid[23]=0x00;
+                    edid[24]=0x0a;                             // no chroma coordinates
+                    edid[38]=1;edid[39]=1;                     // one established timing
+                    edid[54]=0;edid[55]=0;                     // no standard timings
+                    {
+                        // Detailed timing descriptor, CVT reduced blanking:
+                        // h: 48 front / 32 sync / 80 back, v: 3 front / 6 sync / 14 back.
+                        const uint32_t hActive=width, vActive=height;
+                        const uint32_t hFront=48, hSync=32, hBack=80;
+                        const uint32_t vFront=3, vSync=6, vBack=14;
+                        const uint32_t hBlank=hFront+hSync+hBack, vBlank=vFront+vSync+vBack;
+                        const uint32_t clock10k=(uint32_t)(((uint64_t)(hActive+hBlank)*(vActive+vBlank)*60+5000)/10000);
+                        uint8_t *d=edid+54;
+                        d[0]=(uint8_t)(clock10k&0xff);d[1]=(uint8_t)((clock10k>>8)&0xff);
+                        d[2]=(uint8_t)(hActive&0xff);d[3]=(uint8_t)(hBlank&0xff);
+                        d[4]=(uint8_t)((((hActive>>8)&0x0f)<<4)|((hBlank>>8)&0x0f));
+                        d[5]=(uint8_t)(vActive&0xff);d[6]=(uint8_t)(vBlank&0xff);
+                        d[7]=(uint8_t)((((vActive>>8)&0x0f)<<4)|((vBlank>>8)&0x0f));
+                        d[8]=(uint8_t)(hFront&0xff);d[9]=(uint8_t)(hSync&0xff);
+                        d[10]=(uint8_t)(((vFront&0x0f)<<4)|(vSync&0x0f));
+                        d[11]=(uint8_t)((((hFront>>8)&0x03)<<6)|(((hSync>>8)&0x03)<<4)|(((vFront>>4)&0x03)<<2)|((vSync>>4)&0x03));
+                        d[12]=0;d[13]=0;d[14]=0;d[15]=0;d[16]=0;
+                        d[17]=0x1a;   // digital separate sync, +h +v
+                    }
+                    {   // monitor name descriptor
+                        uint8_t at=54+18;
+                        edid[at]=0x00;edid[at+1]=0x00;edid[at+2]=0x00;edid[at+3]=0xfc;edid[at+4]=0x00;
+                        const char *name="UniXNU Display";
+                        for(unsigned i=0;i<13;++i)edid[at+5+i]=(uint8_t)(name[i]?name[i]:0x20);
+                        edid[at+5+13]=0x0a;
+                    }
+                    {   // range limits descriptor
+                        uint8_t at=54+36;
+                        edid[at]=0x00;edid[at+1]=0x00;edid[at+2]=0x00;edid[at+3]=0xfd;edid[at+4]=0x00;
+                        edid[at+5]=50;edid[at+6]=75;edid[at+7]=30;edid[at+8]=90;edid[at+9]=0x00;
+                        edid[at+10]=0x0a;edid[at+11]=0x20;edid[at+12]=0x20;edid[at+13]=0x20;edid[at+14]=0x20;
+                    }
+                    edid[126]=0;                                // no extension block
+                    {unsigned sum=0;for(unsigned i=0;i<127;++i)sum+=edid[i];edid[127]=(uint8_t)(0x100-(sum&0xff));}
+                    OSData *data=OSData::withBytes(edid,sizeof edid);
+                    if(data){setProperty("NativeDisplayEDID",data);setProperty("EDID",data);data->release();}
+                    setProperty("IOMFBUUID","554E5800-0000-4000-8000-000000000001");
+                    setProperty("DisplayWidth",width,32);
+                    setProperty("DisplayHeight",height,32);
+                    IOLog("NativeLegacyDisplay: identity published %ux%u clock %u ok",width,height,(unsigned)(((uint64_t)(width+160)*(height+23)*60+5000)/10000));
+                }"""
+
+
+def patch_ios_identity(root):
+    path = root / 'UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp'
+    text = path.read_text()
+    if 'identity published' in text:
+        print('iOS identity publisher already present')
+        return
+    if IOS_IDENTITY_OLD not in text:
+        fail('gop mapping anchor missing: cannot publish the iOS display identity')
+    text = text.replace(IOS_IDENTITY_OLD, IOS_IDENTITY_NEW, 1)
+    path.write_text(text)
+    print('iOS identity publisher installed')
+
+
 def main():
     patch_virtio_3d(ROOT)
     patch_display(ROOT)
     patch_probe(ROOT)
+    patch_ios_identity(ROOT)
 
 
 if __name__ == '__main__':
