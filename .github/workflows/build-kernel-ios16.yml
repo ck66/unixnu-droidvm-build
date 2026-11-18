@@ -156,25 +156,25 @@ jobs:
                   print('already tolerant:', script); continue
               if old not in text:
                   raise SystemExit('patch loop anchor missing in %s' % script)
-              script.write_text(text.replace(old, new, 1))
+              text = text.replace(old, new, 1)
+              # xnu 8796 reads availability.pl from the SDK; the script already exports
+              # XNU_AVAILABILITY_PL, so the tree's copy only needs the fallback that
+              # UniXNU's local-availability.patch adds (and which cannot be applied here:
+              # the fetched tree is a plain directory, and the patch is not in the series).
+              avail_old = 'export XNU_AVAILABILITY_PL=$ROOT/.cache/fakeroot/usr/local/libexec/availability.pl\n'
+              avail_new = (avail_old +
+                "sed -i '' 's|^AVAILABILITY_PL=\"${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl\"$|"
+                "AVAILABILITY_PL=\"${XNU_AVAILABILITY_PL:-${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl}\"|' "
+                ".cache/xnu-work/bsd/sys/make_symbol_aliasing.sh\n")
+              if avail_old in text and 'AVAILABILITY_PL=\"${XNU_AVAILABILITY_PL' not in text:
+                  text = text.replace(avail_old, avail_new, 1)
+                  print('availability fallback injected:', script)
+              script.write_text(text)
               print('tolerant patch loop:', script)
           PYEOF
           # xnu 8796's build looks for availability.pl inside the SDK (10063 reads it from
           # XNU_AVAILABILITY_PL instead), and UniXNU's own local-availability.patch is what
           # switches it over. Applying it up front keeps the patch loop's reverse-check happy.
-          # xnu 8796's bsd/sys/make_symbol_aliasing.sh reads availability.pl from the SDK;
-          # 10063 took it from XNU_AVAILABILITY_PL, which build-xnu-4k-baseline.sh still exports.
-          # UniXNU's local-availability.patch adds that fallback, but the patch loop cannot apply
-          # it here (the fetched tree is a plain directory, so `git apply` refuses), so edit the
-          # one line directly and print it -- the next failure, if any, must not be this one.
-          ALIAS="$W/bsd/sys/make_symbol_aliasing.sh"
-          if [ -f "$ALIAS" ]; then
-            sed -i '' 's|^AVAILABILITY_PL="${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl"$|AVAILABILITY_PL="${XNU_AVAILABILITY_PL:-${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl}"|' "$ALIAS"
-            echo "availability line: $(grep -n 'AVAILABILITY_PL=' "$ALIAS" | head -2)" | tee -a "$RUNNER_TEMP/ios16.log"
-          else
-            echo "MISSING $ALIAS" | tee -a "$RUNNER_TEMP/ios16.log"
-          fi
-          echo "XNU_AVAILABILITY_PL=$XNU_AVAILABILITY_PL" | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
       - name: What came out
