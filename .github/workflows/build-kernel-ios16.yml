@@ -148,20 +148,19 @@ jobs:
           # xnu 8796's build looks for availability.pl inside the SDK (10063 reads it from
           # XNU_AVAILABILITY_PL instead), and UniXNU's own local-availability.patch is what
           # switches it over. Applying it up front keeps the patch loop's reverse-check happy.
-          # Which xnu did we get: 8796's build reads availability.pl from the SDK, 10063's from
-          # XNU_AVAILABILITY_PL. Print the version strings and pre-apply the patch that adapts it.
-          echo "--- xnu version markers ---" | tee -a "$RUNNER_TEMP/ios16.log"
-          { grep -rhm2 -E "8796|10063|22[A-Z][0-9]+|23[A-Z][0-9]+" "$W"/SETUP/config/version.c 2>/dev/null || echo "no version.c markers"; } | tee -a "$RUNNER_TEMP/ios16.log"
-          for cand in "out/$BOARD/tree/patches/xnu/local-availability.patch" \
-                      "../UniXNU-droidvm/patches/xnu/local-availability.patch" \
-                      "$W/patches/xnu/local-availability.patch"; do
-            if [ -f "$cand" ]; then
-              echo "pre-applying $cand" | tee -a "$RUNNER_TEMP/ios16.log"
-              git -C "$W" apply "$cand" && echo "pre-applied ok" | tee -a "$RUNNER_TEMP/ios16.log" \
-                || echo "pre-apply refused (already applied?)" | tee -a "$RUNNER_TEMP/ios16.log"
-              break
-            fi
-          done
+          # xnu 8796's bsd/sys/make_symbol_aliasing.sh reads availability.pl from the SDK;
+          # 10063 took it from XNU_AVAILABILITY_PL, which build-xnu-4k-baseline.sh still exports.
+          # UniXNU's local-availability.patch adds that fallback, but the patch loop cannot apply
+          # it here (the fetched tree is a plain directory, so `git apply` refuses), so edit the
+          # one line directly and print it -- the next failure, if any, must not be this one.
+          ALIAS="$W/bsd/sys/make_symbol_aliasing.sh"
+          if [ -f "$ALIAS" ]; then
+            sed -i '' 's|^AVAILABILITY_PL="${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl"$|AVAILABILITY_PL="${XNU_AVAILABILITY_PL:-${SDKROOT}/${DRIVERKITROOT}/usr/local/libexec/availability.pl}"|' "$ALIAS"
+            echo "availability line: $(grep -n 'AVAILABILITY_PL=' "$ALIAS" | head -2)" | tee -a "$RUNNER_TEMP/ios16.log"
+          else
+            echo "MISSING $ALIAS" | tee -a "$RUNNER_TEMP/ios16.log"
+          fi
+          echo "XNU_AVAILABILITY_PL=$XNU_AVAILABILITY_PL" | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
       - name: What came out
@@ -177,7 +176,7 @@ jobs:
           set +e
           {
             echo "run $GITHUB_RUN_ID"
-            grep -E "xnu tree commit|xnu version|SKIP\(|patches:|error:|fatal|No such|Unable|pre-applied" "$RUNNER_TEMP/ios16.log" | head -60
+            grep -E "xnu tree commit|xnu version|SKIP\(|patches:|error:|fatal|No such|Unable|pre-applied|availability line|MISSING|XNU_AVAILABILITY_PL" "$RUNNER_TEMP/ios16.log" | head -60
             echo "--- tail ---"
             tail -30 "$RUNNER_TEMP/ios16.log"
           } > self/status/ios16-last.txt
