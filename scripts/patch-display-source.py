@@ -179,6 +179,13 @@ def patch_display(root):
 PROBE_SHAPE_HEAD = """// Plain types on purpose: this block is prepended before any #include, so
 // uint32_t / uint64_t are not declared yet at this point.
 extern "C" volatile unsigned int native_legacy_sel_shape[96][6];
+volatile unsigned int native_legacy_sel_in[96][16];
+volatile unsigned long long native_legacy_sel_scalar[96][4];
+// First 64 bytes of each selector's structure input and its scalars: enough to
+// see what the compositor asks the display to accept (run 44198165323 showed
+// selector 17 writing the same 3084-byte structure selector 27 reads).
+extern "C" volatile unsigned int native_legacy_sel_in[96][16];
+extern "C" volatile unsigned long long native_legacy_sel_scalar[96][4];
 extern "C" volatile unsigned long long native_legacy_lie_mask;
 extern "C" volatile unsigned long long native_legacy_lie_mask_hi;
 static unsigned long long droidvm_lie_loaded;
@@ -203,6 +210,12 @@ PROBE_SHAPE_NEW = """        if(selector<kSelectors){++stat->selector_calls[sele
             native_legacy_sel_shape[selector][4]=(uint32_t)args->structureOutputSize;
         }
         native_legacy_sel_shape[selector][5]=(uint32_t)status;
+        if(args) {
+            if(args->structureInput && args->structureInputSize)
+                memcpy((void *)native_legacy_sel_in[selector],args->structureInput,args->structureInputSize<64?args->structureInputSize:64);
+            if(args->scalarInput)
+                memcpy((void *)native_legacy_sel_scalar[selector],args->scalarInput,(args->scalarInputCount<4?args->scalarInputCount:4)*8);
+        }
     }
     if(status==kIOReturnUnsupported) {
         if(selector<64 && ((native_legacy_lie_mask>>selector)&1ULL))status=kIOReturnSuccess;
