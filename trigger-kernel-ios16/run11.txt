@@ -1,0 +1,1 @@
+run11 2026-11-18: diagnostic grep no longer aborts the build
