@@ -22,7 +22,7 @@ on:
     paths:
       - 'trigger-kernel-ios16/**'
 permissions:
-  contents: read
+  contents: write
 env:
   BOARD: ios16
   UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
