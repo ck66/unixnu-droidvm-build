@@ -1,0 +1,1 @@
+run13 2026-11-18: diagnostics on their own branch; pre-apply local-availability
