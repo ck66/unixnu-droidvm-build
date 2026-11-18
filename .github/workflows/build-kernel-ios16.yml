@@ -145,6 +145,16 @@ jobs:
               script.write_text(text.replace(old, new, 1))
               print('tolerant patch loop:', script)
           PYEOF
+          # xnu 8796's build looks for availability.pl inside the SDK (10063 reads it from
+          # XNU_AVAILABILITY_PL instead), and UniXNU's own local-availability.patch is what
+          # switches it over. Applying it up front keeps the patch loop's reverse-check happy.
+          echo "--- xnu version markers ---" | tee -a "$RUNNER_TEMP/ios16.log"
+          grep -m3 -n "8796\|10063" "$W"/config/MASTER 2>/dev/null | tee -a "$RUNNER_TEMP/ios16.log" || true
+          if [ -f ../UniXNU-droidvm/patches/xnu/local-availability.patch ]; then
+            git -C "$W" apply ../UniXNU-droidvm/patches/xnu/local-availability.patch \
+              && echo "pre-applied local-availability.patch" | tee -a "$RUNNER_TEMP/ios16.log" \
+              || echo "local-availability already applied or refused" | tee -a "$RUNNER_TEMP/ios16.log"
+          fi
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
       - name: What came out
