@@ -82,12 +82,36 @@ jobs:
           mkdir -p UniXNU-droidvm/patches/xnu
           cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
           echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD): $(ls UniXNU-droidvm/patches/xnu | wc -l)"
+      - name: Point the xnu source at 8796 (device-level feed override)
+        run: |
+          set -euo pipefail
+          cat >> UniXNU-droidvm/feeds.toml <<'FEEDEOF'
+
+          # iOS 16: the arch layer's own feeds.toml pins xnu-10063.141.1 and states that
+          # "everything that depends on the Darwin version is set here". A device may add its own
+          # feeds, so the same source name is declared again with the 20H392 revision. If the
+          # resolver keeps the first definition, `unixnu fetch` still pulls 10063 and the build
+          # step prints the tree's commit, so the log says which one we got.
+          [[source]]
+          name = "xnu"
+          kind = "refer"
+          git = "https://github.com/apple-oss-distributions/xnu.git"
+          ref = "xnu-8796.141.3"
+          commit = "1b191cb58250d0705d8a51287127505aa4bc0789"
+          darwin = "22.6.0"
+          version = "8796.141.3"
+          driverkit_tag = "xnu-8796.101.5"
+          trustcache_tag = "xnu-8796.101.5"
+          FEEDEOF
+          tail -14 UniXNU-droidvm/feeds.toml
       - name: Build the kernel
         working-directory: UniXNU
         run: |
           set -o pipefail
           ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee "$RUNNER_TEMP/ios16.log"
           ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+          echo "xnu tree commit: $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo 'not a git tree')" | tee -a "$RUNNER_TEMP/ios16.log"
+          echo "xnu version: $(sed -n 's/.*RC_ProjectSourceVersion=\(.*\)/\1/p' "$W"/config/MASTER 2>/dev/null | head -1)" | tee -a "$RUNNER_TEMP/ios16.log"
           # whyred's series was written against its own xnu tree; on 8796 a few patches refuse
           # (a file the arch layer already provides, or context that moved).  Make the patch loop
           # tolerant so one run reports every one of them instead of stopping at the first, and
