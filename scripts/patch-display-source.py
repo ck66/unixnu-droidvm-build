@@ -334,11 +334,96 @@ def patch_ios_identity(root):
     print('iOS identity publisher installed')
 
 
+
+EMULATE_HEAD = """// DroidVM: the selectors' real meanings are documented (IOMobileFramebuffer
+// reference): 9 setVSyncNotifications, 12 requestPowerChange, 15 setDebugFlags,
+// 17 setGammaTable, 19 setWhiteOnBlackMode, 22 setDisplayDevice,
+// 27 getGammaTable, 33 setVideoPowerSaving, 50 setBrightnessCorrection,
+// 74 supportedFrameInfo, 79 changeFrameInfo. The family answers all of them
+// kIOReturnUnsupported on this backend, so the compositor gets no usable
+// display. 3084 bytes is exactly three 0x101-entry gamma tables (3 * 1028).
+static int native_legacy_emulate=0;
+static int native_legacy_emulate_loaded=0;
+static IOReturn droidvm_emulate_selector(uint32_t selector,IOExternalMethodArguments *args) {
+    switch(selector) {
+    case 9: case 12: case 15: case 19: case 22: case 33: case 50:
+        return kIOReturnSuccess;
+    case 17:
+        return kIOReturnSuccess;
+    case 27: {
+        // Three neutral gamma ramps: each word carries two 10-bit fields.
+        if(args && args->structureOutput && args->structureOutputSize>=3084) {
+            uint32_t *table=static_cast<uint32_t *>(args->structureOutput);
+            for(unsigned k=0;k<0x101;++k) {
+                uint32_t v=(uint32_t)((k*1023u)/0x100u);
+                table[k]=v|(v<<10);
+            }
+            memcpy(table+0x101,table,0x101*4);
+            memcpy(table+0x202,table,0x101*4);
+        }
+        return kIOReturnSuccess;
+    }
+    case 28:
+        if(args && args->scalarOutput && args->scalarOutputCount>=1)
+            args->scalarOutput[0]=264;      // dot pitch, informational
+        return kIOReturnSuccess;
+    case 29:
+        if(args && args->structureOutput && args->structureOutputSize>=8)
+            bzero(args->structureOutput,8);
+        return kIOReturnSuccess;
+    case 74:
+        // supportedFrameInfo: report no optional descriptors (count 0) and clear
+        // the caller's 64-byte descriptor block, as the framework expects.
+        if(args) {
+            if(args->scalarOutput && args->scalarOutputCount>=2) {
+                args->scalarOutput[0]=0;args->scalarOutput[1]=0;
+            }
+            if(args->structureOutput && args->structureOutputSize)
+                bzero(args->structureOutput,args->structureOutputSize);
+        }
+        return kIOReturnSuccess;
+    case 79:
+        if(args && args->structureOutput && args->structureOutputSize)
+            bzero(args->structureOutput,args->structureOutputSize);
+        return kIOReturnSuccess;
+    case 84:
+        return kIOReturnSuccess;
+    }
+    return kIOReturnUnsupported;
+}
+"""
+
+
+def patch_emulate(root):
+    path = root / 'UniXNU-droidvm/package/LegacyDisplayProbe.cpp'
+    text = path.read_text()
+    if 'droidvm_emulate_selector' in text:
+        print('selector emulation already present')
+        return
+    anchor = 'static IOReturn wrappedExternal('
+    if anchor not in text:
+        fail('wrappedExternal not found: cannot add selector emulation')
+    text = text.replace(anchor, EMULATE_HEAD + anchor, 1)
+    old = "    if(status==kIOReturnUnsupported) {"
+    new = ("    if(status==kIOReturnUnsupported) {\n"
+           "        if(!native_legacy_emulate_loaded) {native_legacy_emulate_loaded=1;\n"
+           "            unsigned on=0;PE_parse_boot_argn(\"legacy-emulate\",&on,sizeof on);native_legacy_emulate=on;}\n"
+           "        if(native_legacy_emulate)status=droidvm_emulate_selector(selector,args);\n"
+           "    }\n"
+           "    if(status==kIOReturnUnsupported) {")
+    if old not in text:
+        fail('lie-mask anchor missing')
+    text = text.replace(old, new, 1)
+    path.write_text(text)
+    print('selector emulation installed (legacy-emulate=1)')
+
+
 def main():
     patch_virtio_3d(ROOT)
     patch_display(ROOT)
     patch_probe(ROOT)
     patch_ios_identity(ROOT)
+    patch_emulate(ROOT)
 
 
 if __name__ == '__main__':
