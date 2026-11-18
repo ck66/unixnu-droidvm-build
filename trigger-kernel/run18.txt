@@ -1,0 +1,5 @@
+run18 2026-11-18: iOS display-ready plumbing
+
+legacy-power=1          state transition (off then on) on the client's requestPowerChange
+legacy-vsync-always=1   refresh timer independent of client registration, original vsync every tick
+probes: droidvm_probe_power_calls/_power_status/_vsync_ticks/_vsync_sent
