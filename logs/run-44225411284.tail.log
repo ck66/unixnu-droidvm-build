@@ -1,0 +1,1480 @@
+kernel	Set up job	﻿2026-11-18T02:44:12.0896850Z Current runner version: '2.338.2'
+kernel	Set up job	2026-11-18T02:44:12.0919960Z ##[group]Runner Image Provisioner
+kernel	Set up job	2026-11-18T02:44:12.0920460Z Hosted Compute Agent
+kernel	Set up job	2026-11-18T02:44:12.0920820Z Version: 20261028.624
+kernel	Set up job	2026-11-18T02:44:12.0921200Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+kernel	Set up job	2026-11-18T02:44:12.0921650Z Build Date: 2026-10-28T21:51:42Z
+kernel	Set up job	2026-11-18T02:44:12.0922060Z Worker ID: {c225124b-9ea2-46cc-a5a5-2835c81a1edd}
+kernel	Set up job	2026-11-18T02:44:12.0922490Z Region: westus
+kernel	Set up job	2026-11-18T02:44:12.0922840Z Cloud: MacCloud
+kernel	Set up job	2026-11-18T02:44:12.0923180Z ##[endgroup]
+kernel	Set up job	2026-11-18T02:44:12.0923970Z ##[group]Operating System
+kernel	Set up job	2026-11-18T02:44:12.0924340Z macOS
+kernel	Set up job	2026-11-18T02:44:12.0924650Z 26.7.2
+kernel	Set up job	2026-11-18T02:44:12.0924980Z 25G332
+kernel	Set up job	2026-11-18T02:44:12.0925300Z ##[endgroup]
+kernel	Set up job	2026-11-18T02:44:12.0925630Z ##[group]Runner Image
+kernel	Set up job	2026-11-18T02:44:12.0925990Z Image: macos-26-arm64
+kernel	Set up job	2026-11-18T02:44:12.0926340Z Version: 20261102.0473.1
+kernel	Set up job	2026-11-18T02:44:12.0927050Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20261102.0473/images/macos/macos-26-arm64-Readme.md
+kernel	Set up job	2026-11-18T02:44:12.0928070Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20261102.0473
+kernel	Set up job	2026-11-18T02:44:12.0928690Z ##[endgroup]
+kernel	Set up job	2026-11-18T02:44:12.0929360Z ##[group]GITHUB_TOKEN Permissions
+kernel	Set up job	2026-11-18T02:44:12.0930270Z Contents: write
+kernel	Set up job	2026-11-18T02:44:12.0930620Z Metadata: read
+kernel	Set up job	2026-11-18T02:44:12.0930950Z ##[endgroup]
+kernel	Set up job	2026-11-18T02:44:12.0932230Z Secret source: Actions
+kernel	Set up job	2026-11-18T02:44:12.0932760Z Cache mode: write
+kernel	Set up job	2026-11-18T02:44:12.0933160Z Prepare workflow directory
+kernel	Set up job	2026-11-18T02:44:12.1279340Z Prepare all required actions
+kernel	Set up job	2026-11-18T02:44:12.1313480Z Getting action download info
+kernel	Set up job	2026-11-18T02:44:12.4352020Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+kernel	Set up job	2026-11-18T02:44:12.7180620Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+kernel	Set up job	2026-11-18T02:44:12.8241080Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+kernel	Set up job	2026-11-18T02:44:13.0316560Z Complete job name: kernel
+kernel	Run actions/checkout@v4	﻿2026-11-18T02:44:13.1047130Z ##[group]Run actions/checkout@v4
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1047890Z with:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1048190Z   path: self
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1048520Z   repository: ck66/unixnu-droidvm-build
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1051420Z   token: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1051730Z   ssh-strict: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1052110Z   ssh-user: git
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1052470Z   persist-credentials: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1052830Z   clean: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1053150Z   sparse-checkout-cone-mode: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1053530Z   fetch-depth: 1
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1053860Z   fetch-tags: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1054200Z   show-progress: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1054520Z   lfs: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1054840Z   submodules: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1055170Z   set-safe-directory: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1055540Z   allow-unsafe-pr-checkout: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1056040Z env:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1056350Z   BOARD: droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1056830Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1057360Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1057860Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1058380Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1060960Z   GITHUB_TOKEN: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.1061280Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.5399880Z Syncing repository: ck66/unixnu-droidvm-build
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.5401380Z ##[group]Getting Git version info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.5402010Z Working directory is '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/self'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.5402900Z [command]/opt/homebrew/bin/git version
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6014530Z git version 2.56.0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6111280Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6120620Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/f84cbf40-d006-4cc6-9422-c3b8949da660/.gitconfig'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6126380Z Temporarily overriding HOME='/Users/runner/work/_temp/f84cbf40-d006-4cc6-9422-c3b8949da660' before making global git config changes
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6137770Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6154330Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/self
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6163630Z ##[group]Initializing the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6164580Z [command]/opt/homebrew/bin/git init /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/self
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6324210Z hint: Using 'master' as the name for the initial branch. This default branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6325120Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6325930Z hint: to use in all of your new repositories, which will suppress this warning,
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6326600Z hint: call:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6326960Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6327530Z hint: 	git config --global init.defaultBranch <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6328140Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6328680Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6329410Z hint: 'development'. The just-created branch can be renamed via this command:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6329970Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6330340Z hint: 	git branch -m <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6330770Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6331240Z hint: Disable this message with "git config set advice.defaultBranchName false"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6332140Z Initialized empty Git repository in /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/self/.git/
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6337330Z [command]/opt/homebrew/bin/git remote add origin https://github.com/ck66/unixnu-droidvm-build
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6414830Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6415580Z ##[group]Disabling automatic garbage collection
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6416370Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6478610Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6479210Z ##[group]Setting up auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6482690Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.6546410Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.7477240Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.7539580Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.8828240Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.8929630Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.9557970Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.9644820Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.9646050Z ##[group]Fetching the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:13.9650780Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +3b593f3f6d7972e7a989ef64824c5a08fc1dce32:refs/remotes/origin/display-bump
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6452940Z From https://github.com/ck66/unixnu-droidvm-build
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6453950Z  * [new ref]         3b593f3f6d7972e7a989ef64824c5a08fc1dce32 -> origin/display-bump
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6455690Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6456210Z ##[group]Determining the checkout info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6456780Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6461050Z [command]/opt/homebrew/bin/git sparse-checkout disable
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6535380Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6596930Z ##[group]Checking out the ref
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6599620Z [command]/opt/homebrew/bin/git checkout --progress --force -B display-bump refs/remotes/origin/display-bump
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6984110Z Switched to a new branch 'display-bump'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6991720Z branch 'display-bump' set up to track 'origin/display-bump'.
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.6997650Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7083370Z [command]/opt/homebrew/bin/git log -1 --format=%H
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7154700Z 3b593f3f6d7972e7a989ef64824c5a08fc1dce32
+kernel	Run actions/checkout@v4	﻿2026-11-18T02:44:14.7379380Z ##[group]Run actions/checkout@v4
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7379670Z with:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7379860Z   repository: Droid-VM/macOS-DroidVM
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7380090Z   ref: main
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7380260Z   path: ci
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7380520Z   persist-credentials: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7382460Z   token: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7382640Z   ssh-strict: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7382840Z   ssh-user: git
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7383040Z   clean: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7383250Z   sparse-checkout-cone-mode: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7383480Z   fetch-depth: 1
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7383660Z   fetch-tags: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7383860Z   show-progress: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7384050Z   lfs: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7384230Z   submodules: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7384430Z   set-safe-directory: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7384670Z   allow-unsafe-pr-checkout: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7384900Z env:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7385070Z   BOARD: droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7385290Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7385650Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7385980Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7386370Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7388330Z   GITHUB_TOKEN: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.7388560Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8561210Z Syncing repository: Droid-VM/macOS-DroidVM
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8562020Z ##[group]Getting Git version info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8562560Z Working directory is '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/ci'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8563220Z [command]/opt/homebrew/bin/git version
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8581450Z git version 2.56.0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8592740Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8598850Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/e7807f8f-2dba-40d4-b1b5-650729e568c2/.gitconfig'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8605810Z Temporarily overriding HOME='/Users/runner/work/_temp/e7807f8f-2dba-40d4-b1b5-650729e568c2' before making global git config changes
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8606900Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8609330Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/ci
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8677350Z ##[group]Initializing the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8680660Z [command]/opt/homebrew/bin/git init /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/ci
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8772550Z hint: Using 'master' as the name for the initial branch. This default branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8775300Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8775980Z hint: to use in all of your new repositories, which will suppress this warning,
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8783510Z hint: call:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8784000Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8784820Z hint: 	git config --global init.defaultBranch <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8785390Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8786480Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8788620Z hint: 'development'. The just-created branch can be renamed via this command:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8789150Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8789420Z hint: 	git branch -m <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8789700Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8790100Z hint: Disable this message with "git config set advice.defaultBranchName false"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8791070Z Initialized empty Git repository in /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/ci/.git/
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8792400Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Droid-VM/macOS-DroidVM
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8843060Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8843550Z ##[group]Disabling automatic garbage collection
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8846320Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8903810Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8904320Z ##[group]Setting up auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8907640Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:14.8962730Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.0077410Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.0143820Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.1171580Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.1182910Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.2469620Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.2530020Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.2531370Z ##[group]Fetching the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:15.2535490Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +refs/heads/main*:refs/remotes/origin/main* +refs/tags/main*:refs/tags/main*
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3091200Z From https://github.com/Droid-VM/macOS-DroidVM
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3094500Z  * [new branch]      main       -> origin/main
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3182300Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3183070Z ##[group]Determining the checkout info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3183660Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3214050Z   origin/main
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3255810Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3256990Z [command]/opt/homebrew/bin/git sparse-checkout disable
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3319410Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3399090Z ##[group]Checking out the ref
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.3400160Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4417670Z Switched to a new branch 'main'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4425920Z branch 'main' set up to track 'origin/main'.
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4454310Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4532210Z [command]/opt/homebrew/bin/git log -1 --format=%H
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4607210Z 524d27bf57ae92375aa39e3a81e11727c08973ff
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4618060Z ##[group]Removing auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4623790Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.4698740Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.5677480Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.5742410Z http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.5750750Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.5831490Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.6843750Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.6930680Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8049800Z ##[endgroup]
+kernel	Run actions/checkout@v4	﻿2026-11-18T02:44:16.8206400Z ##[group]Run actions/checkout@v4
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8206620Z with:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8206800Z   repository: Droid-VM/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8207080Z   ref: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8207360Z   path: UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8207530Z   submodules: recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8207740Z   persist-credentials: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8209520Z   token: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8209660Z   ssh-strict: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8209800Z   ssh-user: git
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8209950Z   clean: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210100Z   sparse-checkout-cone-mode: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210290Z   fetch-depth: 1
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210430Z   fetch-tags: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210570Z   show-progress: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210730Z   lfs: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8210870Z   set-safe-directory: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8211050Z   allow-unsafe-pr-checkout: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8211250Z env:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8211400Z   BOARD: droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8211620Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8212020Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8212320Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8212650Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8214570Z   GITHUB_TOKEN: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.8214720Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9416820Z Syncing repository: Droid-VM/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9417620Z ##[group]Getting Git version info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9418180Z Working directory is '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9449960Z [command]/opt/homebrew/bin/git version
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9511260Z git version 2.56.0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9533250Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9539480Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/a0d380fc-5306-4d3e-8347-94a09c1adc0e/.gitconfig'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9546360Z Temporarily overriding HOME='/Users/runner/work/_temp/a0d380fc-5306-4d3e-8347-94a09c1adc0e' before making global git config changes
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9547270Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9550220Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9629040Z ##[group]Initializing the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9638240Z [command]/opt/homebrew/bin/git init /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9920040Z hint: Using 'master' as the name for the initial branch. This default branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:16.9930240Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0013380Z hint: to use in all of your new repositories, which will suppress this warning,
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0108550Z hint: call:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0110910Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0111370Z hint: 	git config --global init.defaultBranch <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0111960Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0112320Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0112880Z hint: 'development'. The just-created branch can be renamed via this command:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0113310Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0116210Z hint: 	git branch -m <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0116630Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0117020Z hint: Disable this message with "git config set advice.defaultBranchName false"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0118350Z Initialized empty Git repository in /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0119970Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Droid-VM/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0121090Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0126360Z ##[group]Disabling automatic garbage collection
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0127940Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0130310Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0131280Z ##[group]Setting up auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0155350Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.0187580Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.1095810Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.1167770Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.2342800Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.2523500Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.3435320Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.3505260Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.3506740Z ##[group]Fetching the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:17.3510910Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0436820Z From https://github.com/Droid-VM/UniXNU
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0437470Z  * branch            56023cdc363249d201328e9e147f7b05690eba4e -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0440650Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0441130Z ##[group]Determining the checkout info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0442200Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0446700Z [command]/opt/homebrew/bin/git sparse-checkout disable
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0539720Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0605260Z ##[group]Checking out the ref
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.0608650Z [command]/opt/homebrew/bin/git checkout --progress --force 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3182620Z HEAD is now at 56023cd GPU parity with upstream feat/ipados27-gpu-parity: metal2vulkan 0dfdbcd, Turnip's BO cache, AdrenoMetal and GopFramebuffer merged
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3191220Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3191690Z ##[group]Setting up auth for fetching submodules
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3196140Z [command]/opt/homebrew/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3304600Z [command]/opt/homebrew/bin/git config --global --unset-all url.https://github.com/.insteadOf
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3499930Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.3818020Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf org-30546701@github.com:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.4172900Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.4302390Z ##[group]Fetching submodules
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.4406000Z [command]/opt/homebrew/bin/git submodule sync --recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.6393850Z [command]/opt/homebrew/bin/git -c protocol.version=2 submodule update --init --force --depth=1 --recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8009750Z Submodule 'drivers/Adreno740' (https://github.com/Droid-VM/NativeAdreno.git) registered for path 'drivers/Adreno740'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8042090Z Submodule 'drivers/AdrenoMetal' (https://github.com/Droid-VM/NativeMetal.git) registered for path 'drivers/AdrenoMetal'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8047200Z Submodule 'drivers/AppleKeyStoreState' (https://github.com/UniXNU/AppleKeyStoreState.git) registered for path 'drivers/AppleKeyStoreState'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8053700Z Submodule 'drivers/ArmCpu' (https://github.com/Droid-VM/ArmCpu.git) registered for path 'drivers/ArmCpu'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8059230Z Submodule 'drivers/ArmDTPlatform' (https://github.com/UniXNU/ArmDTPlatform.git) registered for path 'drivers/ArmDTPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8064920Z Submodule 'drivers/ArmVirtPlatform' (https://github.com/UniXNU/ArmVirtPlatform.git) registered for path 'drivers/ArmVirtPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8071010Z Submodule 'drivers/DarwinBoot' (https://github.com/Droid-VM/DarwinBoot.git) registered for path 'drivers/DarwinBoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8076890Z Submodule 'drivers/GopFramebuffer' (https://github.com/Droid-VM/NativeMobileDisplay.git) registered for path 'drivers/GopFramebuffer'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8083010Z Submodule 'drivers/QcomGeniSpi' (https://github.com/UniXNU/QcomGeniSpi.git) registered for path 'drivers/QcomGeniSpi'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8090760Z Submodule 'drivers/RamBlock' (https://github.com/UniXNU/RamBlock.git) registered for path 'drivers/RamBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8096950Z Submodule 'drivers/SoftwareAES' (https://github.com/UniXNU/SoftwareAES.git) registered for path 'drivers/SoftwareAES'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8136420Z Submodule 'drivers/VirtioMmioBlock' (https://github.com/UniXNU/VirtioMmioBlock.git) registered for path 'drivers/VirtioMmioBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8150080Z Submodule 'drivers/VirtioMmioConsole' (https://github.com/UniXNU/VirtioMmioConsole.git) registered for path 'drivers/VirtioMmioConsole'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8216180Z Submodule 'kits/AdrenoFirmware' (https://github.com/UniXNU/AdrenoFirmware.git) registered for path 'kits/AdrenoFirmware'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8221900Z Submodule 'kits/AdrenoPM4' (https://github.com/UniXNU/AdrenoPM4.git) registered for path 'kits/AdrenoPM4'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8228850Z Submodule 'kits/AirNir' (https://github.com/UniXNU/AirNir.git) registered for path 'kits/AirNir'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8234220Z Submodule 'kits/ArmSmmu4K' (https://github.com/UniXNU/ArmSmmu4K.git) registered for path 'kits/ArmSmmu4K'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8240890Z Submodule 'kits/VerifiedRoot' (https://github.com/UniXNU/VerifiedRoot.git) registered for path 'kits/VerifiedRoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8282150Z Submodule 'kits/XnuPrelink' (https://github.com/UniXNU/XnuPrelink.git) registered for path 'kits/XnuPrelink'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:18.8555530Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/Adreno740'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:19.4461060Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/AdrenoMetal'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:20.0908970Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/AppleKeyStoreState'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:20.5405720Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/ArmCpu'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:21.0435820Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/ArmDTPlatform'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:21.5292500Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/ArmVirtPlatform'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:22.0063110Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/DarwinBoot'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:22.5141820Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/GopFramebuffer'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:23.0257970Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/QcomGeniSpi'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:23.5592410Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/RamBlock'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:24.0707120Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/SoftwareAES'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:24.5206440Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/VirtioMmioBlock'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:25.0408900Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/drivers/VirtioMmioConsole'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:25.4968590Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/AdrenoFirmware'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:26.0008400Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/AdrenoPM4'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:26.4773640Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/AirNir'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:26.9834800Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/ArmSmmu4K'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:27.4728070Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/VerifiedRoot'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:27.9345140Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/kits/XnuPrelink'...
+kernel	Run actions/checkout@v4	2026-11-18T02:44:29.3321270Z From https://github.com/Droid-VM/NativeAdreno
+kernel	Run actions/checkout@v4	2026-11-18T02:44:29.3328200Z  * branch            627836d507ef08037fff2f9b12e9274ba7b2a4f3 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:29.3643390Z Submodule path 'drivers/Adreno740': checked out '627836d507ef08037fff2f9b12e9274ba7b2a4f3'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:30.3775660Z From https://github.com/Droid-VM/NativeMetal
+kernel	Run actions/checkout@v4	2026-11-18T02:44:30.3776710Z  * branch            4e34177384551909abd4670e5895957ef2c9f8be -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:30.4165120Z Submodule path 'drivers/AdrenoMetal': checked out '4e34177384551909abd4670e5895957ef2c9f8be'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:31.3647350Z From https://github.com/UniXNU/AppleKeyStoreState
+kernel	Run actions/checkout@v4	2026-11-18T02:44:31.3648330Z  * branch            42ff83e08b2265fe741d4adaf084bebe003452ba -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:31.3884590Z Submodule path 'drivers/AppleKeyStoreState': checked out '42ff83e08b2265fe741d4adaf084bebe003452ba'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:32.2473230Z From https://github.com/Droid-VM/ArmCpu
+kernel	Run actions/checkout@v4	2026-11-18T02:44:32.2474000Z  * branch            52454a2927a9c6b1338ea6973f02f41685e82c29 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:32.2725450Z Submodule path 'drivers/ArmCpu': checked out '52454a2927a9c6b1338ea6973f02f41685e82c29'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:33.2224270Z From https://github.com/UniXNU/ArmDTPlatform
+kernel	Run actions/checkout@v4	2026-11-18T02:44:33.2225530Z  * branch            417ff95d6a6e8607ddea9309ec45c3bfd4a67c60 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:33.2409840Z Submodule path 'drivers/ArmDTPlatform': checked out '417ff95d6a6e8607ddea9309ec45c3bfd4a67c60'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:33.2727460Z Submodule path 'drivers/ArmVirtPlatform': checked out 'd1423a8bceac4be0478a93d9173587111c040084'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:34.1494960Z From https://github.com/Droid-VM/DarwinBoot
+kernel	Run actions/checkout@v4	2026-11-18T02:44:34.1495860Z  * branch            4dfda8398d131bdf421be1c86637a8e45833393c -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:34.1710590Z Submodule path 'drivers/DarwinBoot': checked out '4dfda8398d131bdf421be1c86637a8e45833393c'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:35.0559910Z From https://github.com/Droid-VM/NativeMobileDisplay
+kernel	Run actions/checkout@v4	2026-11-18T02:44:35.0562230Z  * branch            364ce278a78c30912abd634075285472ade3ead8 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:35.0855140Z Submodule path 'drivers/GopFramebuffer': checked out '364ce278a78c30912abd634075285472ade3ead8'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:35.1441420Z Submodule path 'drivers/QcomGeniSpi': checked out 'eac47baefe6a5d2368a70351e6ad1b6361bedbe2'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:36.2345900Z From https://github.com/UniXNU/RamBlock
+kernel	Run actions/checkout@v4	2026-11-18T02:44:36.2347310Z  * branch            25c57e0e9b68bf452dd1986914525edc9d2320bc -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:36.2585080Z Submodule path 'drivers/RamBlock': checked out '25c57e0e9b68bf452dd1986914525edc9d2320bc'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:37.2144500Z From https://github.com/UniXNU/SoftwareAES
+kernel	Run actions/checkout@v4	2026-11-18T02:44:37.2145330Z  * branch            4a45326da5c2cd6fe6813d79ee43db20805628af -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:37.2346630Z Submodule path 'drivers/SoftwareAES': checked out '4a45326da5c2cd6fe6813d79ee43db20805628af'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.1637530Z From https://github.com/UniXNU/VirtioMmioBlock
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.1646000Z  * branch            8ee3a5ab5a3726b0641990228346aec338246eaf -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.1868290Z Submodule path 'drivers/VirtioMmioBlock': checked out '8ee3a5ab5a3726b0641990228346aec338246eaf'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.2236070Z Submodule path 'drivers/VirtioMmioConsole': checked out '70253216890b2afcaa6333948726f896f84fc757'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.2622260Z Submodule path 'kits/AdrenoFirmware': checked out '20ad3d7aca14bd46aecab6335c780f5413fa054b'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.2978760Z Submodule path 'kits/AdrenoPM4': checked out '282606b528b2595bc4274ea7490b62b323f35a5f'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:38.3535020Z Submodule path 'kits/AirNir': checked out 'b356371a74cd158c2902f4886f373ebb0f833a36'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:39.3620520Z From https://github.com/UniXNU/ArmSmmu4K
+kernel	Run actions/checkout@v4	2026-11-18T02:44:39.3621550Z  * branch            3ba92451bd44bb742d11758fbfcd3a446ecad685 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:39.3835550Z Submodule path 'kits/ArmSmmu4K': checked out '3ba92451bd44bb742d11758fbfcd3a446ecad685'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:40.2677080Z From https://github.com/UniXNU/VerifiedRoot
+kernel	Run actions/checkout@v4	2026-11-18T02:44:40.2679590Z  * branch            def026642c6c6e71be0dea267d989df1d29ddc64 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:40.2881490Z Submodule path 'kits/VerifiedRoot': checked out 'def026642c6c6e71be0dea267d989df1d29ddc64'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.2394690Z From https://github.com/UniXNU/XnuPrelink
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.2395750Z  * branch            f876e3ee62e18fc06653dd75ed7dafcfb3950ac0 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.2589800Z Submodule path 'kits/XnuPrelink': checked out 'f876e3ee62e18fc06653dd75ed7dafcfb3950ac0'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.2704500Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.3561970Z Entering 'drivers/Adreno740'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.3738970Z Entering 'drivers/AdrenoMetal'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.3906520Z Entering 'drivers/AppleKeyStoreState'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4071250Z Entering 'drivers/ArmCpu'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4238040Z Entering 'drivers/ArmDTPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4401300Z Entering 'drivers/ArmVirtPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4570650Z Entering 'drivers/DarwinBoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4728050Z Entering 'drivers/GopFramebuffer'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.4931540Z Entering 'drivers/QcomGeniSpi'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.5113430Z Entering 'drivers/RamBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.5291960Z Entering 'drivers/SoftwareAES'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.5526760Z Entering 'drivers/VirtioMmioBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.5747270Z Entering 'drivers/VirtioMmioConsole'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.5946870Z Entering 'kits/AdrenoFirmware'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.6138780Z Entering 'kits/AdrenoPM4'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.6314880Z Entering 'kits/AirNir'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.6659520Z Entering 'kits/ArmSmmu4K'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.6960450Z Entering 'kits/VerifiedRoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.7410110Z Entering 'kits/XnuPrelink'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.7718770Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.7832420Z [command]/opt/homebrew/bin/git log -1 --format=%H
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.7926240Z 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.8015180Z ##[group]Removing auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.8021750Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.8154430Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.9390580Z Entering 'drivers/Adreno740'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.9659470Z Entering 'drivers/AdrenoMetal'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:41.9909470Z Entering 'drivers/AppleKeyStoreState'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.0139260Z Entering 'drivers/ArmCpu'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.0349710Z Entering 'drivers/ArmDTPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.0571500Z Entering 'drivers/ArmVirtPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.0774500Z Entering 'drivers/DarwinBoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.0988390Z Entering 'drivers/GopFramebuffer'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.1188450Z Entering 'drivers/QcomGeniSpi'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.1397810Z Entering 'drivers/RamBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.1604180Z Entering 'drivers/SoftwareAES'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.1811280Z Entering 'drivers/VirtioMmioBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2022860Z Entering 'drivers/VirtioMmioConsole'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2226790Z Entering 'kits/AdrenoFirmware'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2435510Z Entering 'kits/AdrenoPM4'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2627540Z Entering 'kits/AirNir'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2794560Z Entering 'kits/ArmSmmu4K'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.2968730Z Entering 'kits/VerifiedRoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.3129920Z Entering 'kits/XnuPrelink'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.3722640Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.3727280Z http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.3733500Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.3734990Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.4419760Z Entering 'drivers/Adreno740'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.4529070Z Entering 'drivers/AdrenoMetal'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.4685990Z Entering 'drivers/AppleKeyStoreState'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.4848870Z Entering 'drivers/ArmCpu'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.5009700Z Entering 'drivers/ArmDTPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.5289280Z Entering 'drivers/ArmVirtPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.5492580Z Entering 'drivers/DarwinBoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.5669220Z Entering 'drivers/GopFramebuffer'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.5833390Z Entering 'drivers/QcomGeniSpi'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6000150Z Entering 'drivers/RamBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6159760Z Entering 'drivers/SoftwareAES'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6326490Z Entering 'drivers/VirtioMmioBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6494760Z Entering 'drivers/VirtioMmioConsole'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6652770Z Entering 'kits/AdrenoFirmware'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6816830Z Entering 'kits/AdrenoPM4'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.6975580Z Entering 'kits/AirNir'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.7138030Z Entering 'kits/ArmSmmu4K'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.7301330Z Entering 'kits/VerifiedRoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.7462910Z Entering 'kits/XnuPrelink'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.7640000Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.7692350Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8320250Z Entering 'drivers/Adreno740'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8404840Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/Adreno740/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8456000Z Entering 'drivers/AdrenoMetal'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8533640Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AdrenoMetal/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8583650Z Entering 'drivers/AppleKeyStoreState'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8664750Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AppleKeyStoreState/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8713190Z Entering 'drivers/ArmCpu'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8791750Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmCpu/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8843740Z Entering 'drivers/ArmDTPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8922390Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmDTPlatform/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.8972170Z Entering 'drivers/ArmVirtPlatform'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9057490Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmVirtPlatform/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9118340Z Entering 'drivers/DarwinBoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9198310Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/DarwinBoot/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9247220Z Entering 'drivers/GopFramebuffer'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9324510Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/GopFramebuffer/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9376110Z Entering 'drivers/QcomGeniSpi'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9460160Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/QcomGeniSpi/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9508160Z Entering 'drivers/RamBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9582110Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/RamBlock/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9631380Z Entering 'drivers/SoftwareAES'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9715220Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/SoftwareAES/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9763580Z Entering 'drivers/VirtioMmioBlock'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9840780Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioBlock/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9895330Z Entering 'drivers/VirtioMmioConsole'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:42.9981120Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioConsole/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0030140Z Entering 'kits/AdrenoFirmware'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0105320Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoFirmware/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0155530Z Entering 'kits/AdrenoPM4'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0245760Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoPM4/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0296160Z Entering 'kits/AirNir'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0371840Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AirNir/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0424600Z Entering 'kits/ArmSmmu4K'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0512820Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/ArmSmmu4K/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0561800Z Entering 'kits/VerifiedRoot'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0636750Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/VerifiedRoot/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0688430Z Entering 'kits/XnuPrelink'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0772960Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/XnuPrelink/config	remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0832410Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/Adreno740/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0880670Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AdrenoMetal/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0930130Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AppleKeyStoreState/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.0987610Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmCpu/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1038700Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmDTPlatform/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1085440Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmVirtPlatform/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1131310Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/DarwinBoot/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1179920Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/GopFramebuffer/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1238840Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/QcomGeniSpi/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1290270Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/RamBlock/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1341400Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/SoftwareAES/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1393270Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioBlock/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1443990Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioConsole/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1495520Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoFirmware/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1557370Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoPM4/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1617110Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AirNir/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1673060Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/ArmSmmu4K/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1726740Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/VerifiedRoot/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1790640Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/XnuPrelink/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.1849560Z ##[endgroup]
+kernel	Run actions/checkout@v4	﻿2026-11-18T02:44:43.2142050Z ##[group]Run actions/checkout@v4
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2142260Z with:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2142390Z   repository: Droid-VM/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2142610Z   ref: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2142820Z   path: UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2142990Z   submodules: recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2143160Z   persist-credentials: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2144980Z   token: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145110Z   ssh-strict: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145250Z   ssh-user: git
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145370Z   clean: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145520Z   sparse-checkout-cone-mode: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145700Z   fetch-depth: 1
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145830Z   fetch-tags: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2145980Z   show-progress: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146120Z   lfs: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146250Z   set-safe-directory: true
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146440Z   allow-unsafe-pr-checkout: false
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146600Z env:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146710Z   BOARD: droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2146910Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2147160Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2147420Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2147690Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2149570Z   GITHUB_TOKEN: ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.2149700Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.3996280Z Syncing repository: Droid-VM/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.3996830Z ##[group]Getting Git version info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.3997380Z Working directory is '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4002310Z [command]/opt/homebrew/bin/git version
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4075240Z git version 2.56.0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4091450Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4100250Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/bd36e27c-4bc3-4f24-a324-fe34fb35f294/.gitconfig'
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4110860Z Temporarily overriding HOME='/Users/runner/work/_temp/bd36e27c-4bc3-4f24-a324-fe34fb35f294' before making global git config changes
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4111700Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4114470Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4181570Z ##[group]Initializing the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4185100Z [command]/opt/homebrew/bin/git init /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4290440Z hint: Using 'master' as the name for the initial branch. This default branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4375760Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4378490Z hint: to use in all of your new repositories, which will suppress this warning,
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4379100Z hint: call:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4379360Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4379730Z hint: 	git config --global init.defaultBranch <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4380980Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4384240Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4384800Z hint: 'development'. The just-created branch can be renamed via this command:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4385300Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4385570Z hint: 	git branch -m <name>
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4385890Z hint:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4386280Z hint: Disable this message with "git config set advice.defaultBranchName false"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4387110Z Initialized empty Git repository in /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm/.git/
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4388060Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Droid-VM/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4388840Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4389180Z ##[group]Disabling automatic garbage collection
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4389760Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4455110Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4455510Z ##[group]Setting up auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4456540Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.4516420Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.5288940Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.5356910Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6024790Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6081980Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6721330Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6777380Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6778300Z ##[group]Fetching the repository
+kernel	Run actions/checkout@v4	2026-11-18T02:44:43.6782590Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2003540Z From https://github.com/Droid-VM/UniXNU-droidvm
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2005400Z  * branch            b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13 -> FETCH_HEAD
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2007790Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2008560Z ##[group]Determining the checkout info
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2009970Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2021440Z [command]/opt/homebrew/bin/git sparse-checkout disable
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2160530Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2249730Z ##[group]Checking out the ref
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2253950Z [command]/opt/homebrew/bin/git checkout --progress --force b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2640520Z HEAD is now at b8e5279 Display: GopFramebuffer's half-float offers and generated leaves (upstream feat/ipados27-gpu-parity)
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.2943520Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.3044820Z ##[group]Setting up auth for fetching submodules
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.3149610Z [command]/opt/homebrew/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.3452630Z [command]/opt/homebrew/bin/git config --global --unset-all url.https://github.com/.insteadOf
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.3700770Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.3903070Z [command]/opt/homebrew/bin/git config --global --add url.https://github.com/.insteadOf org-30546701@github.com:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.4208260Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.4308410Z ##[group]Fetching submodules
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.4409380Z [command]/opt/homebrew/bin/git submodule sync --recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.4466800Z [command]/opt/homebrew/bin/git -c protocol.version=2 submodule update --init --force --depth=1 --recursive
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.5429850Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local gc.auto 0
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6202600Z ##[endgroup]
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6274630Z [command]/opt/homebrew/bin/git log -1 --format=%H
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6328930Z b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6336210Z ##[group]Removing auth
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6339580Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.6393140Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.7199730Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.7253350Z http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.7259660Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.7320470Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.7997590Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.8058990Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Run actions/checkout@v4	2026-11-18T02:44:44.9581140Z ##[endgroup]
+kernel	Run actions/setup-python@v5	﻿2026-11-18T02:44:44.9837750Z ##[group]Run actions/setup-python@v5
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9837960Z with:
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9838090Z   python-version: 3.13
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9838240Z   check-latest: false
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9839890Z   token: ***
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840020Z   update-environment: true
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840190Z   allow-prereleases: false
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840540Z   freethreaded: false
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840680Z env:
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840790Z   BOARD: droidvm
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9840960Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9841220Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9841490Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9841760Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9843460Z   GITHUB_TOKEN: ***
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:44.9843600Z ##[endgroup]
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:45.1603290Z ##[group]Installed versions
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:45.1735990Z (node:4446) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:45.1738120Z Successfully set up CPython (3.13.17)
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:45.1738470Z (Use `node --trace-deprecation ...` to show where the warning was created)
+kernel	Run actions/setup-python@v5	2026-11-18T02:44:45.1738970Z ##[endgroup]
+kernel	Toolchain	﻿2026-11-18T02:44:45.1849640Z ##[group]Run set -euo pipefail
+kernel	Toolchain	2026-11-18T02:44:45.1850070Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Toolchain	2026-11-18T02:44:45.1850440Z ^[[36;1mbrew install llvm dtc mtools gnu-sed pkg-config meson bison flex xz^[[0m
+kernel	Toolchain	2026-11-18T02:44:45.1851510Z ^[[36;1mecho "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"^[[0m
+kernel	Toolchain	2026-11-18T02:44:45.1852470Z ^[[36;1mecho "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"^[[0m
+kernel	Toolchain	2026-11-18T02:44:45.2050390Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Toolchain	2026-11-18T02:44:45.2050750Z env:
+kernel	Toolchain	2026-11-18T02:44:45.2050920Z   BOARD: droidvm
+kernel	Toolchain	2026-11-18T02:44:45.2051150Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Toolchain	2026-11-18T02:44:45.2051500Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Toolchain	2026-11-18T02:44:45.2051880Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Toolchain	2026-11-18T02:44:45.2052240Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Toolchain	2026-11-18T02:44:45.2054500Z   GITHUB_TOKEN: ***
+kernel	Toolchain	2026-11-18T02:44:45.2054810Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Toolchain	2026-11-18T02:44:45.2055660Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Toolchain	2026-11-18T02:44:45.2056180Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Toolchain	2026-11-18T02:44:45.2056590Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Toolchain	2026-11-18T02:44:45.2057140Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Toolchain	2026-11-18T02:44:45.2057610Z ##[endgroup]
+kernel	Toolchain	2026-11-18T02:44:47.1238310Z ^[[33mWarning:^[[0m pkgconf 3.0.10 is already installed and up-to-date.
+kernel	Toolchain	2026-11-18T02:44:47.1239080Z To reinstall 3.0.10, run:
+kernel	Toolchain	2026-11-18T02:44:47.1239380Z   brew reinstall pkgconf
+kernel	Toolchain	2026-11-18T02:44:47.1257320Z ^[[33mWarning:^[[0m xz 5.8.4 is already installed and up-to-date.
+kernel	Toolchain	2026-11-18T02:44:47.1257720Z To reinstall 5.8.4, run:
+kernel	Toolchain	2026-11-18T02:44:47.1258050Z   brew reinstall xz
+kernel	Toolchain	2026-11-18T02:44:47.9183050Z ^[[32m==>^[[0m ^[[1mDownloading bottle manifests^[[0m
+kernel	Toolchain	2026-11-18T02:44:47.9227330Z ✔︎ Bottle Manifest llvm (23.1.4)
+kernel	Toolchain	2026-11-18T02:44:47.9227800Z ✔︎ Bottle Manifest dtc (1.8.1)
+kernel	Toolchain	2026-11-18T02:44:47.9228250Z ✔︎ Bottle Manifest mtools (4.0.50)
+kernel	Toolchain	2026-11-18T02:44:47.9228530Z ✔︎ Bottle Manifest gnu-sed (4.10)
+kernel	Toolchain	2026-11-18T02:44:47.9228840Z ✔︎ Bottle Manifest meson (1.12.1)
+kernel	Toolchain	2026-11-18T02:44:47.9229200Z ✔︎ Bottle Manifest bison (3.8.2)
+kernel	Toolchain	2026-11-18T02:44:47.9229560Z ✔︎ Bottle Manifest flex (2.6.4_2)
+kernel	Toolchain	2026-11-18T02:44:47.9857660Z ^[[34m==>^[[0m ^[[1mWould install 7 formulae:^[[0m
+kernel	Toolchain	2026-11-18T02:44:47.9858030Z llvm     23.1.4
+kernel	Toolchain	2026-11-18T02:44:47.9858180Z dtc      1.8.1
+kernel	Toolchain	2026-11-18T02:44:47.9858340Z mtools   4.0.50
+kernel	Toolchain	2026-11-18T02:44:47.9858490Z gnu-sed  4.10
+kernel	Toolchain	2026-11-18T02:44:47.9858650Z meson    1.12.1
+kernel	Toolchain	2026-11-18T02:44:47.9858830Z bison    3.8.2
+kernel	Toolchain	2026-11-18T02:44:47.9858980Z flex     2.6.4_2
+kernel	Toolchain	2026-11-18T02:44:47.9860500Z ^[[34m==>^[[0m ^[[1mWould install 1 dependency for llvm:^[[0m
+kernel	Toolchain	2026-11-18T02:44:47.9860790Z z3 5.3.3
+kernel	Toolchain	2026-11-18T02:44:48.0816830Z ^[[32m==>^[[0m ^[[1mFetching downloads for: ^[[32mllvm^[[39m, ^[[32mdtc^[[39m, ^[[32mmtools^[[39m, ^[[32mgnu-sed^[[39m, ^[[32mmeson^[[39m, ^[[32mbison^[[39m and ^[[32mflex^[[39m^[[0m
+kernel	Toolchain	2026-11-18T02:44:51.6199840Z ✔︎ Bottle dtc (1.8.1)
+kernel	Toolchain	2026-11-18T02:44:51.6302710Z ✔︎ Bottle Manifest z3 (5.3.3)
+kernel	Toolchain	2026-11-18T02:44:52.1371860Z ✔︎ Bottle meson (1.12.1)
+kernel	Toolchain	2026-11-18T02:44:52.3506620Z ✔︎ Bottle gnu-sed (4.10)
+kernel	Toolchain	2026-11-18T02:44:52.4089660Z ✔︎ Bottle bison (3.8.2)
+kernel	Toolchain	2026-11-18T02:44:52.4191360Z ✔︎ Bottle mtools (4.0.50)
+kernel	Toolchain	2026-11-18T02:44:53.8750900Z ✔︎ Bottle flex (2.6.4_2)
+kernel	Toolchain	2026-11-18T02:44:54.1913880Z ✔︎ Bottle z3 (5.3.3)
+kernel	Toolchain	2026-11-18T02:44:59.8779120Z ✔︎ Bottle llvm (23.1.4)
+kernel	Toolchain	2026-11-18T02:44:59.9070520Z ^[[32m==>^[[0m ^[[1mInstalling llvm dependency: ^[[32mz3^[[39m (5.3.3)^[[0m
+kernel	Toolchain	2026-11-18T02:44:59.9250440Z ^[[34m==>^[[0m ^[[1mPouring z3--5.3.3.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:01.3429820Z 🍺  /opt/homebrew/Cellar/z3/5.3.3: 143 files, 44.9MB
+kernel	Toolchain	2026-11-18T02:45:01.3434750Z ^[[32m==>^[[0m ^[[1mInstalling ^[[32mllvm^[[39m^[[0m
+kernel	Toolchain	2026-11-18T02:45:01.3438070Z ^[[34m==>^[[0m ^[[1mPouring llvm--23.1.4.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:10.2513450Z 🍺  /opt/homebrew/Cellar/llvm/23.1.4: 9,338 files, 1.9GB
+kernel	Toolchain	2026-11-18T02:45:10.2627820Z ^[[34m==>^[[0m ^[[1mPouring dtc--1.8.1.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:11.3797360Z 🍺  /opt/homebrew/Cellar/dtc/1.8.1: 19 files, 588.2KB
+kernel	Toolchain	2026-11-18T02:45:11.3798620Z ^[[34m==>^[[0m ^[[1mPouring mtools--4.0.50.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:11.8807280Z 🍺  /opt/homebrew/Cellar/mtools/4.0.50: 69 files, 603.2KB
+kernel	Toolchain	2026-11-18T02:45:11.8815710Z ^[[34m==>^[[0m ^[[1mPouring gnu-sed--4.10.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:12.3547470Z 🍺  /opt/homebrew/Cellar/gnu-sed/4.10: 13 files, 664.5KB
+kernel	Toolchain	2026-11-18T02:45:12.3833240Z ^[[34m==>^[[0m ^[[1mPouring meson--1.12.1.all.bottle.1.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:13.0394460Z 🍺  /opt/homebrew/Cellar/meson/1.12.1: 269 files, 4.4MB
+kernel	Toolchain	2026-11-18T02:45:13.0405980Z ^[[34m==>^[[0m ^[[1mPouring bison--3.8.2.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:13.5541580Z 🍺  /opt/homebrew/Cellar/bison/3.8.2: 100 files, 3.9MB
+kernel	Toolchain	2026-11-18T02:45:13.5624820Z ^[[34m==>^[[0m ^[[1mPouring flex--2.6.4_2.arm64_tahoe.bottle.tar.gz^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6927020Z 🍺  /opt/homebrew/Cellar/flex/2.6.4_2: 47 files, 1.6MB
+kernel	Toolchain	2026-11-18T02:45:14.6930180Z ^[[32m==>^[[0m ^[[1mCaveats^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6930760Z Bash completion has been installed to:
+kernel	Toolchain	2026-11-18T02:45:14.6931090Z   /opt/homebrew/etc/bash_completion.d
+kernel	Toolchain	2026-11-18T02:45:14.6931550Z ^[[34m==>^[[0m ^[[1mllvm^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6931960Z CLANG_CONFIG_FILE_SYSTEM_DIR: /opt/homebrew/etc/clang
+kernel	Toolchain	2026-11-18T02:45:14.6932370Z CLANG_CONFIG_FILE_USER_DIR:   ~/.config/clang
+kernel	Toolchain	2026-11-18T02:45:14.6932570Z 
+kernel	Toolchain	2026-11-18T02:45:14.6932840Z LLD and LLDB are now provided in separate formulae:
+kernel	Toolchain	2026-11-18T02:45:14.6933310Z   brew install lld
+kernel	Toolchain	2026-11-18T02:45:14.6933560Z   brew install lldb
+kernel	Toolchain	2026-11-18T02:45:14.6933750Z 
+kernel	Toolchain	2026-11-18T02:45:14.6934000Z Z3 solver support will be removed in LLVM 24 as it is unsupported upstream,
+kernel	Toolchain	2026-11-18T02:45:14.6934670Z see https://github.com/llvm/llvm-project/pull/205370
+kernel	Toolchain	2026-11-18T02:45:14.6934960Z 
+kernel	Toolchain	2026-11-18T02:45:14.6935190Z Using `clang`, `clang++`, etc., requires a CLT installation at `/Library/Developer/CommandLineTools`.
+kernel	Toolchain	2026-11-18T02:45:14.6936260Z If you don't want to install the CLT, you can write appropriate configuration files pointing to your
+kernel	Toolchain	2026-11-18T02:45:14.6936790Z SDK at ~/.config/clang.
+kernel	Toolchain	2026-11-18T02:45:14.6937000Z 
+kernel	Toolchain	2026-11-18T02:45:14.6937240Z To use the bundled libunwind please use the following LDFLAGS:
+kernel	Toolchain	2026-11-18T02:45:14.6937680Z   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+kernel	Toolchain	2026-11-18T02:45:14.6937950Z 
+kernel	Toolchain	2026-11-18T02:45:14.6938210Z To use the bundled libc++ please use the following LDFLAGS:
+kernel	Toolchain	2026-11-18T02:45:14.6938910Z   LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -L/opt/homebrew/opt/llvm/lib/unwind -lunwind"
+kernel	Toolchain	2026-11-18T02:45:14.6939620Z Features newer than system libc++ will require the following define to enable
+kernel	Toolchain	2026-11-18T02:45:14.6940190Z (support for this may be removed in a future major LLVM release):
+kernel	Toolchain	2026-11-18T02:45:14.6940850Z   CPPFLAGS="-D_LIBCPP_DISABLE_AVAILABILITY"
+kernel	Toolchain	2026-11-18T02:45:14.6941090Z 
+kernel	Toolchain	2026-11-18T02:45:14.6941450Z NOTE: You probably want to use the libunwind and libc++ provided by macOS unless you know what you're doing.
+kernel	Toolchain	2026-11-18T02:45:14.6948890Z 
+kernel	Toolchain	2026-11-18T02:45:14.6949090Z llvm is keg-only, which means it was not symlinked into /opt/homebrew,
+kernel	Toolchain	2026-11-18T02:45:14.6949620Z because macOS already provides this software and installing another version in
+kernel	Toolchain	2026-11-18T02:45:14.6950090Z parallel can cause all kinds of trouble.
+kernel	Toolchain	2026-11-18T02:45:14.6950340Z 
+kernel	Toolchain	2026-11-18T02:45:14.6950570Z If you need to have llvm first in your PATH, run:
+kernel	Toolchain	2026-11-18T02:45:14.6951150Z   printf '%s\n' export\ PATH\=/opt/homebrew/opt/llvm/bin:\$PATH >> /Users/runner/.bash_profile
+kernel	Toolchain	2026-11-18T02:45:14.6951460Z 
+kernel	Toolchain	2026-11-18T02:45:14.6951660Z For compilers to find llvm you may need to set:
+kernel	Toolchain	2026-11-18T02:45:14.6952660Z   export LDFLAGS=-L/opt/homebrew/opt/llvm/lib
+kernel	Toolchain	2026-11-18T02:45:14.6952930Z   export CPPFLAGS=-I/opt/homebrew/opt/llvm/include
+kernel	Toolchain	2026-11-18T02:45:14.6953210Z 
+kernel	Toolchain	2026-11-18T02:45:14.6953300Z For cmake to find llvm you may need to set:
+kernel	Toolchain	2026-11-18T02:45:14.6954080Z   export CMAKE_PREFIX_PATH=/opt/homebrew/opt/llvm
+kernel	Toolchain	2026-11-18T02:45:14.6954440Z ^[[34m==>^[[0m ^[[1mgnu-sed^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6954760Z GNU "sed" has been installed as "gsed".
+kernel	Toolchain	2026-11-18T02:45:14.6955120Z If you need to use it as "sed", you can add a "gnubin" directory
+kernel	Toolchain	2026-11-18T02:45:14.6955570Z to your PATH from your bashrc like:
+kernel	Toolchain	2026-11-18T02:45:14.6955720Z 
+kernel	Toolchain	2026-11-18T02:45:14.6955900Z     PATH="/opt/homebrew/opt/gnu-sed/libexec/gnubin:$PATH"
+kernel	Toolchain	2026-11-18T02:45:14.6956310Z ^[[34m==>^[[0m ^[[1mbison^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6956650Z bison is keg-only, which means it was not symlinked into /opt/homebrew,
+kernel	Toolchain	2026-11-18T02:45:14.6957210Z because macOS already provides this software and installing another version in
+kernel	Toolchain	2026-11-18T02:45:14.6957680Z parallel can cause all kinds of trouble.
+kernel	Toolchain	2026-11-18T02:45:14.6957900Z 
+kernel	Toolchain	2026-11-18T02:45:14.6958000Z If you need to have bison first in your PATH, run:
+kernel	Toolchain	2026-11-18T02:45:14.6958550Z   printf '%s\n' export\ PATH\=/opt/homebrew/opt/bison/bin:\$PATH >> /Users/runner/.bash_profile
+kernel	Toolchain	2026-11-18T02:45:14.6958940Z 
+kernel	Toolchain	2026-11-18T02:45:14.6959090Z For compilers to find bison you may need to set:
+kernel	Toolchain	2026-11-18T02:45:14.6959420Z   export LDFLAGS=-L/opt/homebrew/opt/bison/lib
+kernel	Toolchain	2026-11-18T02:45:14.6959860Z ^[[34m==>^[[0m ^[[1mflex^[[0m
+kernel	Toolchain	2026-11-18T02:45:14.6960180Z flex is keg-only, which means it was not symlinked into /opt/homebrew,
+kernel	Toolchain	2026-11-18T02:45:14.6960760Z because macOS already provides this software and installing another version in
+kernel	Toolchain	2026-11-18T02:45:14.6961170Z parallel can cause all kinds of trouble.
+kernel	Toolchain	2026-11-18T02:45:14.6961330Z 
+kernel	Toolchain	2026-11-18T02:45:14.6961440Z If you need to have flex first in your PATH, run:
+kernel	Toolchain	2026-11-18T02:45:14.6961840Z   printf '%s\n' export\ PATH\=/opt/homebrew/opt/flex/bin:\$PATH >> /Users/runner/.bash_profile
+kernel	Toolchain	2026-11-18T02:45:14.6962130Z 
+kernel	Toolchain	2026-11-18T02:45:14.6962320Z For compilers to find flex you may need to set:
+kernel	Toolchain	2026-11-18T02:45:14.6962610Z   export LDFLAGS=-L/opt/homebrew/opt/flex/lib
+kernel	Toolchain	2026-11-18T02:45:14.6962870Z   export CPPFLAGS=-I/opt/homebrew/opt/flex/include
+kernel	Apply the overlay	﻿2026-11-18T02:45:14.7835520Z ##[group]Run set -euo pipefail
+kernel	Apply the overlay	2026-11-18T02:45:14.7835820Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7836550Z ^[[36;1mmkdir -p UniXNU-droidvm/patches/xnu UniXNU-droidvm/drivers^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7837000Z ^[[36;1mcp ci/overlay/$BOARD/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/ || true^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7837570Z ^[[36;1mcp -R ci/overlay/$BOARD/drivers/. UniXNU-droidvm/drivers/^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7838370Z ^[[36;1mcp -R ci/overlay/$BOARD/scripts/. UniXNU-droidvm/scripts/^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7839770Z ^[[36;1mcp -n UniXNU/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/ || true^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7841310Z ^[[36;1mcp -R UniXNU-droidvm device-ref^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7842340Z ^[[36;1mpython3 ci/scripts/make-reference-device.py device-ref "${BOARD}_defconfig"^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7843390Z ^[[36;1mpython3 ci/scripts/apply-overlay-board.py UniXNU-droidvm "${BOARD}_defconfig"^[[0m
+kernel	Apply the overlay	2026-11-18T02:45:14.7934110Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Apply the overlay	2026-11-18T02:45:14.7935150Z env:
+kernel	Apply the overlay	2026-11-18T02:45:14.7935520Z   BOARD: droidvm
+kernel	Apply the overlay	2026-11-18T02:45:14.7937010Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Apply the overlay	2026-11-18T02:45:14.7937710Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Apply the overlay	2026-11-18T02:45:14.7938750Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Apply the overlay	2026-11-18T02:45:14.7939330Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Apply the overlay	2026-11-18T02:45:14.7943940Z   GITHUB_TOKEN: ***
+kernel	Apply the overlay	2026-11-18T02:45:14.7944680Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Apply the overlay	2026-11-18T02:45:14.7945710Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Apply the overlay	2026-11-18T02:45:14.7946240Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Apply the overlay	2026-11-18T02:45:14.7946790Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Apply the overlay	2026-11-18T02:45:14.7947160Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Apply the overlay	2026-11-18T02:45:14.7947620Z ##[endgroup]
+kernel	Apply the overlay	2026-11-18T02:45:15.3057900Z dropped archive builders:
+kernel	Apply the overlay	2026-11-18T02:45:15.3058400Z   "audit-storage-interface-static.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3058930Z   "build-verified-root-probe.py --component os --include-systemos",
+kernel	Apply the overlay	2026-11-18T02:45:15.3059530Z   "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
+kernel	Apply the overlay	2026-11-18T02:45:15.3060310Z   "build-native-virtio-bindings.py --component NativeVirtioBlock --directory build/native-virtio-block-verified-bundle",
+kernel	Apply the overlay	2026-11-18T02:45:15.3060970Z   "build-arm-driver.py NativeRamBlock",
+kernel	Apply the overlay	2026-11-18T02:45:15.3061480Z   "build-native-virtio-bindings.py --component NativeRamBlock --directory build/ram-block",
+kernel	Apply the overlay	2026-11-18T02:45:15.3061960Z   "build-droidvm-gpu.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3062350Z   "build-native-legacy-display.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3062650Z kept:
+kernel	Apply the overlay	2026-11-18T02:45:15.3062960Z   "build-corecrypto-14.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3063320Z   "build-corecrypto-14.py --namespace",
+kernel	Apply the overlay	2026-11-18T02:45:15.3063660Z   "build-arm-driver.py ArmDTPlatform",
+kernel	Apply the overlay	2026-11-18T02:45:15.3064100Z   "build-arm-driver.py ArmCpu",
+kernel	Apply the overlay	2026-11-18T02:45:15.3064450Z   "build-arm-driver.py NativeAES",
+kernel	Apply the overlay	2026-11-18T02:45:15.3064770Z   "build-native-aes-bindings.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3065070Z   "build-libpthread-kernel.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3380830Z archives added: "build-virtio-pci-drivers.py",
+kernel	Apply the overlay	2026-11-18T02:45:15.3381970Z CONFIG_XNU_EXTRA_LD_ARCHIVES: -Wl,-force_load,{tree}/build/virtio-pci/libVirtioPciDrivers.a
+kernel	Take the display driver from the iPadOS branch	﻿2026-11-18T02:45:15.3445440Z ##[group]Run set -euo pipefail
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3445720Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3446030Z ^[[36;1mcd UniXNU-droidvm^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3446280Z ^[[36;1mgit fetch --depth=1 origin "$DISPLAY_REF"^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3446910Z ^[[36;1mfiles=$(git ls-tree --name-only FETCH_HEAD package/ | grep -E '/DroidVMVirtioGpu[^/]*$' || true)^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3456410Z ^[[36;1mfor f in $files; do git show "FETCH_HEAD:$f" > "$f"; echo "took $f"; done^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3456760Z ^[[36;1mcd ..^[[0m
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3496370Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3496650Z env:
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3496790Z   BOARD: droidvm
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3496990Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3497250Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3497550Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3497840Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3500030Z   GITHUB_TOKEN: ***
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3500280Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3500710Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3501120Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3501480Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3501860Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:15.3502300Z ##[endgroup]
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.1626330Z From https://github.com/Droid-VM/UniXNU-droidvm
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.1628030Z  * branch            3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff -> FETCH_HEAD
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.1911870Z took package/DroidVMVirtioGpu.cpp
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.1993050Z took package/DroidVMVirtioGpu.h
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.2076750Z took package/DroidVMVirtioGpu3D.cpp
+kernel	Take the display driver from the iPadOS branch	2026-11-18T02:45:16.2157830Z took package/DroidVMVirtioGpuDisplay.cpp
+kernel	Patch the display source (pump, probe, -Werror fixes)	﻿2026-11-18T02:45:16.2197540Z ##[group]Run set -euo pipefail
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2197780Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2198060Z ^[[36;1mpython3 self/scripts/patch-display-source.py^[[0m
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2198540Z ^[[36;1mgrep -n 'droidvmPump->setTimeoutMS' UniXNU/drivers/GopFramebuffer/NativeLegacyDisplay.cpp | head -3^[[0m
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2238550Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2238850Z env:
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2239040Z   BOARD: droidvm
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2239240Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2239670Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2240000Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2240300Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2242310Z   GITHUB_TOKEN: ***
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2242670Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2243090Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2243610Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2243990Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2244360Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.2244680Z ##[endgroup]
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3665110Z virtio-3D warning rewrites: 1
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3666430Z pump installed
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3667310Z   startDroidvmPump calls: 2
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3667590Z   setTimeoutMS(16) count: 2
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3667840Z   re-arm line present:   True
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3668160Z selector-shape probe installed; lie mask from legacy-lie=<hex>
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3763170Z 468:        if(self->droidvmPump)self->droidvmPump->setTimeoutMS(16);
+kernel	Patch the display source (pump, probe, -Werror fixes)	2026-11-18T02:45:16.3764240Z 476:        droidvmPump->setTimeoutMS(16);
+kernel	Build the reference candidate	﻿2026-11-18T02:45:16.3796080Z ##[group]Run set -o pipefail
+kernel	Build the reference candidate	2026-11-18T02:45:16.3796350Z ^[[36;1mset -o pipefail^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3796700Z ^[[36;1m./unixnu defconfig "${BOARD}_defconfig" -D ../device-ref 2>&1 | tee "$RUNNER_TEMP/ref.log"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3797130Z ^[[36;1m./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3797540Z ^[[36;1m./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ref.log"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3797940Z ^[[36;1m./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee "$RUNNER_TEMP/ref-kernel.log"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3798310Z ^[[36;1mmkdir -p "$RUNNER_TEMP/ref"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3798720Z ^[[36;1mcp "out/$BOARD/kernel/kernel.macho" "out/$BOARD/kernel/kernel.json" "$RUNNER_TEMP/ref/"^[[0m
+kernel	Build the reference candidate	2026-11-18T02:45:16.3834310Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Build the reference candidate	2026-11-18T02:45:16.3834610Z env:
+kernel	Build the reference candidate	2026-11-18T02:45:16.3834760Z   BOARD: droidvm
+kernel	Build the reference candidate	2026-11-18T02:45:16.3835010Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Build the reference candidate	2026-11-18T02:45:16.3835300Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Build the reference candidate	2026-11-18T02:45:16.3835660Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Build the reference candidate	2026-11-18T02:45:16.3835950Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Build the reference candidate	2026-11-18T02:45:16.3837910Z   GITHUB_TOKEN: ***
+kernel	Build the reference candidate	2026-11-18T02:45:16.3838180Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the reference candidate	2026-11-18T02:45:16.3838610Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Build the reference candidate	2026-11-18T02:45:16.3839060Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the reference candidate	2026-11-18T02:45:16.3839560Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the reference candidate	2026-11-18T02:45:16.3839930Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the reference candidate	2026-11-18T02:45:16.3840220Z ##[endgroup]
+kernel	Build the reference candidate	2026-11-18T02:45:16.7635300Z == configuration droidvm_defconfig -> /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/.config
+kernel	Build the reference candidate	2026-11-18T02:45:16.8599110Z == submodules /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU
+kernel	Build the reference candidate	2026-11-18T02:45:17.4370460Z == fetch https://github.com/apple-oss-distributions/xnu.git d8b80295118e
+kernel	Build the reference candidate	2026-11-18T02:45:17.4786540Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/xnu-0b4b910d fetch -q --depth 1 origin d8b80295118ef25ac3a784134bcf95cd8e88109f
+kernel	Build the reference candidate	2026-11-18T02:45:20.6217230Z == fetch https://github.com/apple-oss-distributions/libplatform.git a00a4cc36da2
+kernel	Build the reference candidate	2026-11-18T02:45:20.6456680Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/libplatform-08d11127 fetch -q --depth 1 origin a00a4cc36da2110578bcf3b8eeeeb93dcc7f4e11
+kernel	Build the reference candidate	2026-11-18T02:45:21.1824440Z == fetch https://github.com/apple-oss-distributions/libdispatch.git 30fe6a7d9453
+kernel	Build the reference candidate	2026-11-18T02:45:21.2088190Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/libdispatch-50d3508d fetch -q --depth 1 origin 30fe6a7d945340ce69cef121132f049e810089a5
+kernel	Build the reference candidate	2026-11-18T02:45:21.8473220Z == fetch https://github.com/apple-oss-distributions/AvailabilityVersions.git 933f9360f1b7
+kernel	Build the reference candidate	2026-11-18T02:45:21.8701110Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/AvailabilityVersions-1c8ff76f fetch -q --depth 1 origin 933f9360f1b70dfbda5548386a3d65e0358b4f7d
+kernel	Build the reference candidate	2026-11-18T02:45:22.3564890Z == fetch https://github.com/microsoft/mu_basecore.git cfb93724a06f
+kernel	Build the reference candidate	2026-11-18T02:45:22.3800110Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb fetch -q --depth 1 origin cfb93724a06ff86ff5ba971413368a7809ee42a5
+kernel	Build the reference candidate	2026-11-18T02:45:28.5857010Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb submodule update --init --depth 1 -- MdePkg/Library/BaseFdtLib/libfdt MdePkg/Library/MipiSysTLib/mipisyst BaseTools/Source/C/BrotliCompress/brotli MdeModulePkg/Library/BrotliCustomDecompressLib/brotli SecurityPkg/DeviceSecurity/SpdmLib/libspdm
+kernel	Build the reference candidate	2026-11-18T02:45:28.6603290Z Submodule 'BaseTools/Source/C/BrotliCompress/brotli' (https://github.com/google/brotli) registered for path 'BaseTools/Source/C/BrotliCompress/brotli'
+kernel	Build the reference candidate	2026-11-18T02:45:28.6608590Z Submodule 'MdeModulePkg/Library/BrotliCustomDecompressLib/brotli' (https://github.com/google/brotli) registered for path 'MdeModulePkg/Library/BrotliCustomDecompressLib/brotli'
+kernel	Build the reference candidate	2026-11-18T02:45:28.6614490Z Submodule 'MdePkg/Library/BaseFdtLib/libfdt' (https://github.com/devicetree-org/pylibfdt.git) registered for path 'MdePkg/Library/BaseFdtLib/libfdt'
+kernel	Build the reference candidate	2026-11-18T02:45:28.6620120Z Submodule 'MdePkg/Library/MipiSysTLib/mipisyst' (https://github.com/MIPI-Alliance/public-mipi-sys-t.git) registered for path 'MdePkg/Library/MipiSysTLib/mipisyst'
+kernel	Build the reference candidate	2026-11-18T02:45:28.6626040Z Submodule 'SecurityPkg/DeviceSecurity/SpdmLib/libspdm' (https://github.com/DMTF/libspdm.git) registered for path 'SecurityPkg/DeviceSecurity/SpdmLib/libspdm'
+kernel	Build the reference candidate	2026-11-18T02:45:28.6766620Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb/BaseTools/Source/C/BrotliCompress/brotli'...
+kernel	Build the reference candidate	2026-11-18T02:45:29.7796860Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli'...
+kernel	Build the reference candidate	2026-11-18T02:45:31.1008690Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb/MdePkg/Library/BaseFdtLib/libfdt'...
+kernel	Build the reference candidate	2026-11-18T02:45:31.5558010Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb/MdePkg/Library/MipiSysTLib/mipisyst'...
+kernel	Build the reference candidate	2026-11-18T02:45:32.0602630Z Cloning into '/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/mu_basecore-89034cbb/SecurityPkg/DeviceSecurity/SpdmLib/libspdm'...
+kernel	Build the reference candidate	2026-11-18T02:45:34.5767670Z From https://github.com/google/brotli
+kernel	Build the reference candidate	2026-11-18T02:45:34.5769160Z  * branch            e230f474b87134e8c6c85b630084c612057f253e -> FETCH_HEAD
+kernel	Build the reference candidate	2026-11-18T02:45:34.7514250Z Submodule path 'BaseTools/Source/C/BrotliCompress/brotli': checked out 'e230f474b87134e8c6c85b630084c612057f253e'
+kernel	Build the reference candidate	2026-11-18T02:45:36.2239110Z From https://github.com/google/brotli
+kernel	Build the reference candidate	2026-11-18T02:45:36.2339830Z  * branch            e230f474b87134e8c6c85b630084c612057f253e -> FETCH_HEAD
+kernel	Build the reference candidate	2026-11-18T02:45:36.4318110Z Submodule path 'MdeModulePkg/Library/BrotliCustomDecompressLib/brotli': checked out 'e230f474b87134e8c6c85b630084c612057f253e'
+kernel	Build the reference candidate	2026-11-18T02:45:37.3672600Z From https://github.com/devicetree-org/pylibfdt
+kernel	Build the reference candidate	2026-11-18T02:45:37.3673200Z  * branch            cfff805481bdea27f900c32698171286542b8d3c -> FETCH_HEAD
+kernel	Build the reference candidate	2026-11-18T02:45:37.4172050Z Submodule path 'MdePkg/Library/BaseFdtLib/libfdt': checked out 'cfff805481bdea27f900c32698171286542b8d3c'
+kernel	Build the reference candidate	2026-11-18T02:45:38.1935130Z From https://github.com/MIPI-Alliance/public-mipi-sys-t
+kernel	Build the reference candidate	2026-11-18T02:45:38.1939980Z  * branch            370b5944c046bab043dd8b133727b2135af7747a -> FETCH_HEAD
+kernel	Build the reference candidate	2026-11-18T02:45:38.2709640Z Submodule path 'MdePkg/Library/MipiSysTLib/mipisyst': checked out '370b5944c046bab043dd8b133727b2135af7747a'
+kernel	Build the reference candidate	2026-11-18T02:45:39.7576340Z From https://github.com/DMTF/libspdm
+kernel	Build the reference candidate	2026-11-18T02:45:39.7576990Z  * branch            f55cf6d48ec69b4ac60a63903e9c6a2cb0fd155d -> FETCH_HEAD
+kernel	Build the reference candidate	2026-11-18T02:45:40.2427260Z Submodule path 'SecurityPkg/DeviceSecurity/SpdmLib/libspdm': checked out 'f55cf6d48ec69b4ac60a63903e9c6a2cb0fd155d'
+kernel	Build the reference candidate	2026-11-18T02:45:40.2571780Z == fetch https://github.com/apple-oss-distributions/libpthread.git c0e60fb5ecfc
+kernel	Build the reference candidate	2026-11-18T02:45:40.3323780Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/libpthread-67dc7894 fetch -q --depth 1 origin c0e60fb5ecfc54cf379c261d3f9572cc22ded891
+kernel	Build the reference candidate	2026-11-18T02:45:40.9423630Z == fetch https://github.com/ONLYA/corecrypto-2023.git 11fba65b12d8
+kernel	Build the reference candidate	2026-11-18T02:45:40.9785530Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/corecrypto-2023-5ef10490 fetch -q --depth 1 origin 11fba65b12d8830630e248dfa8344caf8b065f26
+kernel	Build the reference candidate	2026-11-18T02:45:43.1954240Z == fetch https://github.com/apple-oss-distributions/IOStorageFamily.git e45fbe30a787
+kernel	Build the reference candidate	2026-11-18T02:45:43.2190670Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/IOStorageFamily-481af486 fetch -q --depth 1 origin e45fbe30a7879e0b16e26dddb78538f1b00e0bff
+kernel	Build the reference candidate	2026-11-18T02:45:43.9547420Z == fetch https://github.com/UniXNU/ShengHidInput.git 5f3a37cec0c3
+kernel	Build the reference candidate	2026-11-18T02:45:43.9853650Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/ShengHidInput-cbba9824 fetch -q --depth 1 origin 5f3a37cec0c3fc4234b10726b25489a55f0d77ef
+kernel	Build the reference candidate	2026-11-18T02:45:44.4605230Z == fetch https://github.com/Droid-VM/ownervisor.git 65fc2c7037f4
+kernel	Build the reference candidate	2026-11-18T02:45:44.4857170Z + git -C /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/feeds/ownervisor-48025ab2 fetch -q --depth 1 origin 65fc2c7037f494a238f4263f528a68ff21e87406
+kernel	Build the reference candidate	2026-11-18T02:45:45.0058270Z == wrote /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/device-ref/unixnu.lock
+kernel	Build the reference candidate	2026-11-18T02:45:45.1343690Z == ipsw: remote https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+kernel	Build the reference candidate	2026-11-18T02:45:47.7269660Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/kernelcache.decompressed
+kernel	Build the reference candidate	2026-11-18T02:45:47.7295160Z == ipsw: extracting DeviceTree (Firmware/all_flash/DeviceTree.j120ap.im4p, 0 MiB)
+kernel	Build the reference candidate	2026-11-18T02:45:48.2561020Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/DeviceTree.j120ap.im4p
+kernel	Build the reference candidate	2026-11-18T02:45:48.2632610Z == ipsw: extracting StaticTrustCache (Firmware/044-76040-038.dmg.trustcache, 0 MiB)
+kernel	Build the reference candidate	2026-11-18T02:45:48.2634330Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-76040-038.dmg.trustcache
+kernel	Build the reference candidate	2026-11-18T02:45:48.2635070Z == ipsw: extracting Cryptex1,SystemTrustCache (Firmware/044-76034-038.dmg.trustcache, 0 MiB)
+kernel	Build the reference candidate	2026-11-18T02:45:48.2635800Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-76034-038.dmg.trustcache
+kernel	Build the reference candidate	2026-11-18T02:45:48.2636510Z == ipsw: extracting Cryptex1,AppOS (044-75188-038.dmg, 10 MiB)
+kernel	Build the reference candidate	2026-11-18T02:45:48.8081960Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-75188-038.dmg
+kernel	Build the reference candidate	2026-11-18T02:45:48.8181870Z == ipsw: extracting Cryptex1,AppTrustCache (Firmware/044-75188-038.dmg.trustcache, 0 MiB)
+kernel	Build the reference candidate	2026-11-18T02:45:49.3236380Z /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-75188-038.dmg.trustcache
+kernel	Build the reference candidate	2026-11-18T02:45:49.4173940Z == submodules /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU
+kernel	Build the reference candidate	2026-11-18T02:45:49.7988410Z == tree /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree
+kernel	Build the reference candidate	2026-11-18T02:45:50.4544510Z == kernel: XNU
+kernel	Build the reference candidate	2026-11-18T02:45:50.4644900Z == kernel: bootstrap pass for the compile records
+kernel	Build the reference candidate	2026-11-18T02:45:50.4746330Z + bash /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-xnu-4k-baseline.sh
+kernel	Build the reference candidate	2026-11-18T02:50:29.6980840Z == kernel: prepare storage headers
+kernel	Build the reference candidate	2026-11-18T02:50:29.6983530Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/prepare-storage-headers.py
+kernel	Build the reference candidate	2026-11-18T02:50:29.9415500Z == kernel: archive-01-build-corecrypto-14
+kernel	Build the reference candidate	2026-11-18T02:50:29.9418560Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-corecrypto-14.py
+kernel	Build the reference candidate	2026-11-18T02:50:49.1683450Z == kernel: archive-02-build-corecrypto-14
+kernel	Build the reference candidate	2026-11-18T02:50:49.1687770Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-corecrypto-14.py --namespace
+kernel	Build the reference candidate	2026-11-18T02:51:08.0421550Z == kernel: archive-03-build-arm-driver
+kernel	Build the reference candidate	2026-11-18T02:51:08.0523090Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-arm-driver.py ArmDTPlatform
+kernel	Build the reference candidate	2026-11-18T02:51:09.1489930Z == kernel: archive-04-build-arm-driver
+kernel	Build the reference candidate	2026-11-18T02:51:09.1492130Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-arm-driver.py ArmCpu
+kernel	Build the reference candidate	2026-11-18T02:51:09.9862030Z == kernel: archive-05-build-arm-driver
+kernel	Build the reference candidate	2026-11-18T02:51:09.9864070Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-arm-driver.py NativeAES
+kernel	Build the reference candidate	2026-11-18T02:51:10.8003080Z == kernel: archive-06-build-native-aes-bindings
+kernel	Build the reference candidate	2026-11-18T02:51:10.8003990Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-native-aes-bindings.py
+kernel	Build the reference candidate	2026-11-18T02:51:11.4963500Z == kernel: archive-07-build-libpthread-kernel
+kernel	Build the reference candidate	2026-11-18T02:51:11.4965980Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-libpthread-kernel.py
+kernel	Build the reference candidate	2026-11-18T02:51:14.2295590Z + bash /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-xnu-4k-baseline.sh
+kernel	Build the reference candidate	2026-11-18T02:51:35.6205830Z == kernel: prelink
+kernel	Build the reference candidate	2026-11-18T02:51:35.6208200Z == ipsw: remote https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+kernel	Build the reference candidate	2026-11-18T02:51:37.4096270Z + python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/kits/NativePrelink/emit_prelink.py --kernel /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf --prelinked /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/kernelcache.decompressed --slide=-0x1000000 --output /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/kernel/kernel.macho --root com.apple.AppleFSCompression.AppleFSCompressionTypeZlib --root com.apple.driver.AppleARMPlatform --root com.apple.driver.AppleARMWatchdogTimer --root com.apple.driver.AppleAudioClockLibs --root com.apple.driver.AppleEffaceableStorage --root com.apple.driver.AppleIISController --root com.apple.driver.AppleM2ScalerCSCDriver --root com.apple.driver.AppleMobileFileIntegrity --root com.apple.driver.ApplePMGR --root com.apple.driver.IODARTFamily --root com.apple.filesystems.apfs --root com.apple.iokit.CoreAnalyticsFamily --root com.apple.iokit.IOAVFamily --root com.apple.iokit.IOAudio2Family --root com.apple.iokit.IOCECFamily --root com.apple.iokit.IOCryptoAcceleratorFamily --root com.apple.iokit.IOGPUFamily --root com.apple.iokit.IOHDCPFamily --root com.apple.iokit.IOMobileGraphicsFamily --root com.apple.iokit.IOReportFamily --root com.apple.iokit.IOSlowAdaptiveClockingFamily --root com.apple.iokit.IOStorageFamily --root com.apple.iokit.IOSurface --root com.apple.kec.Libm --root com.apple.kec.corecrypto --root com.apple.kext.AppleMatch --root com.apple.kext.CoreTrust --root com.apple.security.AppleImage4 --root com.apple.security.sandbox --root com.apple.iokit.IOHIDFamily --root com.apple.iokit.IOHIDEventDriver --early-security-init com.apple.driver.AppleMobileFileIntegrity=0xfffffff005ab4ae0
+kernel	Build the reference candidate	2026-11-18T02:51:41.5008900Z == kernel: /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/kernel/kernel.macho sha256 d834e5d32e6aead3137e6c0e237d380685c93a5cae78bec3756fc89c17ba1806
+kernel	Sources, volumes, policies, Data fixture	﻿2026-11-18T02:51:41.6213950Z ##[group]Run set -o pipefail
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.6214350Z ^[[36;1mset -o pipefail^[[0m
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.6214760Z ^[[36;1mpython3 scripts/build-droidvm-all.py --to data-base 2>&1 | tee "$RUNNER_TEMP/kernel-1.log"^[[0m
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8688310Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8689020Z env:
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8689510Z   BOARD: droidvm
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8689930Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8690280Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8690740Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8691120Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8694650Z   GITHUB_TOKEN: ***
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8695820Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8696480Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8697030Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8697590Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8698160Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:41.8698520Z ##[endgroup]
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:42.0596590Z == 02:51:42 step setup
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:42.0599610Z == 02:51:42 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu defconfig droidvm_defconfig -D /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:42.7518290Z == configuration droidvm_defconfig -> /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/.config
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:42.7673940Z == 02:51:42 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu fetch --update  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/fetch.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:43.4554080Z == 02:51:43 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu ipsw fetch  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/ipsw-fetch.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:51:45.0055280Z == 02:51:45 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu ipsw fetch OS Cryptex1,SystemOS  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/ipsw-fetch-volumes.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:58:51.4216230Z == 02:58:51 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu tree  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/tree.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:58:53.0948290Z == 02:58:53 step setup: done in 431 s
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:58:53.0950360Z == 02:58:53 step volumes
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:58:53.0954570Z == 02:58:53 $ cp -c /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-76034-038.dmg /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/.cache/firmware/target-volumes/044-76034-038.dmg
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:58:53.1034240Z == 02:58:53 $ cp /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-76040-038.dmg /tmp/droidvm-build-runner/044-76040-038.dmg
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:10.4872480Z == 02:59:10 OS image attached: /dev/disk33
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:10.5094980Z == 02:59:10 step volumes: done in 17 s
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:10.5206690Z == 02:59:10 step policies
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:10.6492780Z == 02:59:10 $ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/kits/VerifiedRoot/tests/check.py --output /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/verified-root-host --openssl-prefix /opt/homebrew/opt/openssl@3  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/verified-root-host.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:12.0043800Z == 02:59:12 $ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-owner-os-policy.py  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/build-owner-os-policy.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T02:59:53.8910870Z == 02:59:53 $ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-owner-systemos-policy.py  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/build-owner-systemos-policy.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:09.6447930Z == 03:00:09 $ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/scripts/build-original-trust-from-members.py /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/build-original-trust-from-members.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:09.7128510Z == 03:00:09 $ cp -c /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/21H461/044-75188-038.dmg.trustcache /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/original-trust-extra/app.trustcache
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:09.7195830Z == 03:00:09 step policies: done in 59 s
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:09.7209610Z == 03:00:09 step data-base
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:10.0030680Z == 03:00:10 $ python3 /tmp/droidvm-build-runner/seedtree/scripts/prepare-owner-data-fixture.py --output /tmp/droidvm-build-runner/owner-data-fixture  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/prepare-owner-data-fixture.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:23.6977410Z == 03:00:23 $ python3 -c import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); import packed_ramdisk; print(packed_ramdisk.pack(Path(sys.argv[2]), Path(sys.argv[3]))) /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/drivers/DarwinBoot/Test /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/owner-data-fixture/owner-data-32.cdr /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-32.dbr
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:23.8975210Z {'bytes': 33554432, 'sha256': 'fae152161e54d278e49da087ec7c5f410c5475ccc5a54bf48a1c2c68d94a0a94', 'encoded_bytes': 983120, 'encoded_sha256': '7bb4002b7e911479972517667a3abc3964992d4962d4ed112a62811c9a29a4a9', 'packed': True}
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:24.0211080Z == 03:00:24 $ python3 /tmp/droidvm-build-runner/seedtree/scripts/seed-data-grow.py --volatile --gib 2 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-32.dbr /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-2g.dbr  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/seed-data-grow.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:37.9742050Z == 03:00:37 $ python3 /tmp/droidvm-build-runner/seedtree/scripts/seed-data-skip-setup.py /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-2g.dbr /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-2g-skip.dbr  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/seed-data-skip-setup.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:00:52.2879500Z == 03:00:52 $ python3 /tmp/droidvm-build-runner/seedtree/scripts/add-app-cryptex-data.py /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-2g-skip.dbr /tmp/droidvm-build-runner/044-75188-038.dmg /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/tree/build/droidvm-data/data-2g-skip-app.dbr  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/add-app-cryptex-data.log
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:01:08.6026830Z == 03:01:08 Data volume UUID A11C5CB9-16FA-41D5-873C-CEA17EB93BB5
+kernel	Sources, volumes, policies, Data fixture	2026-11-18T03:01:08.6028140Z == 03:01:08 step data-base: done in 58 s
+kernel	Pin the Data volume UUID	﻿2026-11-18T03:01:08.6655470Z ##[group]Run set -euo pipefail
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6656150Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6656500Z ^[[36;1mseed=UniXNU/out/droidvm/tree/build/owner-data-fixture/seed.json^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6657410Z ^[[36;1mpython3 - "$seed" "$DATA_VOLUME_UUID" <<'PY'^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6658090Z ^[[36;1mimport json, sys^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6658400Z ^[[36;1mpath, uuid = sys.argv[1], sys.argv[2]^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6659210Z ^[[36;1mdata = json.load(open(path))^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6659540Z ^[[36;1mdata['volume_uuid'] = uuid^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6660270Z ^[[36;1mjson.dump(data, open(path, 'w'), indent=2)^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.6660590Z ^[[36;1mPY^[[0m
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7020530Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7021110Z env:
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7021450Z   BOARD: droidvm
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7022060Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7022480Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7022940Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7023300Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7027310Z   GITHUB_TOKEN: ***
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7027810Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7028390Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7029310Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7029730Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7030230Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Pin the Data volume UUID	2026-11-18T03:01:08.7030740Z ##[endgroup]
+kernel	Place the reference candidate in the tree	﻿2026-11-18T03:01:08.8535290Z ##[group]Run set -euo pipefail
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8535930Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8536690Z ^[[36;1mfor ref in "UniXNU/out/droidvm/tree/build/reference-candidate" \^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8537520Z ^[[36;1m           "UniXNU-droidvm/out/droidvm/tree/build/reference-candidate"; do^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8538050Z ^[[36;1m  mkdir -p "$ref"^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8538600Z ^[[36;1m  cp "$RUNNER_TEMP/ref/kernel.macho" "$RUNNER_TEMP/ref/kernel.json" "$ref/"^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8539330Z ^[[36;1mdone^[[0m
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8623790Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8624330Z env:
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8624590Z   BOARD: droidvm
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8624980Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8626950Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8627490Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8628030Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8630270Z   GITHUB_TOKEN: ***
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8630760Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8631300Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8631930Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8632420Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8632940Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Place the reference candidate in the tree	2026-11-18T03:01:08.8633390Z ##[endgroup]
+kernel	Turn this repository's XNU changes into a patch	﻿2026-11-18T03:01:09.0008980Z ##[group]Run set -euo pipefail
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0009360Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0009690Z ^[[36;1mW=UniXNU/out/droidvm/tree/.cache/xnu-work^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0010100Z ^[[36;1mP="$GITHUB_WORKSPACE/UniXNU/out/droidvm/tree/patches/xnu/zzzz-droidvm-hole-and-diag.patch"^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0010560Z ^[[36;1mgit -C "$W" add -A^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0010900Z ^[[36;1mpython3 self/scripts/apply-xnu-changes.py "$W"^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0011350Z ^[[36;1mgit -C "$W" diff > "$P"^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0011790Z ^[[36;1mgit -C "$W" reset -q^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0012190Z ^[[36;1mgit apply --stat "$P" || { echo "::error::bad patch"; exit 1; }^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0012740Z ^[[36;1mgit -C "$W" apply --reverse --check "$P"^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0013100Z ^[[36;1mgit -C "$W" apply --reverse "$P"^[[0m
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0053510Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0054170Z env:
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0054430Z   BOARD: droidvm
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0054810Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0055270Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0055690Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0056170Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0058320Z   GITHUB_TOKEN: ***
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0058720Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0059540Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0060220Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0060710Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0061130Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:09.0061550Z ##[endgroup]
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3918880Z 0001 osfmk/vm/vm_map_store_rb.c
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3919450Z   ok    anchor found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3919820Z   ok    comment present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3920060Z   ok    panic gone
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3920270Z 0002 bsd/kern/kern_exec.c (owner cache)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3920570Z   ok    anchor found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3920800Z   ok    panic present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3921050Z 0003 bsd/kern/kern_exec.c (cryptex view and cache paths)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3921330Z   ok    cryptex anchor found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3921580Z   ok    cryptex panic present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3921820Z 0004 bsd/kern/kern_exit.c (initproc report)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3922070Z   ok    initproc anchor found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3922270Z   ok    initproc report present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3922540Z 0005 bsd/vm/vm_unix.c (the shared region result dyld sees)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3922820Z   ok    vm_unix anchors found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3923050Z   ok    recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3923250Z   ok    counts present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3923950Z 0006 bsd/vm/vm_unix.c (which shared-region check refused the cache)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3924290Z     0006 globals: exact "static int" anchor
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3924520Z     0006 | /*
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3924890Z     0006 |  * DroidVM: which check in shared_region_map_and_slide_setup() turned dyld away.
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3925330Z     0006 |  * sr_stage is the 1-based index of that function's `goto done` sites,
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3925770Z     0006 |  * sr_setup_error the errno it returned, sr_vmkr the raw kern_return_t from
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3926240Z     0006 |  * vm_shared_region_map_file() (-1 when setup failed first).  Live-readable.
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3926590Z     0006 |  */
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3926780Z     0006 | int droidvm_sr_stage = 0;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3927080Z     0006 | int droidvm_sr_setup_e
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3927600Z     0006 stage  1: (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm)); | if (files_count > _SR_FILE_MAPPINGS_MAX_FILES) { | error = E2BIG;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3928230Z     0006 stage  2: error = E2BIG; | goto done; | } | if (files_count == 0) { | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3929770Z     0006 stage  3: } | *sr_file_mappings = kalloc_type(struct _sr_file_mappings, files_count, | Z_WAITOK | Z_ZERO); | if (*sr_file_mappings == NULL) { | error = ENOMEM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3930780Z     0006 stage  4: es[i].sf_mappings_count; | srfmp->mappings = &mappings[mappings_next]; | mappings_next += srfmp->mappings_count; | if (mappings_next > mappings_count) { | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3931730Z     0006 stage  5: ("shared_region: %p [%d(%s)] map(): " | "no shared region\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3932630Z     0006 stage  6: : rdir_vp != rootvnode) { | SHARED_REGION_TRACE_ERROR( | ("shared_region: map(%p) root_dir mismatch\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()))); | error = EPERM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3933550Z     0006 stage  7: EGION_TRACE_ERROR( | ("shared_region: %p [%d(%s)] map data >1 mapping\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3934490Z     0006 stage  8: egion: %p [%d(%s)] map data destination 0x%llx not aligned\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, dest_addr)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3935470Z     0006 stage  9: shared_region: %p [%d(%s)] map data size 0x%llx not aligned\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, map_size)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3936400Z     0006 stage 10: ("shared_region: %p [%d(%s)] map: " | "fd=%d lookup failed (error=%d)\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, srfmp->fd, error));
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3937370Z     0006 stage 11: ("shared_region: %p [%d(%s)] map: " | "fd=%d not readable\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, srfmp->fd)); | error = EPERM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3938300Z     0006 stage 12: ared_region: %p [%d(%s)] map: " | "fd=%d getwithref failed (error=%d)\n", | (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, srfmp->fd, error));
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3939240Z     0006 stage 13:  *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name, srfmp->vp->v_type)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3940190Z     0006 stage 14:  error = mac_file_check_mmap(vfs_context_ucred(vfs_context_current()), | srfmp->fp->fp_glob, VM_PROT_ALL, MAP_FILE | MAP_PRIVATE | MAP_FIXED, 0, &maxprot); | if (error) {
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3941040Z     0006 stage 15: proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | error));
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3941950Z     0006 stage 16: (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name, va.va_uid)); | error = EPERM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3943020Z     0006 stage 17: proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | error));
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3943860Z     0006 stage 18: (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name)); | error = EPERM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3944650Z     0006 stage 19: srfmp->vp->v_name)); | error = EPERM; | if (preboot_vp) { | (void)vnode_put(preboot_vp); | }
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3945370Z     0006 stage 20: (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name)); | error = EPERM;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3946380Z     0006 stage 21: L_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), error));
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3947360Z     0006 stage 22: (void *)VM_KERNEL_ADDRPERM(current_thread()), | proc_getpid(p), p->p_comm, | (void *)VM_KERNEL_ADDRPERM(srfmp->vp), | srfmp->vp->v_name)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3948750Z     0006 stage 23: srfmp->mappings[i].sms_size, | srfmp->mappings[i].sms_file_offset, | srfmp->mappings[i].sms_max_prot, | srfmp->mappings[i].sms_init_prot)); | error = EINVAL;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3949440Z   ok    setup anchors found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3949640Z   ok    stage recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3949860Z   ok    vmkr recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3950190Z 0007 osfmk/vm/vm_shared_region.c (which VM-side check returns KERN_FAILURE)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3950530Z     0007 insertion point:
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3950750Z       k overflow.
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3950970Z        */
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3951110Z       
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3951400Z       /* DroidVM 0007: live-readable recorders for the VM-side shared-region refusal. */
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3951960Z       int droidvm_sr_vmstage = 0;             /* 1=race, 2=copyin, 3=slide, 0=other */
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3952320Z       int droidvm_sr_vm_setup_kr = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3952550Z       int droidvm_sr_vm_slide_kr = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3952840Z       int droidvm_sr_vm_slide_index = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3953090Z       int droidvm_sr_vm_first_mapping = -2;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3953340Z       int droidvm_sr_vm_slides = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3954140Z       
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3954370Z       __attribute__((noinline))
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3955700Z       static kern_return_t
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3955980Z       vm_shared_region_map_file_setup(
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3956270Z   ok    vm anchors found
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3956450Z   ok    race recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3956660Z   ok    copyin recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3956890Z   ok    slide recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3957200Z   ok    setup kr recorder present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3957510Z 0008 osfmk/vm/vm_shared_region.c (reuse an already-mapped shared region)
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3957860Z     0008 short-circuit:
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3958190Z       	/* DroidVM 0008: the first call already installed every mapping.
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3958580Z       	 * dyld calls map_and_slide again here; rejecting it with
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3958960Z       	 * KERN_FAILURE becomes EINVAL and dyld drops the cache.
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3959280Z       	 * Reuse the existing region instead (same semantics as
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3959750Z       	 * vm_shared_region_start_address()). Return before setup()
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3960120Z       	 * so no lock / sr_mapping_in_progress state is held. */
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3960490Z       	if (shared_region->sr_first_mapping != (mach_vm_offset_t)-1) {
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3960770Z       		droidvm_sr_vmshort++;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3960990Z       		return KERN_SUCCESS;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3961170Z       	}
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3961320Z       
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3961460Z       	droidvm_sr_vmstage = 0;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3962070Z       	droidvm_sr_vm_setup_kr = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3962290Z       	droidvm_sr_vm_slide_kr = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3962510Z       	droidvm_sr_vm_slide_index = -1;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3962790Z       	droidvm_sr_vm_first_mapping = -2;
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3963040Z   ok    0007 recorders present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3963280Z   ok    short-circuit present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3963480Z   ok    short-circuit counter present
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.3963730Z all changes are in the source the compiler will read
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5975040Z  bsd/kern/kern_exec.c        |   69 +++++++++++++++++++++++++++++++++++++++++
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5975470Z  bsd/kern/kern_exit.c        |   22 +++++++++++++
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5975880Z  bsd/vm/vm_unix.c            |   73 +++++++++++++++++++++++++++++--------------
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5976200Z  osfmk/vm/vm_map_store_rb.c  |   16 ++++-----
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5976550Z  osfmk/vm/vm_shared_region.c |   35 ++++++++++++++++++++-
+kernel	Turn this repository's XNU changes into a patch	2026-11-18T03:01:10.5976900Z  5 files changed, 181 insertions(+), 34 deletions(-)
+kernel	Build the kernel	﻿2026-11-18T03:01:10.6252610Z ##[group]Run set -o pipefail
+kernel	Build the kernel	2026-11-18T03:01:10.6252900Z ^[[36;1mset -o pipefail^[[0m
+kernel	Build the kernel	2026-11-18T03:01:10.6253320Z ^[[36;1mpython3 scripts/build-droidvm-all.py --only kernel 2>&1 | tee "$RUNNER_TEMP/kernel-2.log"^[[0m
+kernel	Build the kernel	2026-11-18T03:01:10.6295210Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Build the kernel	2026-11-18T03:01:10.6295480Z env:
+kernel	Build the kernel	2026-11-18T03:01:10.6295680Z   BOARD: droidvm
+kernel	Build the kernel	2026-11-18T03:01:10.6295870Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Build the kernel	2026-11-18T03:01:10.6296130Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Build the kernel	2026-11-18T03:01:10.6296440Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Build the kernel	2026-11-18T03:01:10.6296790Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Build the kernel	2026-11-18T03:01:10.6298750Z   GITHUB_TOKEN: ***
+kernel	Build the kernel	2026-11-18T03:01:10.6298970Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the kernel	2026-11-18T03:01:10.6299380Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Build the kernel	2026-11-18T03:01:10.6299780Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the kernel	2026-11-18T03:01:10.6300200Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the kernel	2026-11-18T03:01:10.6300570Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Build the kernel	2026-11-18T03:01:10.6300840Z ##[endgroup]
+kernel	Build the kernel	2026-11-18T03:01:10.7856630Z == 03:01:10 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu fetch --update  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/fetch.log
+kernel	Build the kernel	2026-11-18T03:01:11.4429920Z == 03:01:11 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu tree  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/tree.log
+kernel	Build the kernel	2026-11-18T03:01:12.4218000Z == 03:01:12 step kernel
+kernel	Build the kernel	2026-11-18T03:01:12.4564060Z == 03:01:12 Data volume UUID C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Build the kernel	2026-11-18T03:01:12.4565100Z == 03:01:12 $ /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/unixnu build kernel  > /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/droidvm/build-all/logs/kernel.log
+kernel	Build the kernel	2026-11-18T03:02:58.6658810Z == 03:02:58 step kernel: done in 106 s
+kernel	Self-check	﻿2026-11-18T03:02:58.7128970Z ##[group]Run set +e
+kernel	Self-check	2026-11-18T03:02:58.7129290Z ^[[36;1mset +e^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7129610Z ^[[36;1mK=UniXNU/out/droidvm/kernel/kernel.macho^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7130000Z ^[[36;1mls -l "$K" || { echo "::error::no kernel built"; exit 1; }^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7130440Z ^[[36;1mecho "nm probe symbols:"^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7130770Z ^[[36;1mnm "$K" 2>/dev/null | grep -E 'droidvm_probe_' | head -6^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7131350Z ^[[36;1mecho "pipeline:     $(strings "$K" | grep -c 'droidvm_virtio_present_pipeline')"^[[0m
+kernel	Self-check	2026-11-18T03:02:58.7553380Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Self-check	2026-11-18T03:02:58.7553800Z env:
+kernel	Self-check	2026-11-18T03:02:58.7554320Z   BOARD: droidvm
+kernel	Self-check	2026-11-18T03:02:58.7554600Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Self-check	2026-11-18T03:02:58.7555840Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Self-check	2026-11-18T03:02:58.7556300Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Self-check	2026-11-18T03:02:58.7556910Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Self-check	2026-11-18T03:02:58.7559690Z   GITHUB_TOKEN: ***
+kernel	Self-check	2026-11-18T03:02:58.7560120Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Self-check	2026-11-18T03:02:58.7560690Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Self-check	2026-11-18T03:02:58.7561180Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Self-check	2026-11-18T03:02:58.7561780Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Self-check	2026-11-18T03:02:58.7562250Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Self-check	2026-11-18T03:02:58.7562620Z ##[endgroup]
+kernel	Self-check	2026-11-18T03:02:58.8482670Z -rw-r--r--  1 runner  staff  126353408 Nov 18 03:02 UniXNU/out/droidvm/kernel/kernel.macho
+kernel	Self-check	2026-11-18T03:02:58.8484420Z nm probe symbols:
+kernel	Self-check	2026-11-18T03:02:59.0984850Z fffffff00c180088 S _droidvm_probe_base_swap_ptr
+kernel	Self-check	2026-11-18T03:02:59.0985880Z fffffff00c180078 S _droidvm_probe_base_swap_ticks
+kernel	Self-check	2026-11-18T03:02:59.0986350Z fffffff00c180080 S _droidvm_probe_base_swap_validated
+kernel	Self-check	2026-11-18T03:02:59.0986970Z fffffff00c1800a0 S _droidvm_probe_kick_calls
+kernel	Self-check	2026-11-18T03:02:59.0987400Z fffffff00c180098 S _droidvm_probe_ready_ticks
+kernel	Self-check	2026-11-18T03:02:59.0987870Z fffffff00c180090 S _droidvm_probe_tick_count
+kernel	Self-check	2026-11-18T03:02:59.6489920Z pipeline:     0
+kernel	Keep the built kernel as an artifact	﻿2026-11-18T03:02:59.6645860Z ##[group]Run actions/upload-artifact@v4
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6646160Z with:
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6646390Z   name: kernel-macho-44225411284
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6646700Z   path: UniXNU/out/droidvm/kernel/kernel.macho
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6647210Z   if-no-files-found: ignore
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6647380Z   retention-days: 14
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6647600Z   compression-level: 0
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6647840Z   overwrite: false
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6648160Z   include-hidden-files: false
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6648500Z env:
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6648620Z   BOARD: droidvm
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6648870Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6649260Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6649780Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6650380Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6652560Z   GITHUB_TOKEN: ***
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6652800Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6653310Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6653800Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6654160Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6654690Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Keep the built kernel as an artifact	2026-11-18T03:02:59.6655020Z ##[endgroup]
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.2721160Z (node:83615) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.2723170Z (Use `node --trace-deprecation ...` to show where the warning was created)
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.2814430Z With the provided path, there will be 1 file uploaded
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.2885840Z Artifact name is valid!
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.2887800Z Root directory input is valid!
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.6097330Z Beginning upload of artifact content to blob storage
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:00.6456150Z (node:83615) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.2749740Z Uploaded bytes 8388608
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.2846260Z Uploaded bytes 16777216
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.3797920Z Uploaded bytes 25165824
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.3920320Z Uploaded bytes 33554432
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.4936060Z Uploaded bytes 41943040
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.5730940Z Uploaded bytes 50331648
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.6532080Z Uploaded bytes 58720256
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.7562020Z Uploaded bytes 67108864
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.7666040Z Uploaded bytes 75497472
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.8287680Z Uploaded bytes 83886080
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.9098120Z Uploaded bytes 92274688
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:01.9483180Z Uploaded bytes 100663296
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.0037860Z Uploaded bytes 109051904
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.0791530Z Uploaded bytes 117440512
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.1145910Z Uploaded bytes 125829120
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.1962070Z Uploaded bytes 126353546
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.2397330Z Finished uploading artifact content to blob storage!
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.2399000Z SHA256 digest of uploaded artifact zip is 05f9fa44665a696ebea01c04a086b69e9d3ba53f30904b0239506fc65639399e
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.2400830Z Finalizing artifact upload
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.6800590Z Artifact kernel-macho-44225411284.zip successfully finalized. Artifact ID 14393462651
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.6802730Z Artifact kernel-macho-44225411284 has been successfully uploaded! Final size is 126353546 bytes. Artifact ID is 14393462651
+kernel	Keep the built kernel as an artifact	2026-11-18T03:03:02.6824430Z Artifact download URL: https://github.com/ck66/unixnu-droidvm-build/actions/runs/44225411284/artifacts/14393462651
+kernel	Publish the kernel as a release asset	﻿2026-11-18T03:03:02.7024830Z ##[group]Run set -euo pipefail
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7025140Z ^[[36;1mset -euo pipefail^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7025400Z ^[[36;1mK=UniXNU/out/droidvm/kernel/kernel.macho^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7025690Z ^[[36;1mTAG="kernel-$(date -u +%Y%m%d)-r${RUN_ID}"^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7025970Z ^[[36;1msum=$(shasum -a 256 "$K" | awk '{print $1}')^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7026360Z ^[[36;1mprintf '%s  kernel.macho\n' "$sum" > "$RUNNER_TEMP/kernel.macho.sha256"^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7026840Z ^[[36;1mgh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" \^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7027240Z ^[[36;1m  --notes "run ${RUN_ID} sha256 ${sum}" \^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7027520Z ^[[36;1m  "$K" "$RUNNER_TEMP/kernel.macho.sha256" \^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7028030Z ^[[36;1m  || gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber "$K" "$RUNNER_TEMP/kernel.macho.sha256"^[[0m
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7103850Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7104230Z env:
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7104500Z   BOARD: droidvm
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7104800Z   UNIXNU_REF: 56023cdc363249d201328e9e147f7b05690eba4e
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7105230Z   DEVICE_REF: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7105560Z   DISPLAY_REF: 3da41eaa0f06fd21e7bc1ef17aafe0a3e72d70ff
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7105880Z   DATA_VOLUME_UUID: C9B8D4FB-631D-44C4-90AA-35C392D4B8E5
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7108140Z   GITHUB_TOKEN: ***
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7108410Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7108950Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.17/arm64/lib/pkgconfig
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7109410Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7109890Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7110300Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.17/arm64
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7112590Z   GH_TOKEN: ***
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7112780Z   RUN_ID: 44225411284
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:02.7113110Z ##[endgroup]
+kernel	Publish the kernel as a release asset	2026-11-18T03:03:12.7002100Z https://github.com/ck66/unixnu-droidvm-build/releases/tag/kernel-20261118-r44225411284
+kernel	Post Run actions/setup-python@v5	﻿2026-11-18T03:03:12.7437850Z Post job cleanup.
+kernel	Post Run actions/setup-python@v5	2026-11-18T03:03:12.9472430Z (node:83957) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+kernel	Post Run actions/setup-python@v5	2026-11-18T03:03:12.9473590Z (Use `node --trace-deprecation ...` to show where the warning was created)
+kernel	Post Run actions/checkout@v4	﻿2026-11-18T03:03:12.9609760Z Post job cleanup.
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.0960380Z [command]/opt/homebrew/bin/git version
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1067220Z git version 2.56.0
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1089650Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/bf1e7880-ea3e-4979-a14d-6114ba220e5a/.gitconfig'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1103700Z Temporarily overriding HOME='/Users/runner/work/_temp/bf1e7880-ea3e-4979-a14d-6114ba220e5a' before making global git config changes
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1105520Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1108420Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU-droidvm
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1232770Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.1308020Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.2366030Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.2441310Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.3262030Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.3336730Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Post Run actions/checkout@v4	﻿2026-11-18T03:03:13.4316850Z Post job cleanup.
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5291750Z [command]/opt/homebrew/bin/git version
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5360650Z git version 2.56.0
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5379840Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/c9fd2c68-74d5-4c02-9788-0bca9a5b79cc/.gitconfig'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5387290Z Temporarily overriding HOME='/Users/runner/work/_temp/c9fd2c68-74d5-4c02-9788-0bca9a5b79cc' before making global git config changes
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5388000Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5391160Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5472370Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.5544730Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.6371550Z Entering 'drivers/Adreno740'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.6600040Z Entering 'drivers/AdrenoMetal'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.6823710Z Entering 'drivers/AppleKeyStoreState'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.7042740Z Entering 'drivers/ArmCpu'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.7271780Z Entering 'drivers/ArmDTPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.7505120Z Entering 'drivers/ArmVirtPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.7722340Z Entering 'drivers/DarwinBoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.7945170Z Entering 'drivers/GopFramebuffer'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.8178590Z Entering 'drivers/QcomGeniSpi'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.8418470Z Entering 'drivers/RamBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.8621930Z Entering 'drivers/SoftwareAES'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.8841220Z Entering 'drivers/VirtioMmioBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.9106490Z Entering 'drivers/VirtioMmioConsole'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.9436870Z Entering 'kits/AdrenoFirmware'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.9693080Z Entering 'kits/AdrenoPM4'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:13.9946290Z Entering 'kits/AirNir'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.0187430Z Entering 'kits/ArmSmmu4K'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.0435190Z Entering 'kits/VerifiedRoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.0661710Z Entering 'kits/XnuPrelink'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.0913260Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.0990760Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.1898760Z Entering 'drivers/Adreno740'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.2135990Z Entering 'drivers/AdrenoMetal'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.2347470Z Entering 'drivers/AppleKeyStoreState'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.2568540Z Entering 'drivers/ArmCpu'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.2778700Z Entering 'drivers/ArmDTPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.3000060Z Entering 'drivers/ArmVirtPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.3217740Z Entering 'drivers/DarwinBoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.3433020Z Entering 'drivers/GopFramebuffer'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.3705640Z Entering 'drivers/QcomGeniSpi'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.3922260Z Entering 'drivers/RamBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.4147470Z Entering 'drivers/SoftwareAES'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.4363020Z Entering 'drivers/VirtioMmioBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.4573520Z Entering 'drivers/VirtioMmioConsole'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.4783250Z Entering 'kits/AdrenoFirmware'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.5003540Z Entering 'kits/AdrenoPM4'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.5208690Z Entering 'kits/AirNir'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.5424580Z Entering 'kits/ArmSmmu4K'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.5636470Z Entering 'kits/VerifiedRoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.5848900Z Entering 'kits/XnuPrelink'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.6069990Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.6136850Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.6998000Z Entering 'drivers/Adreno740'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7104440Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/Adreno740/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7172520Z Entering 'drivers/AdrenoMetal'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7278960Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AdrenoMetal/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7343880Z Entering 'drivers/AppleKeyStoreState'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7445040Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AppleKeyStoreState/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7513650Z Entering 'drivers/ArmCpu'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7623120Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmCpu/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7693780Z Entering 'drivers/ArmDTPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7790350Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmDTPlatform/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7855670Z Entering 'drivers/ArmVirtPlatform'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.7949500Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmVirtPlatform/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8011830Z Entering 'drivers/DarwinBoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8109190Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/DarwinBoot/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8174730Z Entering 'drivers/GopFramebuffer'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8270680Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/GopFramebuffer/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8334210Z Entering 'drivers/QcomGeniSpi'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8433390Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/QcomGeniSpi/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8496320Z Entering 'drivers/RamBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8590190Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/RamBlock/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8655650Z Entering 'drivers/SoftwareAES'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8752610Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/SoftwareAES/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8814700Z Entering 'drivers/VirtioMmioBlock'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8917920Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioBlock/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.8983570Z Entering 'drivers/VirtioMmioConsole'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9075320Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioConsole/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9139230Z Entering 'kits/AdrenoFirmware'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9235620Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoFirmware/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9299170Z Entering 'kits/AdrenoPM4'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9390470Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoPM4/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9459210Z Entering 'kits/AirNir'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9550570Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AirNir/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9626170Z Entering 'kits/ArmSmmu4K'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9724340Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/ArmSmmu4K/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9792550Z Entering 'kits/VerifiedRoot'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9886510Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/VerifiedRoot/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:14.9953680Z Entering 'kits/XnuPrelink'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0049650Z file:/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/XnuPrelink/config	remote.origin.url
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0129340Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/Adreno740/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0194930Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AdrenoMetal/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0260720Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/AppleKeyStoreState/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0324790Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmCpu/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0387930Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmDTPlatform/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0450910Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/ArmVirtPlatform/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0517040Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/DarwinBoot/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0578870Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/GopFramebuffer/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0650920Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/QcomGeniSpi/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0717210Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/RamBlock/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0791890Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/SoftwareAES/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0857820Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioBlock/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.0924110Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/drivers/VirtioMmioConsole/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1000160Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoFirmware/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1068280Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AdrenoPM4/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1171780Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/AirNir/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1244160Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/ArmSmmu4K/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1336410Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/VerifiedRoot/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.1405640Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/.git/modules/kits/XnuPrelink/config --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	﻿2026-11-18T03:03:15.1644490Z Post job cleanup.
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2854950Z [command]/opt/homebrew/bin/git version
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2928910Z git version 2.56.0
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2948340Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/28366d11-7299-4958-ba88-a8d8bced9f09/.gitconfig'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2957200Z Temporarily overriding HOME='/Users/runner/work/_temp/28366d11-7299-4958-ba88-a8d8bced9f09' before making global git config changes
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2958010Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.2960120Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/ci
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.3058460Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.3138280Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.4379340Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.4456460Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.5367140Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.5436730Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Post Run actions/checkout@v4	﻿2026-11-18T03:03:15.6515050Z Post job cleanup.
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7491400Z [command]/opt/homebrew/bin/git version
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7559280Z git version 2.56.0
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7579720Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/3da85d0f-6536-46a8-8f36-17f1371e113c/.gitconfig'
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7589890Z Temporarily overriding HOME='/Users/runner/work/_temp/3da85d0f-6536-46a8-8f36-17f1371e113c' before making global git config changes
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7590690Z Adding repository directory to the temporary git global config as a safe directory
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7592610Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/self
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7678310Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.7762770Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.8842980Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.8895530Z http.https://github.com/.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.8904970Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.9005280Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.9927980Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+kernel	Post Run actions/checkout@v4	2026-11-18T03:03:15.9994420Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+kernel	Complete job	﻿2026-11-18T03:03:16.0967000Z Cleaning up orphan processes
+kernel	Complete job	2026-11-18T03:03:16.6256280Z Terminate orphan process: pid (70887) (diskimages-help)
+kernel	Complete job	2026-11-18T03:03:18.6597790Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
