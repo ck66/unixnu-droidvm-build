@@ -80,9 +80,18 @@ jobs:
           set -euo pipefail
           rm -rf UniXNU-droidvm/patches/xnu
           mkdir -p UniXNU-droidvm/patches/xnu
-          cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
-          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD)"
-          ls UniXNU-droidvm/patches/xnu | wc -l
+          # whyred's series is written for a tree where these do not exist yet; the arch layer
+          # (UniXNU itself) already ships them, so copying them fails with "already exists".
+          SKIP="arm64-nonapple-kpc-stub.patch"
+          for p in whyred/patches/xnu/*.patch; do
+            name=$(basename "$p")
+            case " $SKIP " in
+              *" $name "*) echo "skip $name (the arch layer already provides it)"; continue;;
+            esac
+            cp "$p" UniXNU-droidvm/patches/xnu/
+          done
+          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD):"
+          ls UniXNU-droidvm/patches/xnu
       - name: Build the kernel
         working-directory: UniXNU
         run: |
