@@ -1,0 +1,1 @@
+run3 2026-11-18: retry without the duplicate kpc stub patch
