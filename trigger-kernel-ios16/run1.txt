@@ -1,0 +1,5 @@
+run1 2026-11-18: first iOS 16 kernel build
+
+xnu-8796.141.3 for the droidvm guest, board derived from the working
+17.7.11 board, device patches from N1709/UniXNU-whyred (the set that applies
+to 8796), KernelCache/DeviceTree/StaticTrustCache only.

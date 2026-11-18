@@ -1,0 +1,30 @@
+# iOS 16 (xnu-8796) kernel configuration for the DroidVM guest: crosvm on Gunyah, SM8650.
+#
+# Derived from N1709/UniXNU-whyred's configs/whyred_defconfig (the only published iOS 16
+# board that gets as far as a kernel) with the two board-specific bits changed:
+#   - no CONFIG_XNU_NATIVE_PAN=n: Kryo 260 is ARMv8.0 and cannot run the PAN sequence,
+#     SM8650 is ARMv8.7 and does have PSTATE.PAN;
+#   - CONFIG_XNU_BUILD_ARCHIVES=y, because this board's archives (board.toml [kernel]
+#     archives) are how corecrypto/pthread/AES/ArmCpu enter the link.
+#
+# The OS layer's own fragment (os:configs/ios.config in S7) is already folded in here:
+# TRUST_CACHE_RUNTIME, SOURCE_MOCKFS, NATIVE_CS_HASH_CACHE, CRYPTO_BOOTSTRAP="prelinked".
+#
+# First milestone: a kernel. Storage, display, GPU and owner-root are separate steps and
+# are explicitly off, exactly as the whyred board has them.
+CONFIG_XNU_BUILD_ARCHIVES=y
+CONFIG_XNU_ARM_DT_PLATFORM=y
+CONFIG_XNU_ARMCPU=y
+CONFIG_XNU_SOURCE_CORECRYPTO14=y
+CONFIG_XNU_SOURCE_PTHREAD=y
+CONFIG_XNU_NATIVE_AES=y
+CONFIG_XNU_NATIVE_ARCH_TIMER=y
+CONFIG_XNU_TRUST_CACHE_RUNTIME=y
+CONFIG_XNU_SOURCE_MOCKFS=y
+CONFIG_XNU_NATIVE_CS_HASH_CACHE=y
+CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
+
+CONFIG_XNU_NATIVE_UFS=n
+CONFIG_XNU_NATIVE_ADRENO=n
+CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n
+CONFIG_XNU_ARMVIRT_PLATFORM=n

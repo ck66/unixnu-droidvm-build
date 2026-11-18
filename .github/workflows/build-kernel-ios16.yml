@@ -1,0 +1,198 @@
+name: build kernel (ios16)
+
+# First iOS 16 milestone: compile xnu-8796 for the droidvm guest, nothing more.
+#
+# It deliberately stops at a kernel. No OS/SystemOS volume, no owner trust bundle, no
+# payload: those need the 7.7 GB of dmgs and the cryptex/union chain, and none of them
+# can be debugged before a kernel exists.  `[ipsw] fetch` for this board asks for
+# KernelCache + DeviceTree + StaticTrustCache only, so the run pulls ~18 MB, not 6 GB.
+#
+# The board is derived here from the working 17.7.11 board rather than stored, so the
+# delta against a board that boots is visible in one place (ios16/board.build.toml in
+# the hy4 tree is the same thing, kept for offline reading).
+on:
+  workflow_dispatch:
+    inputs:
+      unixnu_ref:
+        default: 56023cdc363249d201328e9e147f7b05690eba4e
+      device_ref:
+        default: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
+      whyred_ref:
+        default: main
+  push:
+    paths:
+      - 'trigger-kernel-ios16/**'
+permissions:
+  contents: read
+env:
+  BOARD: ios16
+  UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
+  DEVICE_REF: ${{ inputs.device_ref || 'b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13' }}
+  WHyRED_REF: ${{ inputs.whyred_ref || 'main' }}
+defaults:
+  run:
+    shell: bash
+jobs:
+  kernel:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: self
+      - uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/UniXNU
+          ref: ${{ env.UNIXNU_REF }}
+          path: UniXNU
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: Droid-VM/UniXNU-droidvm
+          ref: ${{ env.DEVICE_REF }}
+          path: UniXNU-droidvm
+          submodules: recursive
+          persist-credentials: false
+      # The only published real iOS 16 device tree: its patches/xnu is the set that
+      # actually applies to xnu-8796 (the droidvm one targets xnu-10063).
+      - uses: actions/checkout@v4
+        with:
+          repository: N1709/UniXNU-whyred
+          ref: ${{ env.WHYRED_REF }}
+          path: whyred
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Toolchain
+        run: |
+          set -euo pipefail
+          brew install llvm dtc mtools gnu-sed pkg-config meson bison flex xz
+          echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
+          echo "$(brew --prefix flex)/bin" >> "$GITHUB_PATH"
+      - name: Install the iOS 16 board
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('UniXNU-droidvm/board.toml')
+          t = p.read_text()
+
+          def sub(old, new):
+              global t
+              if old not in t:
+                  raise SystemExit(f'board.toml: anchor missing: {old[:60]!r}')
+              t = t.replace(old, new, 1)
+
+          sub('name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"',
+              'name = "ios16"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah), iOS 16.7.16 profile"')
+
+          sub('''url = "https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw"
+product = "iPad7,1"
+version = "17.7.11"
+build = "21H461"
+device_class = "j120ap"
+chip_id = 0x8011
+board_id = 12
+fetch = ["KernelCache", "DeviceTree", "StaticTrustCache", "Cryptex1,SystemTrustCache", "Cryptex1,AppOS", "Cryptex1,AppTrustCache"]''',
+          '''url = "https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
+product = "iPhone10,6"
+version = "16.7.16"
+build = "20H392"
+device_class = "d221ap"
+chip_id = 0x8015
+board_id = 14
+# A kernel-only build fetches no volume: the OS/SystemOS dmgs are 7.7 GB and bvxn-wrapped.
+fetch = ["KernelCache", "DeviceTree", "StaticTrustCache"]''')
+
+          sub('''"044-76040-038.dmg" = "3f99b859c9728379110b66657c7b15285bcb1925ad8b5726542e2cdcf8b1028d"
+"044-76034-038.dmg" = "b4908cde41d23e6bc05e6af51a2c9eeb00cf0f863a6a18b1600c96a3fd70414f"''',
+          '''# Measured 2026-11-18 against 122-77006 with tools/ipswfetch.py (HTTP Range); the whole
+# archive hashes to ece1194f7e233e9109c5790a8d23a4564a10a254e15ec5b09978a343265568fb.
+"kernelcache.release.iphone10b" = "2d6a13d040aaf87cec09bb6906d43e9bd8cea951e43d1aa1cd62707dfdc5aaec"
+"Firmware/all_flash/DeviceTree.d221ap.im4p" = "889e838319619c10f5f7f6ef25f9ff2a3a652a3c078803038ba678efa1201b79"
+"Firmware/087-86698-044.dmg.trustcache" = "63e01c03b31e1532a5581a24865490673f0b5c297b0199fe0095637c6100ef4b"
+"Firmware/087-86593-047.dmg.trustcache" = "9cc478fe3525e2683b5b9ea1eea0851eaebebdab21d206556233400e59d2e361"''')
+
+          sub('defconfig = "droidvm_defconfig"', 'defconfig = "ios16_defconfig"')
+
+          start = t.index('archives = [')
+          end = t.index('\n]', start)
+          t = t[:start] + '''archives = [
+  # build-droidvm-all.py's REFERENCE_ARCHIVES: the set the 17.7.11 reference candidate uses.
+  # No storage/display audits, no OS volume -- this run only has to produce a kernel.
+  "build-corecrypto-14.py",
+  "build-corecrypto-14.py --namespace",
+  "build-arm-driver.py ArmDTPlatform",
+  "build-arm-driver.py ArmCpu",
+  "build-arm-driver.py NativeAES",
+  "build-native-aes-bindings.py",
+  "build-libpthread-kernel.py",
+]''' + t[end+2:]
+
+          sub('kernelcache_sha256 = "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7"',
+              'kernelcache_sha256 = "2ec297bac95bcba01046fd0148e97e7e5885c05a6c18827f39f534ba375c1221"')
+          sub('early_security_init = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff005ab4ae0"',
+              'early_security_init = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff005703c54"')
+          # 17.7.11 ships 31 roots; S7's real iOS 16 profile ships 30 (no codeless IOHIDEventDriver).
+          sub('  "com.apple.iokit.IOHIDEventDriver",\n', '')
+
+          sub('root_match_volume_uuid = "04769D26-2CA0-4825-B443-E2E5F88300F2"   # the original OS volume',
+              'root_match_volume_uuid = "TODO"   # seed output; never copy the 17.7.11 value')
+          sub('ipad_identity = true', 'ipad_identity = false')
+          sub('chip_id = "8011"                     # iPad7,1 (A10X), as board [ipsw] chip_id',
+              'chip_id = "8015"                     # iPhone10,6 (A11), as board [ipsw] chip_id')
+          p.write_text(t)
+
+          import tomllib
+          d = tomllib.loads(t)
+          assert d['kernel']['defconfig'] == 'ios16_defconfig'
+          assert len(d['kernel']['prelink']['roots']) == 30, len(d['kernel']['prelink']['roots'])
+          assert d['kernel']['prelink']['kernelcache_sha256'].startswith('2ec297ba')
+          print('board:', d['board']['name'], d['ipsw']['build'], 'roots', len(d['kernel']['prelink']['roots']),
+                'archives', len(d['kernel']['archives']))
+          PY
+      - name: Swap in the iOS 16 kernel patches and defconfig
+        run: |
+          set -euo pipefail
+          rm -rf UniXNU-droidvm/patches/xnu
+          mkdir -p UniXNU-droidvm/patches/xnu
+          cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
+          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD):"
+          ls UniXNU-droidvm/patches/xnu | wc -l
+          mkdir -p UniXNU-droidvm/configs
+          cp self/boards/ios16/configs/ios16_defconfig UniXNU-droidvm/configs/ios16_defconfig
+          cat UniXNU-droidvm/configs/ios16_defconfig
+      - name: Build the kernel
+        working-directory: UniXNU
+        run: |
+          set -o pipefail
+          ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee "$RUNNER_TEMP/ios16.log"
+          ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+          ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+          ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+      - name: What came out
+        run: |
+          set -euo pipefail
+          ls -l "UniXNU/out/$BOARD/kernel/" || true
+          shasum -a 256 "UniXNU/out/$BOARD/kernel/kernel.macho" | tee "$RUNNER_TEMP/sha.txt" || true
+      - name: Archive logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios16-kernel-logs
+          path: |
+            ${{ runner.temp }}/ios16.log
+            ${{ runner.temp }}/sha.txt
+            UniXNU/out/${{ env.BOARD }}/logs/*.log
+          if-no-files-found: warn
+      - name: Keep the kernel
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios16-kernel
+          path: |
+            UniXNU/out/${{ env.BOARD }}/kernel/kernel.macho
+            UniXNU/out/${{ env.BOARD }}/kernel/kernel.json
+          if-no-files-found: error
