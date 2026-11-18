@@ -60,6 +60,7 @@ extern volatile uint64_t droidvm_probe_ready_ticks;
 extern volatile uint64_t droidvm_probe_kick_calls;
 extern volatile uint64_t droidvm_probe_w[10];
 extern volatile uint64_t droidvm_probe_w2[8];
+extern volatile unsigned long long droidvm_probe_primary;
 }
 volatile uint64_t droidvm_probe_base_swap_ticks=0;
 volatile uint64_t droidvm_probe_base_swap_validated=0;
@@ -187,6 +188,7 @@ volatile unsigned long long native_legacy_sel_scalar[96][4];
 volatile unsigned long long native_legacy_sel_out[96][4];
 volatile unsigned long long native_legacy_lie_mask;
 volatile unsigned long long native_legacy_lie_mask_hi;
+volatile unsigned long long droidvm_probe_primary;
 }
 static unsigned long long droidvm_lie_loaded;
 """
@@ -256,6 +258,7 @@ def patch_probe(root):
 IOS_IDENTITY_OLD = """                valid=native_legacy_gop_mapping_observed(this,bootMapping,width,height);"""
 
 IOS_IDENTITY_NEW = """                valid=native_legacy_gop_mapping_observed(this,bootMapping,width,height);
+                droidvm_probe_primary=primary?1:0;
                 // iOS: a display has to identify itself before its clients trust
                 // it (macOS's WindowServer reads IOMFBUUID and the EDID; QuartzCore
                 // on iOS asks the family for the same things). The macOS branch
