@@ -1,0 +1,1 @@
+run7 2026-11-18: diagnostics land in status/ios16-last.txt
