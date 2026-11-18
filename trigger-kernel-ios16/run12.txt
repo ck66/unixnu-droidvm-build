@@ -1,0 +1,1 @@
+run12 2026-11-18: pre-apply local-availability; print the xnu version markers
