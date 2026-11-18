@@ -112,8 +112,12 @@ jobs:
         working-directory: UniXNU
         run: |
           set -o pipefail
-          echo "--- what the resolver says about xnu ---" | tee -a "$RUNNER_TEMP/ios16.log"
-          grep -E "^(ref|commit|version|darwin|driverkit_tag|trustcache_tag)" -A0 UniXNU-droidvm/feeds.toml | tail -6 | tee -a "$RUNNER_TEMP/ios16.log"
+          # A bare grep in a pipefail step aborts the whole run when it matches nothing (run 10
+          # died exactly there, with an almost empty log).
+          {
+            echo "--- what the resolver says about xnu ---"
+            grep -E "^(ref|commit|version|darwin|driverkit_tag|trustcache_tag)" UniXNU-droidvm/feeds.toml | tail -8
+          } | tee -a "$RUNNER_TEMP/ios16.log" || true
           ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           echo "xnu tree commit: $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo 'not a git tree')" | tee -a "$RUNNER_TEMP/ios16.log"
