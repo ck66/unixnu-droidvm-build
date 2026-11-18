@@ -1,0 +1,3 @@
+run2 2026-11-18: retry after the YAML fix
+
+board derivation moved to boards/ios16/make-board.py; workflow now only calls it.
