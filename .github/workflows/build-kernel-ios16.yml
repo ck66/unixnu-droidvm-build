@@ -80,24 +80,31 @@ jobs:
           set -euo pipefail
           rm -rf UniXNU-droidvm/patches/xnu
           mkdir -p UniXNU-droidvm/patches/xnu
-          # whyred's series is written for a tree where these do not exist yet; the arch layer
-          # (UniXNU itself) already ships them, so copying them fails with "already exists".
-          SKIP="arm64-nonapple-kpc-stub.patch"
-          for p in whyred/patches/xnu/*.patch; do
-            name=$(basename "$p")
-            case " $SKIP " in
-              *" $name "*) echo "skip $name (the arch layer already provides it)"; continue;;
-            esac
-            cp "$p" UniXNU-droidvm/patches/xnu/
-          done
-          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD):"
-          ls UniXNU-droidvm/patches/xnu
+          cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
+          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD): $(ls UniXNU-droidvm/patches/xnu | wc -l)"
       - name: Build the kernel
         working-directory: UniXNU
         run: |
           set -o pipefail
+          W="out/$BOARD/tree/.cache/xnu-work"
           ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee "$RUNNER_TEMP/ios16.log"
           ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+          # whyred's series was written against its own xnu tree; on 8796 some hunks do not
+          # apply (a file the arch layer already provides, or context that moved).  Probe every
+          # patch against the fetched tree and drop the ones that refuse, naming them in the
+          # log, so one run reports the whole set instead of one patch per run.
+          echo '--- probing device patches against the fetched tree ---' | tee -a "$RUNNER_TEMP/ios16.log"
+          kept=0; dropped=0
+          for p in ../UniXNU-droidvm/patches/xnu/*.patch; do
+            if git -C "$W" apply --check "$p" 2>/dev/null; then
+              kept=$((kept+1))
+            else
+              echo "DROP $(basename "$p")" | tee -a "$RUNNER_TEMP/ios16.log"
+              mv "$p" "$RUNNER_TEMP/"
+              dropped=$((dropped+1))
+            fi
+          done
+          echo "patches: $kept apply, $dropped dropped" | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
       - name: What came out
