@@ -1,0 +1,1 @@
+run18 2026-11-18: W defined; availability fix and fuzz loop both active
