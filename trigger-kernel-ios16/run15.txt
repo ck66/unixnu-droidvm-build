@@ -1,0 +1,1 @@
+run15 2026-11-18: availability.pl fallback edited in place
