@@ -116,6 +116,8 @@ jobs:
         working-directory: UniXNU
         run: |
           set -o pipefail
+          # The fetched xnu lives here; `unixnu fetch` creates it, so this is only a path.
+          W="out/$BOARD/tree/.cache/xnu-work"
           # A bare grep in a pipefail step aborts the whole run when it matches nothing (run 10
           # died exactly there, with an almost empty log).
           {
