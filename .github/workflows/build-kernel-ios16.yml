@@ -25,6 +25,9 @@ permissions:
   contents: write
 env:
   BOARD: ios16
+  # prepare-xnu-source.py restores DriverKit headers through the GitHub API, and anonymous
+  # calls from a hosted runner are 403 rate limited (the script says so itself).
+  GITHUB_TOKEN: ${{ github.token }}
   UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
   DEVICE_REF: ${{ inputs.device_ref || 'b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13' }}
   WHYRED_REF: ${{ inputs.whyred_ref || 'main' }}
@@ -108,7 +111,9 @@ jobs:
         working-directory: UniXNU
         run: |
           set -o pipefail
-          ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee "$RUNNER_TEMP/ios16.log"
+          echo "--- what the resolver says about xnu ---" | tee -a "$RUNNER_TEMP/ios16.log"
+          grep -E "^(ref|commit|version|darwin|driverkit_tag|trustcache_tag)" -A0 UniXNU-droidvm/feeds.toml | tail -6 | tee -a "$RUNNER_TEMP/ios16.log"
+          ./unixnu defconfig ios16_defconfig -D ../UniXNU-droidvm 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           echo "xnu tree commit: $(git -C "$W" rev-parse --short HEAD 2>/dev/null || echo 'not a git tree')" | tee -a "$RUNNER_TEMP/ios16.log"
           echo "xnu version: $(sed -n 's/.*RC_ProjectSourceVersion=\(.*\)/\1/p' "$W"/config/MASTER 2>/dev/null | head -1)" | tee -a "$RUNNER_TEMP/ios16.log"
