@@ -217,8 +217,11 @@ jobs:
             LOG="UniXNU/out/$BOARD/logs/kernel-bootstrap.log"
             [ -f "$LOG" ] || LOG=$(ls UniXNU/out/*/logs/kernel-bootstrap.log 2>/dev/null | head -1)
             if [ -f "$LOG" ]; then
-              grep -n -m 6 -E "error:|fatal error:|\*\*\* \[" "$LOG" | head -12
-              N=$(grep -n -m 1 -E "fatal error:|error:" "$LOG" | cut -d: -f1)
+              # Only real diagnostics: "<path>:<line>:<col>: error: ..." (a plain "error:" also
+              # matches string literals in IOLog format strings, which is what filled line up).
+              PAT=':[0-9]+:[0-9]+: (fatal )?error:'
+              grep -n -m 6 -E "$PAT|make\[[0-9]+\]: \*\*\* \[[^]]+\] Error [12]" "$LOG" | head -12
+              N=$(grep -n -m 1 -E "$PAT" "$LOG" | cut -d: -f1)
               if [ -n "$N" ]; then sed -n "$((N>6 ? N-6 : 1)),$((N+12))p" "$LOG"; fi
             else
               echo "no $LOG"
