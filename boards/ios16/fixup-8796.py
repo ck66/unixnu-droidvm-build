@@ -248,6 +248,52 @@ LIBPTHREAD_PATCH = (
 )
 
 
+SOURCE_PTHREAD_BOOTSTRAP = (
+    '/* SPDX-License-Identifier: BSD-2-Clause-Patent */' "\n"
+    '#include <kern/startup.h>' "\n"
+    '#include <kern/debug.h>' "\n"
+    '#include <libkern/section_keywords.h>' "\n"
+    '#include <mach/kmod.h>' "\n"
+    '' "\n"
+    'extern kern_return_t pthread_start(kmod_info_t *, void *);' "\n"
+    'SECURITY_READ_ONLY_LATE(kern_return_t) source_pthread_status = KERN_FAILURE;' "\n"
+    '' "\n"
+    'static void' "\n"
+    'source_pthread_bootstrap(void)' "\n"
+    '{' "\n"
+    '\tstatic kmod_info_t info = {' "\n"
+    '\t\t.info_version = KMOD_INFO_VERSION,' "\n"
+    '\t\t.name = "source-libpthread",' "\n"
+    '\t\t.version = "519.120.4",' "\n"
+    '\t};' "\n"
+    '\tsource_pthread_status = pthread_start(&info, NULL);' "\n"
+    '\tif (source_pthread_status != KERN_SUCCESS) {' "\n"
+    '\t\tpanic("source libpthread registration failed: %d", source_pthread_status);' "\n"
+    '\t}' "\n"
+    '}' "\n"
+    'STARTUP(EARLY_BOOT, STARTUP_RANK_SECOND, source_pthread_bootstrap);' "\n"
+)
+
+
+def write_source_pthread_bootstrap():
+    """build-libpthread-kernel.py compiles bsd/kern/source_pthread_bootstrap.c as its
+    bootstrap object. UniXNU's arch series creates that file, but this board takes whyred's
+    (8796-adapted) series alone and the arch: entry is not selected, so the archive fails with
+    `clang: error: no such file or directory`. It is a 23-line registration shim; the patch
+    that adds it changes nothing else, so supplying it directly is equivalent.
+    """
+    target = Path('.cache/xnu-work/bsd/kern/source_pthread_bootstrap.c')
+    if not Path('.cache/xnu-work/bsd/kern').is_dir():
+        print('fixup: no xnu work tree, skip pthread bootstrap')
+        return False
+    if target.is_file():
+        print('fixup: source_pthread_bootstrap.c already present')
+        return False
+    target.write_bytes(SOURCE_PTHREAD_BOOTSTRAP.encode())
+    print('fixup: wrote %s' % target)
+    return True
+
+
 def write_libpthread_patch():
     """build-libpthread-kernel.py clones Darwin 23's libpthread and replays the kernel's own
     compile command against it. 8796's `struct pthread_kern` has no proc_get_jit_entitled /
@@ -347,6 +393,7 @@ def main():
     disable_mockfs()
     add_compile_records()
     write_libpthread_patch()
+    write_source_pthread_bootstrap()
     write_link_shims()
     print('fixup: done')
     return 0
