@@ -93,33 +93,41 @@ def dedupe_pmap_field():
     return True
 
 
-def stub_ppl_iommu():
-    """Only when the PPL/SART headers are genuinely absent from the tree."""
+SHIM = """/* Synthesised for this board: xnu-8796's pmap.c includes the closed per-SoC PPL/IOMMU
+ * headers (arm64/ppl/sart.h, arm64/ppl/uat.h), which Apple has never published. Everything it
+ * takes from them is an IOMMU lock-down hook, and this board has no IOMMU tables to lock --
+ * so they collapse to nothing. Macros, not prototypes: the call sites pass different argument
+ * counts under XNU_MONITOR and there is nothing to implement.
+ */
+#pragma once
+
+#define sart_bootstrap()               do { } while (0)
+#define uat_bootstrap()                do { } while (0)
+#define ptep_get_iommu(...)            ((void *)0)
+#define pmap_ppl_lockdown_page(...)    do { } while (0)
+#define pmap_ppl_lockdown_pages(...)   do { } while (0)
+#define pmap_ppl_lockdown_page_with_prot(...) do { } while (0)
+#define pmap_ppl_unlockdown_page(...)  do { } while (0)
+#define pmap_ppl_unlockdown_pages(...) do { } while (0)
+#define pmap_ppl_unlockdown_page_locked(...)  do { } while (0)
+"""
+
+
+def write_ppl_shims():
+    """Only when the PPL/SART headers are genuinely absent (they always are)."""
     work = Path('.cache/xnu-work')
-    if (work / 'osfmk/arm64/ppl/sart.h').is_file():
-        print('fixup: sart.h present, series guard applied')
+    if not work.is_dir():
+        print('fixup: no xnu work tree, skip PPL shims')
         return False
-    p = work / 'osfmk/arm/pmap/pmap.c'
-    if not p.is_file():
-        print('fixup: no pmap.c, skip')
+    target_dir = work / 'osfmk/arm64/ppl'
+    if (target_dir / 'sart.h').is_file():
+        print('fixup: ppl/sart.h present, series guard applied')
         return False
-    t = p.read_text()
-    if '/* unixnu: PPL/SART bootstrap stubbed */' in t:
-        print('fixup: PPL/SART already stubbed')
-        return False
-    changed = False
-    for header, call in (('<arm64/ppl/sart.h>', 'sart_bootstrap'), ('<arm64/ppl/uat.h>', 'uat_bootstrap')):
-        line = '#include %s\n' % header
-        if line in t:
-            t = t.replace(line, '/* unixnu: PPL/SART bootstrap stubbed */\n', 1)
-            changed = True
-        if '%s();' % call in t:
-            t = t.replace('%s();' % call, '/* %s(); -- no IOMMU tables on this board */' % call, 1)
-            changed = True
-    if changed:
-        p.write_text(t)
-        print('fixup: PPL/SART includes and calls stubbed out in pmap.c')
-    return changed
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for name in ('sart.h', 'uat.h'):
+        (target_dir / name).write_text(SHIM)
+    print('fixup: wrote osfmk/arm64/ppl/{sart.h,uat.h} (no-op IOMMU hooks)')
+    return True
 
 
 def place_late():
@@ -156,7 +164,7 @@ def main():
         return 0
     fetch_headers()
     dedupe_pmap_field()
-    stub_ppl_iommu()
+    write_ppl_shims()
     print('fixup: done')
     return 0
 
