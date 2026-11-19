@@ -181,8 +181,14 @@ jobs:
               # this board -- the struct has a duplicate member and nothing compiles.
               # non-apple-pmap-field.patch fixes the 10063 numbering, not 8796's, so a small
               # helper (staged next to this script) renames the later field.
-              if 'scripts/fixup-8796.py' not in text:
-                  text = text.replace(avail_new, avail_new + 'python3 scripts/fixup-8796.py\n', 1)
+              # installhdrs re-creates the SDK fakeroot and the compile reads EXPORT_HDRS, so
+              # the private firehose header has to be placed again right before the build make.
+              late = 'make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}"'
+              if late in text and 'fixup-8796.py --late' not in text:
+                  text = text.replace(late, 'python3 scripts/fixup-8796.py --late\n' + late, 1)
+                  print('late fixup injected:', script)
+              if '# 8796 fixups' not in text:
+                  text = text.replace(avail_new, avail_new + 'python3 scripts/fixup-8796.py  # 8796 fixups\n', 1)
                   print('8796 fixups injected:', script)
               script.write_text(text)
               print('tolerant patch loop:', script)
