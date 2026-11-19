@@ -209,11 +209,26 @@ jobs:
         if: always()
         run: |
           set +e
+          # The step output interleaves the parallel make, so the real compiler diagnostic is
+          # read from the build's own log, with context, before anything else.
           {
             echo "run $GITHUB_RUN_ID"
-            grep -E "xnu tree commit|xnu version|SKIP\(|patches:|error:|fatal|No such|Unable|pre-applied|availability line|MISSING|XNU_AVAILABILITY_PL" "$RUNNER_TEMP/ios16.log" | head -60
+            echo "--- first errors from kernel-bootstrap.log ---"
+            LOG="UniXNU/out/$BOARD/logs/kernel-bootstrap.log"
+            [ -f "$LOG" ] || LOG=$(ls UniXNU/out/*/logs/kernel-bootstrap.log 2>/dev/null | head -1)
+            if [ -f "$LOG" ]; then
+              grep -n -m 6 -E "error:|fatal error:|\*\*\* \[" "$LOG" | head -12
+              N=$(grep -n -m 1 -E "fatal error:|error:" "$LOG" | cut -d: -f1)
+              if [ -n "$N" ]; then sed -n "$((N>6 ? N-6 : 1)),$((N+12))p" "$LOG"; fi
+            else
+              echo "no $LOG"
+            fi
+            echo "--- fixups ---"
+            grep -E "^fixup:|^late:" "$LOG" 2>/dev/null | head -12
+            echo "--- step log ---"
+            grep -E "xnu tree commit|patches:|XNU patch|resolver" "$RUNNER_TEMP/ios16.log" | head -20
             echo "--- tail ---"
-            tail -30 "$RUNNER_TEMP/ios16.log"
+            tail -20 "$RUNNER_TEMP/ios16.log"
           } > self/status/ios16-last.txt
           cp self/status/ios16-last.txt "self/status/ios16-$GITHUB_RUN_ID.txt"
           # A commit on display-bump raced the trigger commits and left every later run reading
