@@ -49,8 +49,10 @@ def fetch_headers():
         print('fixup: no xnu work tree, skip headers')
         return 0
     added = 0
+    sdk_include = Path('.cache/fakeroot/usr/local/include')
     for relative, repo_path in HEADERS.items():
-        target = work / relative
+        from_libdispatch = relative == 'libkern/os/firehose_buffer_private.h'
+        target = (sdk_include / relative[len('libkern/'):]) if from_libdispatch else (work / relative)
         if target.exists():
             continue
         url = 'https://raw.githubusercontent.com/' + repo_path
@@ -67,6 +69,8 @@ def fetch_headers():
         target.write_bytes(data)
         added += 1
         print('fixup: added %s (%d bytes)' % (relative, len(data)))
+        if from_libdispatch:
+            print('fixup: placed %s in the kernel SDK include path' % target)
     if not added:
         print('fixup: private firehose headers already present')
     return added
