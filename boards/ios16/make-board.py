@@ -60,8 +60,10 @@ ARCHIVES_NEW = '''archives = [
   # uses, so no storage/display audit and no OS volume. This run only wants a kernel.
   "build-corecrypto-14.py",
   "build-corecrypto-14.py --namespace",
-  "build-arm-driver.py ArmDTPlatform",
-  "build-arm-driver.py ArmCpu",
+  # ArmDTPlatform and ArmCpu are absent on purpose: the archive builders read the compile
+  # records the kernel build wrote for each kext, and the BCM2837 machine config does not
+  # build those two (they belong to the phone-shaped machine). They come back once this board
+  # gets its own machine config; the kernel itself does not need them to compile or link.
   "build-arm-driver.py NativeAES",
   "build-native-aes-bindings.py",
   "build-libpthread-kernel.py",
