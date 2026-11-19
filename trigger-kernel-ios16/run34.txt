@@ -1,0 +1,1 @@
+run34 2026-11-19: libfirehose_kernel into the SDK search path
