@@ -1,0 +1,1 @@
+run45 2026-11-19: storage audit gets the bootstrap-linked kernel
