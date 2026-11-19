@@ -257,6 +257,20 @@ jobs:
             ls -l "$T/.cache/fakeroot/usr/local/lib/kernel" 2>/dev/null | head -8
             find "$T" -name "libfirehose*" -o -name "firehose_kernel*" 2>/dev/null | head -8
             grep -n -E "libfirehose_kernel|BUILD SUCCEEDED|BUILD FAILED" "$LOG" 2>/dev/null | tail -6
+            echo "--- archive diagnostics ---"
+            # build-libpthread-kernel.py writes the full clang output to
+            # build/libpthread-kernel/<name>.log but only rethrows its last 4500 chars, so the
+            # real error can be absent from out/<board>/logs/archive-*.log. Scan both.
+            for A in $(ls -t UniXNU/out/$BOARD/logs/archive-*.log \
+                          UniXNU/out/$BOARD/tree/build/*/*.log 2>/dev/null | head -8); do
+              if grep -qE ':[0-9]+:[0-9]+: (fatal )?error:' "$A"; then
+                echo "file: $(basename "$A")"
+                grep -n -E ':[0-9]+:[0-9]+: (fatal )?error:' "$A" | head -5
+                K=$(grep -n -m 1 -E ':[0-9]+:[0-9]+: (fatal )?error:' "$A" | cut -d: -f1)
+                sed -n "$((K>8 ? K-8 : 1)),$((K+8))p" "$A"
+                break
+              fi
+            done
             echo "--- fixups ---"
             grep -E "^fixup:|^late:" "$LOG" 2>/dev/null | head -12
             echo "--- step log ---"
