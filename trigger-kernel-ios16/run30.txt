@@ -1,0 +1,1 @@
+run30 2026-11-19: synthesised PPL/IOMMU headers (macros, no include removal)
