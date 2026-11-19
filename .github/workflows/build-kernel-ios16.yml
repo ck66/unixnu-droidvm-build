@@ -202,9 +202,23 @@ jobs:
         if: always()
         run: |
           set +e
-          ls -l "UniXNU/out/$BOARD/kernel/"
-          shasum -a 256 "UniXNU/out/$BOARD/kernel/kernel.macho" | tee "$RUNNER_TEMP/sha.txt"
-          grep -E "error:|undefined|referenced from|fatal" "$RUNNER_TEMP/ios16.log" | head -40
+          # The kernel is linked before the archive step runs, so collect it even when the
+          # archives fail -- that is the artifact this milestone is about.
+          OBJ="UniXNU/out/$BOARD/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837"
+          ls -l "$OBJ"/mach.* 2>/dev/null | head -8
+          SRC=""
+          for cand in "$OBJ/mach.development.bcm2837.unstripped.noctf" "$OBJ/mach.development.bcm2837.unstripped"; do
+            if [ -f "$cand" ]; then SRC="$cand"; break; fi
+          done
+          if [ -n "$SRC" ]; then
+            mkdir -p "UniXNU/out/$BOARD/kernel"
+            cp "$SRC" "UniXNU/out/$BOARD/kernel/kernel.macho"
+            echo "collected $SRC -> out/$BOARD/kernel/kernel.macho"
+            shasum -a 256 "UniXNU/out/$BOARD/kernel/kernel.macho" | tee "$RUNNER_TEMP/sha.txt"
+          else
+            echo "no linked kernel image found under $OBJ"
+          fi
+          ls -l "UniXNU/out/$BOARD/kernel/" 2>/dev/null
       - name: Publish the last diagnostics into the status branch
         if: always()
         run: |
@@ -269,11 +283,11 @@ jobs:
             UniXNU/out/${{ env.BOARD }}/logs/*.log
           if-no-files-found: warn
       - name: Keep the kernel
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ios16-kernel
           path: |
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.macho
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.json
-          if-no-files-found: error
+          if-no-files-found: warn
