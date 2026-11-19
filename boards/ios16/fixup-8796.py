@@ -122,7 +122,38 @@ def stub_ppl_iommu():
     return changed
 
 
+def place_late():
+    """After installhdrs the kernel compiles against EXPORT_HDRS (and installhdrs re-creates
+    the SDK fakeroot), so the libdispatch header has to be re-placed right before the build."""
+    source = Path('.cache/fakeroot/usr/local/include/os/firehose_buffer_private.h')
+    if not source.is_file():
+        source = Path('.cache/xnu-work/libkern/os/firehose_buffer_private.h')
+    if not source.is_file():
+        print('late: no firehose_buffer_private.h to place')
+        return False
+    data = source.read_bytes()
+    placed = 0
+    for export in Path('build').rglob('EXPORT_HDRS'):
+        target = export / 'libkern/os/firehose_buffer_private.h'
+        if target.is_file():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        placed += 1
+        print('late: %s' % target)
+    sdk = Path('.cache/fakeroot/usr/local/include/os/firehose_buffer_private.h')
+    if not sdk.is_file():
+        sdk.parent.mkdir(parents=True, exist_ok=True)
+        sdk.write_bytes(data)
+        print('late: %s' % sdk)
+    print('late: %d EXPORT_HDRS copies' % placed)
+    return placed > 0
+
+
 def main():
+    if '--late' in sys.argv:
+        place_late()
+        return 0
     fetch_headers()
     dedupe_pmap_field()
     stub_ppl_iommu()
