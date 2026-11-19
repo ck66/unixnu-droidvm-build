@@ -87,6 +87,15 @@ def main():
     sub(PIN_OLD, PIN_NEW)
     sub('defconfig = "droidvm_defconfig"', 'defconfig = "ios16_defconfig"')
 
+    # The patch series is the part of a board that cannot be derived: UniXNU's arch profile
+    # ships one list written against xnu-10063, and applying that plus whyred's device list
+    # stacks two generations of patches on a 8796 tree (that is what kept failing: pmap.c and
+    # the firehose headers are only consistent in one of them). N1709's series *is* the arm64
+    # list adapted to 8796 -- it replaces the entries that moved and names the four it omits --
+    # so this board takes that list alone.
+    sub('defconfig = "ios16_defconfig"',
+        'defconfig = "ios16_defconfig"\npatch_series = ["device:patches/xnu/series"]')
+
     start = text.index('archives = [')
     end = text.index('\n]', start)
     text = text[:start] + ARCHIVES_NEW + text[end + 2:]
