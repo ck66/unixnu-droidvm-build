@@ -104,6 +104,17 @@ def main():
     sub('defconfig = "ios16_defconfig"',
         'defconfig = "ios16_defconfig"\npatch_series = ["device:patches/xnu/series"]')
 
+    # ARTIFACT NAME -- derived from the two makefiles, not inherited from the 17.7.11 board.
+    # xnu-10063's MakeInc.kernel links "$(KERNEL_FILE_NAME).unstripped.noctf" (raw, no CTF),
+    # copies that to ".unstripped" only after merging CTF, and strips to "$(KERNEL_FILE_NAME)".
+    # xnu-8796's MakeInc.kernel links ".unstripped" directly and documents five outputs, none
+    # of them .noctf.  So .noctf is 10063's name for the raw kernel and 8796 spells it
+    # .unstripped; inherit the 17.7.11 pin and prelink looks for a file this tree never writes
+    # (that is what run50 stopped on).  prelink consumes the raw kernel, so on 8796 that is
+    # the plain .unstripped file.
+    sub('kernel = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf"',
+        'kernel = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped"')
+
     start = text.index('archives = [')
     end = text.index('\n]', start)
     text = text[:start] + ARCHIVES_NEW + text[end + 2:]
@@ -125,6 +136,8 @@ def main():
 
     board = tomllib.loads(text)
     assert board['kernel']['defconfig'] == 'ios16_defconfig'
+    # The one field that must NOT follow the 17.7.11 board: 8796 writes no .noctf file.
+    assert board['kernel']['prelink']['kernel'].endswith('.unstripped'), board['kernel']['prelink']['kernel']
     assert len(board['kernel']['prelink']['roots']) == 30, len(board['kernel']['prelink']['roots'])
     assert board['kernel']['prelink']['kernelcache_sha256'].startswith('2ec297ba')
     assert board['kernel']['prelink']['early_security_init'].endswith('0xfffffff005703c54')

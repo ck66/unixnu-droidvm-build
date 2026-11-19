@@ -1,0 +1,6 @@
+run51 2026-11-19T23:55:55Z
+boards/ios16/make-board.py: pin [kernel.prelink] kernel to
+mach.development.bcm2837.unstripped. xnu-8796 MakeInc.kernel links that name
+directly (10063 links .unstripped.noctf and only later copies it to .unstripped),
+so the 17.7.11 board value named a file this tree never writes -- run50 stopped
+at prelink on exactly that path.
