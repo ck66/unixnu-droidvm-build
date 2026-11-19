@@ -177,11 +177,24 @@ def disable_mockfs():
         if len(kept) != len(text.splitlines(True)):
             path.write_text(''.join(kept))
             touched.append(path.name)
+    # The option is not the only place the macro can come from (turning MASTER off was not
+    # enough: the link still pulled mockfs in), so switch the two guarded blocks in vfs_conf.c
+    # off directly. They are `#if MOCKFS ... #endif` around the vfs table entry and the
+    # vnodeop desc; `#if 0` keeps the file's shape intact instead of editing the entries.
+    conf = Path('.cache/xnu-work/bsd/vfs/vfs_conf.c')
+    hit = 0
+    if conf.is_file():
+        text = conf.read_text()
+        hit = text.count('#if MOCKFS')
+        if hit:
+            conf.write_text(text.replace('#if MOCKFS', '#if 0 /* unixnu: this board mounts the payload volumes */'))
     if touched:
         print('fixup: dropped options MOCKFS from %s' % ', '.join(touched))
-    else:
-        print('fixup: no options MOCKFS in config/MASTER*')
-    return bool(touched)
+    if hit:
+        print('fixup: disabled %d "#if MOCKFS" block(s) in vfs_conf.c' % hit)
+    if not touched and not hit:
+        print('fixup: mockfs was already off')
+    return bool(touched or hit)
 
 
 def write_link_shims():
