@@ -1,0 +1,1 @@
+run44 2026-11-19: -MJ compile records (the real gate for the archive stage)
