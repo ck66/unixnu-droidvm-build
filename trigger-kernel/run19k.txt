@@ -1,0 +1,1 @@
+run19k 2026-11-19: k34 with per-selector counters (droidvm_selector_hits)
