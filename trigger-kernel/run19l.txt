@@ -1,0 +1,1 @@
+run19l 2026-11-19: k35 with non-volatile selector counters
