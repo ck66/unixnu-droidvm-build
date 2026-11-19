@@ -132,6 +132,11 @@ jobs:
           # (a file the arch layer already provides, or context that moved).  Make the patch loop
           # tolerant so one run reports every one of them instead of stopping at the first, and
           # name each skip in the log.
+          # The last-resort source fixups (see boards/ios16/fixup-8796.py) must sit next to
+          # build-xnu-4k-baseline.sh, which is executed from out/$BOARD/tree.
+          mkdir -p "out/$BOARD/tree/scripts"
+          cp ../self/boards/ios16/fixup-8796.py "out/$BOARD/tree/scripts/fixup-8796.py"
+          cp ../self/boards/ios16/fixup-8796.py scripts/fixup-8796.py
           python3 - <<'PYEOF' 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           from pathlib import Path
           old = ('    git -C .cache/xnu-work apply --check "$PATCH"\n'
@@ -171,25 +176,12 @@ jobs:
                   print('availability fallback injected:', script)
               # 8796 has two `bool reserved10;` in osfmk/arm/pmap/pmap.h (one behind
               # CONFIG_ROSETTA, one behind HAS_APPLE_PAC). With both features off -- which is
-              # this board -- the struct has a duplicate member and the kernel does not compile.
-              # non-apple-pmap-field.patch fixes the 10063 numbering, not this one, so rename
-              # the *second* occurrence here. Idempotent: a clean tree has exactly two.
-              dup = '''
-python3 - <<'PYX'
-from pathlib import Path
-p = Path('.cache/xnu-work/osfmk/arm/pmap/pmap.h')
-t = p.read_text()
-n = t.count('bool reserved10;')
-if n > 1:
-    i = t.rfind('bool reserved10;')
-    t = t[:i] + 'bool reserved13;' + t[i + len('bool reserved10;'):]
-    p.write_text(t)
-print('reserved10 in pmap.h: %d -> %d' % (n, t.count('bool reserved10;')))
-PYX
-'''
-              if 'reserved10 in pmap.h' not in text:
-                  text = text.replace(avail_new, avail_new + dup, 1)
-                  print('pmap duplicate fix injected:', script)
+              # this board -- the struct has a duplicate member and nothing compiles.
+              # non-apple-pmap-field.patch fixes the 10063 numbering, not 8796's, so a small
+              # helper (staged next to this script) renames the later field.
+              if 'scripts/fixup-8796.py' not in text:
+                  text = text.replace(avail_new, avail_new + 'python3 scripts/fixup-8796.py\n', 1)
+                  print('8796 fixups injected:', script)
               script.write_text(text)
               print('tolerant patch loop:', script)
           PYEOF
