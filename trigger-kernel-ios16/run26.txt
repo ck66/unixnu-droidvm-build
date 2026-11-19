@@ -1,0 +1,1 @@
+run26 2026-11-19: firehose header into the SDK include path
