@@ -247,8 +247,10 @@ jobs:
               if [ -n "$M" ]; then sed -n "$M,$((M+40))p" "$LOG"; fi
             fi
             echo "--- compile records ---"
-            find "UniXNU/out/$BOARD/tree/build/xnu/ios-obj" -name "*.cpo*" 2>/dev/null | head -6
-            echo "count: $(find "UniXNU/out/$BOARD/tree/build/xnu/ios-obj" -name '*.cpo*' 2>/dev/null | wc -l)"
+            R="UniXNU/out/$BOARD/tree/build/xnu/ios-obj"
+            find "$R" -name "IOPlatformExpert.cpo.json" 2>/dev/null | head -2
+            echo "records: $(find "$R" -name '*.json' 2>/dev/null | wc -l)  objects: $(find "$R" -name '*.cpo' 2>/dev/null | wc -l)"
+            find "$R" -name '*.json' 2>/dev/null | head -3
             ls "UniXNU/out/$BOARD/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit" 2>/dev/null | head -6
             echo "--- firehose kernel lib ---"
             T="UniXNU/out/$BOARD/tree"
