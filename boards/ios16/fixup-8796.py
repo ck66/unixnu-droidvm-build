@@ -110,6 +110,11 @@ SHIM = """/* Synthesised for this board: xnu-8796's pmap.c includes the closed p
 #define pmap_ppl_unlockdown_page(...)  do { } while (0)
 #define pmap_ppl_unlockdown_pages(...) do { } while (0)
 #define pmap_ppl_unlockdown_page_locked(...)  do { } while (0)
+
+/* pmap.c calls this at line ~6315 and defines it `static` at ~11940, so the declaration it
+ * used to get from the closed header has to be here or the call becomes an implicit
+ * declaration (and then the static definition is a conflicting redefinition). */
+static void pmap_phys_write_disable(vm_address_t va);
 """
 
 
