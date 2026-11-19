@@ -56,16 +56,25 @@ PIN_NEW = '''# Measured 2026-11-18 against 122-77006 with tools/ipswfetch.py ove
 "Firmware/087-86593-047.dmg.trustcache" = "9cc478fe3525e2683b5b9ea1eea0851eaebebdab21d206556233400e59d2e361"'''
 
 ARCHIVES_NEW = '''archives = [
-  # Only the corecrypto pair, and it is not optional: build-xnu-4k-baseline.sh's second pass
-  # refuses to run without build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
-  # (line ~787, `test -f "$CRYPTO_ARCHIVE"`). It builds straight from source, so unlike the
-  # driver archives it does not need any per-object compile record.
-  #
-  # Everything else stays out for this milestone: those builders read
-  # build/xnu/ios-obj/.../IOPlatformExpert.cpo.json, and the tree only ever writes ".cpo"
-  # (120 of them, an iokit subset). Nothing in the public chain produces the ".json" form.
+  # The device board's list, unchanged. All of these replay the kernel's own compile command
+  # out of build/xnu/ios-obj/.../<name>.cpo.json -- which 8796 does not write by itself
+  # (10063 added `-MJ $(@:o=o.json)` to makedefs/MakeInc.rule; 8796 stops at `-MF`). The
+  # board's fixup script adds that flag, so the records exist and the list can stay whole.
   "build-corecrypto-14.py",
   "build-corecrypto-14.py --namespace",
+  "build-arm-driver.py ArmDTPlatform",
+  "build-arm-driver.py ArmCpu",
+  "build-arm-driver.py NativeAES",
+  "build-native-aes-bindings.py",
+  "audit-storage-interface-static.py",
+  "build-verified-root-probe.py --component os --include-systemos",
+  "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
+  "build-native-virtio-bindings.py --component NativeVirtioBlock --directory build/native-virtio-block-verified-bundle",
+  "build-arm-driver.py NativeRamBlock",
+  "build-native-virtio-bindings.py --component NativeRamBlock --directory build/ram-block",
+  "build-libpthread-kernel.py",
+  "build-droidvm-gpu.py",
+  "build-native-legacy-display.py",
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
