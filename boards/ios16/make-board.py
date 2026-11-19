@@ -56,12 +56,16 @@ PIN_NEW = '''# Measured 2026-11-18 against 122-77006 with tools/ipswfetch.py ove
 "Firmware/087-86593-047.dmg.trustcache" = "9cc478fe3525e2683b5b9ea1eea0851eaebebdab21d206556233400e59d2e361"'''
 
 ARCHIVES_NEW = '''archives = [
-  # Empty on purpose for this milestone. The archive builders compile the guest drivers
-  # against a recorded copy of the kernel's own compile command
-  # (build/xnu/ios-obj/.../IOPlatformExpert.cpo.json), and nothing in the public chain writes
-  # that record -- xnu 8796, UniXNU and the device repo only ever read it. The kernel links
-  # without the archives, so this run stops at "an iOS 16 kernel exists"; the archives come
-  # back once the record has a producer.
+  # Only the corecrypto pair, and it is not optional: build-xnu-4k-baseline.sh's second pass
+  # refuses to run without build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
+  # (line ~787, `test -f "$CRYPTO_ARCHIVE"`). It builds straight from source, so unlike the
+  # driver archives it does not need any per-object compile record.
+  #
+  # Everything else stays out for this milestone: those builders read
+  # build/xnu/ios-obj/.../IOPlatformExpert.cpo.json, and the tree only ever writes ".cpo"
+  # (120 of them, an iokit subset). Nothing in the public chain produces the ".json" form.
+  "build-corecrypto-14.py",
+  "build-corecrypto-14.py --namespace",
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
