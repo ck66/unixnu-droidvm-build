@@ -159,6 +159,28 @@ def place_late():
         sdk.parent.mkdir(parents=True, exist_ok=True)
         sdk.write_bytes(data)
         print('late: %s' % sdk)
+    # The bootstrap pass links without -L$(fakeroot)/usr/local/lib/kernel (that flag is only
+    # added for the non-bootstrap pass in build-xnu-4k-baseline.sh), so ld searches the SDK's
+    # own usr/local/lib/kernel -- which does not exist. Put the archive where it looks.
+    lib = Path('.cache/fakeroot/usr/local/lib/kernel/libfirehose_kernel.a')
+    if lib.is_file():
+        import subprocess
+        sdk_path = subprocess.run(['xcrun', '--sdk', 'iphoneos', '--show-sdk-path'],
+                                  capture_output=True, text=True).stdout.strip()
+        if sdk_path:
+            dest = Path(sdk_path) / 'usr/local/lib/kernel'
+            try:
+                dest.mkdir(parents=True, exist_ok=True)
+                (dest / lib.name).write_bytes(lib.read_bytes())
+                print('late: %s' % (dest / lib.name))
+            except OSError:
+                subprocess.run(['sudo', '-n', 'mkdir', '-p', str(dest)], check=False)
+                subprocess.run(['sudo', '-n', 'cp', str(lib), str(dest / lib.name)], check=False)
+                print('late: sudo copy -> %s' % (dest / lib.name))
+        else:
+            print('late: no iphoneos sdk path')
+    else:
+        print('late: no %s' % lib)
     print('late: %d EXPORT_HDRS copies' % placed)
     return placed > 0
 
