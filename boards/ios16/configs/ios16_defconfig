@@ -20,7 +20,10 @@ CONFIG_XNU_SOURCE_PTHREAD=y
 CONFIG_XNU_NATIVE_AES=y
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
 CONFIG_XNU_TRUST_CACHE_RUNTIME=y
-CONFIG_XNU_SOURCE_MOCKFS=y
+# 8796's public mockfs sources are incomplete (mockfs_fsnode.c needs the private enum) and this
+# board mounts the payload's real APFS volumes; fixup-8796.py also turns the four #if MOCKFS
+# blocks in vfs_conf.c off. build-xnu-4k-baseline.sh otherwise insists on libmockfs_fixture.a.
+CONFIG_XNU_SOURCE_MOCKFS=n
 CONFIG_XNU_NATIVE_CS_HASH_CACHE=y
 CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
 
