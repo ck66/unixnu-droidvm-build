@@ -162,39 +162,23 @@ ml_enable_monitor(void)
 """
 
 
-def enable_mockfs():
-    """vfs_conf.c (patched) refers to mockfs_mountroot at link time; bsd/conf/files has the
-    mockfs sources behind `optional mockfs`, so the option has to be on."""
+def disable_mockfs():
+    """mockfs is the ramdisk root used by the phone-shaped boards. This one mounts the real APFS
+    volumes from the payload, so mockfs is dead weight -- and 8796's public mockfs sources do not
+    build (mockfs_fsnode.c needs the enum that the patched header chain loses). vfs_conf.c guards
+    its mockfs entry with `#if MOCKFS`, so turning the option off removes both the entry and the
+    sources from the build."""
     p = Path('.cache/xnu-work/config/MASTER')
     if not p.is_file():
         print('fixup: no config/MASTER, skip mockfs')
         return False
-    t = p.read_text()
-    if 'options   MOCKFS' in t or 'options\t\tMOCKFS' in t:
-        print('fixup: MOCKFS already enabled')
+    lines = p.read_text().splitlines(True)
+    kept = [l for l in lines if not l.lstrip().startswith('options\t\tMOCKFS')]
+    if len(kept) == len(lines):
+        print('fixup: MOCKFS not in config/MASTER')
         return False
-    t = t.rstrip('\n') + '\n\noptions   MOCKFS\t\t\t# <mockfs>\n'
-    p.write_text(t)
-    print('fixup: enabled options MOCKFS in config/MASTER')
-    return True
-
-
-def force_mockfs_files():
-    """`options MOCKFS` is on, yet the link cannot find mockfs_mountroot -- the bsd file list is
-    the only other place that can drop the sources, so make the three entries unconditional."""
-    files = Path('.cache/xnu-work/bsd/conf/files')
-    if not files.is_file():
-        print('fixup: no bsd/conf/files, skip mockfs force')
-        return False
-    t = files.read_text()
-    if 'optional mockfs' not in t:
-        print('fixup: mockfs entries already unconditional')
-        return False
-    for name in ('mockfs_fsnode.c', 'mockfs_vfsops.c', 'mockfs_vnops.c'):
-        t = t.replace('bsd/miscfs/mockfs/%s\toptional mockfs' % name,
-                      'bsd/miscfs/mockfs/%s\tstandard' % name)
-    files.write_text(t)
-    print('fixup: mockfs sources made unconditional in bsd/conf/files')
+    p.write_text(''.join(kept))
+    print('fixup: turned MOCKFS off in config/MASTER')
     return True
 
 
@@ -275,8 +259,7 @@ def main():
     fetch_headers()
     dedupe_pmap_field()
     write_ppl_shims()
-    enable_mockfs()
-    force_mockfs_files()
+    disable_mockfs()
     write_link_shims()
     print('fixup: done')
     return 0
