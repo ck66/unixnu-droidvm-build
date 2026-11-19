@@ -197,6 +197,38 @@ def disable_mockfs():
     return bool(touched or hit)
 
 
+def add_compile_records():
+    """xnu-10063 (iOS 17) emits a per-object JSON compile record -- `-MJ $(@:o=o.json)` in
+    makedefs/MakeInc.rule -- and the whole UniXNU archive stage is written against it
+    (build-arm-driver.py and friends read IOPlatformExpert.cpo.json to replay the kernel's own
+    compile command). 8796 only writes `-MF`, so on iOS 16 nothing ever produced those records:
+    that, and not a missing tool, is why the archives could not build. Adding the flag is the
+    whole fix.
+    """
+    rule = Path('.cache/xnu-work/makedefs/MakeInc.rule')
+    if not rule.is_file():
+        print('fixup: no makedefs/MakeInc.rule, skip compile records')
+        return False
+    text = rule.read_text()
+    if '-MJ $(@:o=o.json)' in text:
+        print('fixup: compile records already enabled')
+        return False
+    added = 0
+    for old in ('S_RULE_1A=$(_v)${S_KCC} -c ${SFLAGS} -MD -MF $(@:o=d) -MP',
+                'C_RULE_1A=$(_v)${KCC} -c ${filter-out ${$@_CFLAGS_RM}, ${CFLAGS} ${CWARNFLAGS}} -MD -MF $(@:o=d) -MP',
+                'P_RULE_1A=$(_v)${KC++} -o $@ -c ${CXXFLAGS} ${filter-out ${$@_CFLAGS_RM}, ${CFLAGS} ${CXXWARNFLAGS}} -MD -MF $(@:o=d) -MP'):
+        if old in text:
+            head, tail = old.split('-MF $(@:o=d) -MP')
+            text = text.replace(old, '%s-MF $(@:o=d) -MJ $(@:o=o.json) -MP%s' % (head, tail), 1)
+            added += 1
+    if not added:
+        print('fixup: compile-record rule anchors missing')
+        return False
+    rule.write_text(text)
+    print('fixup: added -MJ $(@:o=o.json) to %d compile rules' % added)
+    return True
+
+
 def write_link_shims():
     work = Path('.cache/xnu-work')
     src = work / 'osfmk/arm64/unixnu_shims.c'
@@ -275,6 +307,7 @@ def main():
     dedupe_pmap_field()
     write_ppl_shims()
     disable_mockfs()
+    add_compile_records()
     write_link_shims()
     print('fixup: done')
     return 0
