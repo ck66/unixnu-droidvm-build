@@ -169,6 +169,27 @@ jobs:
               if avail_old in text and 'AVAILABILITY_PL=\"${XNU_AVAILABILITY_PL' not in text:
                   text = text.replace(avail_old, avail_new, 1)
                   print('availability fallback injected:', script)
+              # 8796 has two `bool reserved10;` in osfmk/arm/pmap/pmap.h (one behind
+              # CONFIG_ROSETTA, one behind HAS_APPLE_PAC). With both features off -- which is
+              # this board -- the struct has a duplicate member and the kernel does not compile.
+              # non-apple-pmap-field.patch fixes the 10063 numbering, not this one, so rename
+              # the *second* occurrence here. Idempotent: a clean tree has exactly two.
+              dup = '''
+python3 - <<'PYX'
+from pathlib import Path
+p = Path('.cache/xnu-work/osfmk/arm/pmap/pmap.h')
+t = p.read_text()
+n = t.count('bool reserved10;')
+if n > 1:
+    i = t.rfind('bool reserved10;')
+    t = t[:i] + 'bool reserved13;' + t[i + len('bool reserved10;'):]
+    p.write_text(t)
+print('reserved10 in pmap.h: %d -> %d' % (n, t.count('bool reserved10;')))
+PYX
+'''
+              if 'reserved10 in pmap.h' not in text:
+                  text = text.replace(avail_new, avail_new + dup, 1)
+                  print('pmap duplicate fix injected:', script)
               script.write_text(text)
               print('tolerant patch loop:', script)
           PYEOF
