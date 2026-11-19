@@ -66,7 +66,10 @@ ARCHIVES_NEW = '''archives = [
   "build-arm-driver.py ArmCpu",
   "build-arm-driver.py NativeAES",
   "build-native-aes-bindings.py",
-  "audit-storage-interface-static.py",
+  # Not the audit itself: it needs a kernel image and on a first build none exists yet. The
+  # board ships a resolver (fixup-8796.py writes it) that hands the audit the image the
+  # bootstrap pass already linked.
+  "audit-storage-candidate.py",
   "build-verified-root-probe.py --component os --include-systemos",
   "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
   "build-native-virtio-bindings.py --component NativeVirtioBlock --directory build/native-virtio-block-verified-bundle",
