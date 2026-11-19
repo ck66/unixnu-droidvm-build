@@ -1,0 +1,1 @@
+run28 2026-11-19: first real compiler error published in status/
