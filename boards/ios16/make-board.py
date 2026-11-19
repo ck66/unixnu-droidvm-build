@@ -56,28 +56,23 @@ PIN_NEW = '''# Measured 2026-11-18 against 122-77006 with tools/ipswfetch.py ove
 "Firmware/087-86593-047.dmg.trustcache" = "9cc478fe3525e2683b5b9ea1eea0851eaebebdab21d206556233400e59d2e361"'''
 
 ARCHIVES_NEW = '''archives = [
-  # The device board's list, unchanged. All of these replay the kernel's own compile command
-  # out of build/xnu/ios-obj/.../<name>.cpo.json -- which 8796 does not write by itself
-  # (10063 added `-MJ $(@:o=o.json)` to makedefs/MakeInc.rule; 8796 stops at `-MF`). The
-  # board's fixup script adds that flag, so the records exist and the list can stay whole.
+  # Only what this board's defconfig actually links. ios16_defconfig says storage, display,
+  # GPU and owner-root are separate (later) steps, so the iOS 17 board's 15-entry list does
+  # not apply here. In particular audit-storage-interface-static.py qualifies the Darwin 23
+  # original kernelcache (fixed SHA + 190-slot dispatch shape) and needs a prelink plan from
+  # a second "reference candidate" kernel -- neither exists for iOS 16. Everything that
+  # consumed its output (virtio/ram bindings, verified-root probe, gpu, legacy display) is
+  # therefore out too, for this milestone.
+  #
+  # The first six all built successfully once 8796 was taught `-MJ $(@:o=o.json)`
+  # (fixup-8796.py writes the per-object compile records the archive builders replay).
   "build-corecrypto-14.py",
   "build-corecrypto-14.py --namespace",
   "build-arm-driver.py ArmDTPlatform",
   "build-arm-driver.py ArmCpu",
   "build-arm-driver.py NativeAES",
   "build-native-aes-bindings.py",
-  # Not the audit itself: it needs a kernel image and on a first build none exists yet. The
-  # board ships a resolver (fixup-8796.py writes it) that hands the audit the image the
-  # bootstrap pass already linked.
-  "audit-storage-candidate.py",
-  "build-verified-root-probe.py --component os --include-systemos",
-  "build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle",
-  "build-native-virtio-bindings.py --component NativeVirtioBlock --directory build/native-virtio-block-verified-bundle",
-  "build-arm-driver.py NativeRamBlock",
-  "build-native-virtio-bindings.py --component NativeRamBlock --directory build/ram-block",
   "build-libpthread-kernel.py",
-  "build-droidvm-gpu.py",
-  "build-native-legacy-display.py",
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
