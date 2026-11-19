@@ -229,6 +229,55 @@ def add_compile_records():
     return True
 
 
+AUDIT_WRAPPER = '''#!/usr/bin/env python3
+"""Give the storage-ABI audit a kernel image it can actually read.
+
+audit-storage-interface-static.py wants "a kernel WITHOUT the storage drivers" and defaults to
+build/reference-candidate/kernel.macho, else out/<board>/kernel/kernel.macho. On a first build
+from scratch neither exists when the archive stage runs: the board links its candidate only at
+the very end. The bootstrap pass has already linked an image by then -- that is exactly the
+kernel without the archive drivers -- so hand the audit that one.
+"""
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+obj = ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837'
+real = ROOT / 'scripts/audit-storage-interface-static.py'
+
+if any(a.startswith('--candidate') for a in sys.argv[1:]):
+    sys.exit(subprocess.call([sys.executable, str(real), *sys.argv[1:]]))
+
+candidates = [
+    ROOT / 'build/reference-candidate/kernel.macho',
+    obj / 'mach.development.bcm2837.unstripped.noctf',
+    obj / 'mach.development.bcm2837.unstripped',
+    ROOT.parent / 'kernel/kernel.macho',
+]
+chosen = next((path for path in candidates if path.is_file()), None)
+if chosen is None:
+    print('audit-storage-candidate: no kernel image to audit yet')
+    sys.exit(1)
+print('audit-storage-candidate: auditing %s' % chosen.relative_to(ROOT))
+sys.exit(subprocess.call([sys.executable, str(real), '--candidate', str(chosen)]))
+'''
+
+
+def write_audit_wrapper():
+    """Registered for the board's `audit-storage-candidate.py` archive entry."""
+    # tree/scripts, not .cache/xnu-work/scripts: the archive entries are resolved against the
+    # tree root (kernel.py does `ctx.tree / 'scripts' / executable`).
+    target = Path('scripts/audit-storage-candidate.py')
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_file() and target.read_text() == AUDIT_WRAPPER:
+        print('fixup: audit wrapper already in place')
+        return False
+    target.write_text(AUDIT_WRAPPER)
+    print('fixup: wrote scripts/audit-storage-candidate.py')
+    return True
+
+
 def write_link_shims():
     work = Path('.cache/xnu-work')
     src = work / 'osfmk/arm64/unixnu_shims.c'
@@ -308,6 +357,7 @@ def main():
     write_ppl_shims()
     disable_mockfs()
     add_compile_records()
+    write_audit_wrapper()
     write_link_shims()
     print('fixup: done')
     return 0
