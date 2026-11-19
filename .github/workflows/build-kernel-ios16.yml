@@ -232,6 +232,10 @@ jobs:
               M=$(grep -n -m 1 -E "Undefined symbols|symbol\(s\) not found" "$LOG" | cut -d: -f1)
               if [ -n "$M" ]; then sed -n "$M,$((M+40))p" "$LOG"; fi
             fi
+            echo "--- compile records ---"
+            find "UniXNU/out/$BOARD/tree/build/xnu/ios-obj" -name "*.cpo*" 2>/dev/null | head -6
+            echo "count: $(find "UniXNU/out/$BOARD/tree/build/xnu/ios-obj" -name '*.cpo*' 2>/dev/null | wc -l)"
+            ls "UniXNU/out/$BOARD/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit" 2>/dev/null | head -6
             echo "--- firehose kernel lib ---"
             T="UniXNU/out/$BOARD/tree"
             ls -l "$T/.cache/fakeroot/usr/local/lib/kernel" 2>/dev/null | head -8
