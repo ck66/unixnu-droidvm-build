@@ -229,52 +229,41 @@ def add_compile_records():
     return True
 
 
-AUDIT_WRAPPER = '''#!/usr/bin/env python3
-"""Give the storage-ABI audit a kernel image it can actually read.
-
-audit-storage-interface-static.py wants "a kernel WITHOUT the storage drivers" and defaults to
-build/reference-candidate/kernel.macho, else out/<board>/kernel/kernel.macho. On a first build
-from scratch neither exists when the archive stage runs: the board links its candidate only at
-the very end. The bootstrap pass has already linked an image by then -- that is exactly the
-kernel without the archive drivers -- so hand the audit that one.
-"""
-import subprocess
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-obj = ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837'
-real = ROOT / 'scripts/audit-storage-interface-static.py'
-
-if any(a.startswith('--candidate') for a in sys.argv[1:]):
-    sys.exit(subprocess.call([sys.executable, str(real), *sys.argv[1:]]))
-
-candidates = [
-    ROOT / 'build/reference-candidate/kernel.macho',
-    obj / 'mach.development.bcm2837.unstripped.noctf',
-    obj / 'mach.development.bcm2837.unstripped',
-    ROOT.parent / 'kernel/kernel.macho',
-]
-chosen = next((path for path in candidates if path.is_file()), None)
-if chosen is None:
-    print('audit-storage-candidate: no kernel image to audit yet')
-    sys.exit(1)
-print('audit-storage-candidate: auditing %s' % chosen.relative_to(ROOT))
-sys.exit(subprocess.call([sys.executable, str(real), '--candidate', str(chosen)]))
-'''
+LIBPTHREAD_PATCH = (
+    'diff --git a/kern/kern_support.c b/kern/kern_support.c' "\n"
+    'index bdb04ab..c59708d 100644' "\n"
+    '--- a/kern/kern_support.c' "\n"
+    '+++ b/kern/kern_support.c' "\n"
+    '@@ -666,7 +666,9 @@ _bsdthread_register(struct proc *p,' "\n"
+    ' \t/* return the supported feature set as the return value. */' "\n"
+    ' \t*retval = PTHREAD_FEATURE_SUPPORTED;' "\n"
+    ' ' "\n"
+    '-#if _PTHREAD_CONFIG_JIT_WRITE_PROTECT' "\n"
+    '+/* xnu-8796 (iOS 16) has no proc_get_jit_entitled / proc_get_pthread_jit_allowlist2 in' "\n"
+    '+ * struct pthread_kern; this Darwin 23 feature block cannot compile against it. */' "\n"
+    '+#if 0' "\n"
+    ' \tif (pthread_kern->proc_get_jit_entitled(p)) {' "\n"
+    ' \t\t*retval |= PTHREAD_FEATURE_JIT_ENTITLED;' "\n"
+    ' \t}' "\n"
+)
 
 
-def write_audit_wrapper():
-    """Registered for the board's `audit-storage-candidate.py` archive entry."""
-    # tree/scripts, not .cache/xnu-work/scripts: the archive entries are resolved against the
-    # tree root (kernel.py does `ctx.tree / 'scripts' / executable`).
-    target = Path('scripts/audit-storage-candidate.py')
+def write_libpthread_patch():
+    """build-libpthread-kernel.py clones Darwin 23's libpthread and replays the kernel's own
+    compile command against it. 8796's `struct pthread_kern` has no proc_get_jit_entitled /
+    proc_get_pthread_jit_allowlist2, so kern_support.c:670 fails with
+    `no member named 'proc_get_jit_entitled'`. The archive script applies every
+    tree/patches/libpthread/*.patch to its work clone -- that is the supported extension point,
+    so drop a patch there (sorted last, its hunk is at line 666, clear of the shipped patch's
+    559/902+ hunks).
+    """
+    target = Path('patches/libpthread/zzzz-8796-no-jit-entitled.patch')
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.is_file() and target.read_text() == AUDIT_WRAPPER:
-        print('fixup: audit wrapper already in place')
+    if target.is_file() and target.read_bytes() == LIBPTHREAD_PATCH.encode():
+        print('fixup: libpthread patch already in place')
         return False
-    target.write_text(AUDIT_WRAPPER)
-    print('fixup: wrote scripts/audit-storage-candidate.py')
+    target.write_bytes(LIBPTHREAD_PATCH.encode())
+    print('fixup: wrote %s' % target)
     return True
 
 
@@ -357,7 +346,7 @@ def main():
     write_ppl_shims()
     disable_mockfs()
     add_compile_records()
-    write_audit_wrapper()
+    write_libpthread_patch()
     write_link_shims()
     print('fixup: done')
     return 0
