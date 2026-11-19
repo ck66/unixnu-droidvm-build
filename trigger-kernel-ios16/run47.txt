@@ -1,0 +1,1 @@
+run47 2026-11-19: read the full clang log for the libpthread archive error
