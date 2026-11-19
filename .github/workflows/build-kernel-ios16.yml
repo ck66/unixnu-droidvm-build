@@ -226,6 +226,12 @@ jobs:
             else
               echo "no $LOG"
             fi
+            echo "--- link diagnostics ---"
+            if [ -f "$LOG" ]; then
+              grep -n -m 8 -E "^ld: |Undefined symbols|symbol\(s\) not found|duplicate symbol|_OBJC_CLASS_" "$LOG" | head -12
+              M=$(grep -n -m 1 -E "Undefined symbols|symbol\(s\) not found" "$LOG" | cut -d: -f1)
+              if [ -n "$M" ]; then sed -n "$M,$((M+40))p" "$LOG"; fi
+            fi
             echo "--- fixups ---"
             grep -E "^fixup:|^late:" "$LOG" 2>/dev/null | head -12
             echo "--- step log ---"
