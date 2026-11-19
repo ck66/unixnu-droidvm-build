@@ -56,17 +56,12 @@ PIN_NEW = '''# Measured 2026-11-18 against 122-77006 with tools/ipswfetch.py ove
 "Firmware/087-86593-047.dmg.trustcache" = "9cc478fe3525e2683b5b9ea1eea0851eaebebdab21d206556233400e59d2e361"'''
 
 ARCHIVES_NEW = '''archives = [
-  # build-droidvm-all.py's REFERENCE_ARCHIVES: the set the 17.7.11 reference candidate
-  # uses, so no storage/display audit and no OS volume. This run only wants a kernel.
-  "build-corecrypto-14.py",
-  "build-corecrypto-14.py --namespace",
-  # ArmDTPlatform and ArmCpu are absent on purpose: the archive builders read the compile
-  # records the kernel build wrote for each kext, and the BCM2837 machine config does not
-  # build those two (they belong to the phone-shaped machine). They come back once this board
-  # gets its own machine config; the kernel itself does not need them to compile or link.
-  "build-arm-driver.py NativeAES",
-  "build-native-aes-bindings.py",
-  "build-libpthread-kernel.py",
+  # Empty on purpose for this milestone. The archive builders compile the guest drivers
+  # against a recorded copy of the kernel's own compile command
+  # (build/xnu/ios-obj/.../IOPlatformExpert.cpo.json), and nothing in the public chain writes
+  # that record -- xnu 8796, UniXNU and the device repo only ever read it. The kernel links
+  # without the archives, so this run stops at "an iOS 16 kernel exists"; the archives come
+  # back once the record has a producer.
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
