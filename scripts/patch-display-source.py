@@ -347,6 +347,10 @@ EMULATE_HEAD = """// DroidVM: the selectors' real meanings are documented (IOMob
 // display. 3084 bytes is exactly three 0x101-entry gamma tables (3 * 1028).
 static int native_legacy_emulate=0;
 static int native_legacy_emulate_loaded=0;
+// Every user-client selector the display family sees, counted by number. The compositor's
+// behaviour is otherwise invisible: 'sel 3/4/5/9 never called' was measured this way, and a
+// 64-entry table answers 'what *did* it call, and in what order' for any future question.
+volatile uint32_t droidvm_selector_hits[64];
 extern "C" int native_legacy_power_request(void *,unsigned);
 // The display this client is attached to: the backend object when it was recorded at start, else
 // the client's own provider (the display service it opened). Set on every wrapped call.
@@ -429,8 +433,14 @@ def patch_emulate(root):
     if old not in text:
         fail('lie-mask anchor missing')
     text = text.replace(old, new, 1)
+    entry = '    ClientStat *stat=statFor(client);'
+    if 'droidvm_selector_hits[selector]' not in text:
+        if entry not in text:
+            fail('wrappedExternal entry anchor missing')
+        text = text.replace(entry,
+            '    if(selector<64)++droidvm_selector_hits[selector];\n' + entry, 1)
     path.write_text(text)
-    print('selector emulation installed (legacy-emulate=1)')
+    print('selector emulation installed (legacy-emulate=1), selector counters on')
 
 
 READY_GLOBALS = """// DroidVM (§61): the display-ready plumbing. macOS's DroidVMDisplay, on this same VM and the same
