@@ -135,6 +135,89 @@ def write_ppl_shims():
     return True
 
 
+SHIM_C = """/* Synthesised for this board: two symbols that 8796's sources call but that live in Apple's
+ * closed per-SoC / PPL sources. Neither does anything useful here.
+ *
+ *  - CleanPoC_DcacheRegion_Force_nopreempt_nohid: the "no preemption, no HID" variant of a PoC
+ *    dcache clean. This board has coherent DMA and no PPL, so the plain flush is the right
+ *    behaviour; the callers only need the lines written back.
+ *  - ml_enable_monitor: enables the PPL/monitor mode. There is no monitor on a non-Apple SoC.
+ */
+#include <arm/caches_internal.h>
+#include <mach/vm_types.h>
+#include <stddef.h>
+
+void
+CleanPoC_DcacheRegion_Force_nopreempt_nohid(vm_offset_t va, size_t length)
+{
+	(void)va;
+	(void)length;
+	FlushPoC_Dcache();
+}
+
+void
+ml_enable_monitor(void)
+{
+}
+"""
+
+
+def enable_mockfs():
+    """vfs_conf.c (patched) refers to mockfs_mountroot at link time; bsd/conf/files has the
+    mockfs sources behind `optional mockfs`, so the option has to be on."""
+    p = Path('.cache/xnu-work/config/MASTER')
+    if not p.is_file():
+        print('fixup: no config/MASTER, skip mockfs')
+        return False
+    t = p.read_text()
+    if 'options   MOCKFS' in t or 'options\t\tMOCKFS' in t:
+        print('fixup: MOCKFS already enabled')
+        return False
+    t = t.rstrip('\n') + '\n\noptions   MOCKFS\t\t\t# <mockfs>\n'
+    p.write_text(t)
+    print('fixup: enabled options MOCKFS in config/MASTER')
+    return True
+
+
+def force_mockfs_files():
+    """`options MOCKFS` is on, yet the link cannot find mockfs_mountroot -- the bsd file list is
+    the only other place that can drop the sources, so make the three entries unconditional."""
+    files = Path('.cache/xnu-work/bsd/conf/files')
+    if not files.is_file():
+        print('fixup: no bsd/conf/files, skip mockfs force')
+        return False
+    t = files.read_text()
+    if 'optional mockfs' not in t:
+        print('fixup: mockfs entries already unconditional')
+        return False
+    for name in ('mockfs_fsnode.c', 'mockfs_vfsops.c', 'mockfs_vnops.c'):
+        t = t.replace('bsd/miscfs/mockfs/%s\toptional mockfs' % name,
+                      'bsd/miscfs/mockfs/%s\tstandard' % name)
+    files.write_text(t)
+    print('fixup: mockfs sources made unconditional in bsd/conf/files')
+    return True
+
+
+def write_link_shims():
+    work = Path('.cache/xnu-work')
+    src = work / 'osfmk/arm64/unixnu_shims.c'
+    if not work.is_dir():
+        print('fixup: no xnu work tree, skip link shims')
+        return False
+    files = work / 'osfmk/conf/files.arm64'
+    if not files.is_file():
+        print('fixup: no osfmk/conf/files.arm64, skip link shims')
+        return False
+    if 'unixnu_shims.c' in files.read_text():
+        print('fixup: link shims already registered')
+        return False
+    src.write_text(SHIM_C)
+    text = files.read_text().rstrip('\n') + '\nosfmk/arm64/unixnu_shims.c\tstandard\n'
+    files.write_text(text)
+    print('fixup: registered osfmk/arm64/unixnu_shims.c')
+    return True
+
+
 def place_late():
     """After installhdrs the kernel compiles against EXPORT_HDRS (and installhdrs re-creates
     the SDK fakeroot), so the libdispatch header has to be re-placed right before the build."""
@@ -192,6 +275,9 @@ def main():
     fetch_headers()
     dedupe_pmap_field()
     write_ppl_shims()
+    enable_mockfs()
+    force_mockfs_files()
+    write_link_shims()
     print('fixup: done')
     return 0
 
