@@ -163,23 +163,25 @@ ml_enable_monitor(void)
 
 
 def disable_mockfs():
-    """mockfs is the ramdisk root used by the phone-shaped boards. This one mounts the real APFS
-    volumes from the payload, so mockfs is dead weight -- and 8796's public mockfs sources do not
-    build (mockfs_fsnode.c needs the enum that the patched header chain loses). vfs_conf.c guards
-    its mockfs entry with `#if MOCKFS`, so turning the option off removes both the entry and the
-    sources from the build."""
-    p = Path('.cache/xnu-work/config/MASTER')
-    if not p.is_file():
-        print('fixup: no config/MASTER, skip mockfs')
-        return False
-    lines = p.read_text().splitlines(True)
-    kept = [l for l in lines if not l.lstrip().startswith('options\t\tMOCKFS')]
-    if len(kept) == len(lines):
-        print('fixup: MOCKFS not in config/MASTER')
-        return False
-    p.write_text(''.join(kept))
-    print('fixup: turned MOCKFS off in config/MASTER')
-    return True
+    """mockfs is the ramdisk root the phone-shaped boards use; this board mounts the real APFS
+    volumes from the payload. vfs_conf.c guards its mockfs entry with `#if MOCKFS`, so the option
+    has to go -- and it may be declared in config/MASTER *or* in the machine config, so clear it
+    everywhere. (Compiling mockfs instead is not an option: 8796's public sources need a private
+    header.)"""
+    import re
+    touched = []
+    for path in sorted(Path('.cache/xnu-work/config').glob('MASTER*')):
+        text = path.read_text()
+        kept = [l for l in text.splitlines(True)
+                if not re.match(r'^\s*options\s+MOCKFS\b', l)]
+        if len(kept) != len(text.splitlines(True)):
+            path.write_text(''.join(kept))
+            touched.append(path.name)
+    if touched:
+        print('fixup: dropped options MOCKFS from %s' % ', '.join(touched))
+    else:
+        print('fixup: no options MOCKFS in config/MASTER*')
+    return bool(touched)
 
 
 def write_link_shims():
