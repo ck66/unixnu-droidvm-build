@@ -1,0 +1,1 @@
+run23 2026-11-19: resolver retries with -C1/-C0; rebased source-machine-layer in place
