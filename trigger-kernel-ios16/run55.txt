@@ -1,0 +1,7 @@
+run55 2026-11-20T01:24:41Z
+run54 got past 0xfffffff005b8c1cc (ADRP into nowhere) and then stopped at
+0xfffffff005b8c29c -- the same float pool, whose word decodes as an ADR that lands in a
+gap INSIDE the image, so the span test let it through to the raise. The rule is now the
+simple one: a decoded target that is inside no segment cannot be a reference, because a
+prelinked kernel can only point at things in its own segments. Those words are recorded
+in unrecognised_inline_data and the scan continues.

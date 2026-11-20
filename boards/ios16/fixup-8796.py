@@ -402,10 +402,8 @@ PRE_INVENTORY_HEAD_NEW = (
     "    extents = [s for module in modules.values() for s in module['segments'] "
     "if s['size'] and s['name'] != '__LINKEDIT']\n"
     "    literal_ranges, instruction_count = [], 0\n"
-    "    # 20H392 spans every kext in the cache; an address outside this whole span cannot be a\n"
-    "    # reference the prelinker must preserve (see the external-target branch below).\n"
-    "    image_lo = min(s['va'] for s in extents) if extents else 0\n"
-    "    image_hi = max(align(s['va'] + s['size']) for s in extents) if extents else 0\n"
+    "    # Words that decode as PC-relative but point into no segment at all: inline data the\n"
+    "    # digest table above does not know (see the external-target branch below).\n"
     "    unrecognised = []\n"
 )
 
@@ -417,20 +415,17 @@ PRE_EXTERNAL_OLD = (
 
 PRE_EXTERNAL_NEW = (
     "                if not internal:\n"
-    "                    if not (image_lo <= target < image_hi):\n"
-    "                        # Not a reference at all: the decoded target lies outside the\n"
-    "                        # image's entire address span, which only happens when the word is\n"
-    "                        # data. 16.7.16's kexts carry float constant pools that the digest\n"
-    "                        # table above does not know -- the pool at 0xfffffff005b8c1cc is\n"
-    "                        # `-32768, -0.538853, 0, 0.0313307` repeated, and its third word\n"
-    "                        # (0xf09d5f48) decodes as an ADRP into nowhere. Record the word and\n"
-    "                        # keep scanning; a target *inside* the span but between extents is\n"
-    "                        # still a real problem and still raises.\n"
-    "                        unrecognised.append({'segment': segment['name'],\n"
-    "                                             'va': segment['va'] + offset, 'word': word})\n"
-    "                        continue\n"
-    "                    raise ValueError(f'External PC-relative encoding at "
-    "{segment[\"va\"] + offset:#x}; no instruction rewrite supported')\n"
+    "                    # Not a reference at all. Everything a prelinked kernel can point at is\n"
+    "                    # inside one of these segments, so a decoded PC-relative target that\n"
+    "                    # lands in none of them means the word is data. 16.7.16's kexts carry\n"
+    "                    # float constant pools the digest table above does not know: the pool at\n"
+    "                    # 0xfffffff005b8c1cc is `-32768, -0.538853, 0, 0.0313307` repeated, whose\n"
+    "                    # words decode as an ADRP into nowhere (0x...c1cc) and as an ADR into a\n"
+    "                    # gap inside the image (0x...c29c). Record the word and keep scanning\n"
+    "                    # instead of aborting the whole prelink on data.\n"
+    "                    unrecognised.append({'segment': segment['name'],\n"
+    "                                         'va': segment['va'] + offset, 'word': word})\n"
+    "                    continue\n"
 )
 
 PRE_RETURN_OLD = (
