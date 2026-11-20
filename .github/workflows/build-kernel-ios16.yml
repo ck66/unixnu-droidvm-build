@@ -210,14 +210,24 @@ jobs:
           for cand in "$OBJ/mach.development.bcm2837.unstripped.noctf" "$OBJ/mach.development.bcm2837.unstripped"; do
             if [ -f "$cand" ]; then SRC="$cand"; break; fi
           done
-          if [ -n "$SRC" ]; then
+          DEST="UniXNU/out/$BOARD/kernel/kernel.macho"
+          # The prelink step writes the artifact this milestone is about straight to $DEST, and the
+          # plain copy below then replaced it with the raw linked xnu: run 44653449412 printed
+          # sha f4ba0c86... for the prelinked image at 01:36:00 and shipped 08a9c1d8... (18,383,592
+          # bytes, exactly the size of mach.*.unstripped) two seconds later.  Keep the prelinked
+          # image whenever it exists, and put the raw xnu beside it under its own name so both are
+          # inspectable in the artifact.
+          if [ -s "$DEST" ]; then
+            echo "keeping the prelinked kernel at $DEST"
+          elif [ -n "$SRC" ]; then
             mkdir -p "UniXNU/out/$BOARD/kernel"
-            cp "$SRC" "UniXNU/out/$BOARD/kernel/kernel.macho"
-            echo "collected $SRC -> out/$BOARD/kernel/kernel.macho"
-            shasum -a 256 "UniXNU/out/$BOARD/kernel/kernel.macho" | tee "$RUNNER_TEMP/sha.txt"
+            cp "$SRC" "$DEST"
+            echo "no prelinked kernel; collected $SRC -> $DEST"
           else
             echo "no linked kernel image found under $OBJ"
           fi
+          [ -n "$SRC" ] && cp "$SRC" "UniXNU/out/$BOARD/kernel/kernel.xnu.macho"
+          shasum -a 256 "UniXNU/out/$BOARD/kernel/"*.macho | tee "$RUNNER_TEMP/sha.txt"
           ls -l "UniXNU/out/$BOARD/kernel/" 2>/dev/null
       - name: Publish the last diagnostics into the status branch
         if: always()
@@ -305,5 +315,6 @@ jobs:
           name: ios16-kernel
           path: |
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.macho
+            UniXNU/out/${{ env.BOARD }}/kernel/kernel.xnu.macho
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.json
           if-no-files-found: warn

@@ -1,0 +1,6 @@
+run56 2026-11-20T01:40:28Z
+workflow: keep the prelinked kernel. "What came out" copied
+mach.development.bcm2837.unstripped over out/ios16/kernel/kernel.macho, which is
+where the prelink step had just written its output, so run55 shipped the raw xnu
+(08a9c1d8..., 18,383,592 bytes) while the log had printed f4ba0c86... for the
+prelinked image. Now the prelinked file wins and the raw xnu is kept beside it.
