@@ -135,29 +135,20 @@ def write_ppl_shims():
     return True
 
 
-SHIM_C = """/* Synthesised for this board: symbols that 8796's sources do not have but the guest needs.
+SHIM_C = """/* Synthesised for this board: two symbols that 8796's sources call but that live in Apple's
+ * closed per-SoC / PPL sources. Neither does anything useful here.
  *
- * Two of them live in Apple's closed per-SoC / PPL sources and do nothing useful here:
  *  - CleanPoC_DcacheRegion_Force_nopreempt_nohid: the "no preemption, no HID" variant of a PoC
  *    dcache clean. This board has coherent DMA and no PPL, so the plain flush is the right
  *    behaviour; the callers only need the lines written back.
  *  - ml_enable_monitor: enables the PPL/monitor mode. There is no monitor on a non-Apple SoC.
  *
- * The third is a generation delta. prelink (run51) failed with
- *   "Kernel target 0xfffffff00734c520 has 0 native address candidates:
- *    ['_vfs_getvfs_with_vfsops']"
- * i.e. a kext inside the 20H392 prelinked kernelcache imports this symbol, so Apple's own
- * 16.7.16 build exports it, while the public xnu-8796.141.3 drop we compile has only
- * vfs_getvfs(). 10063 (bsd/vfs/vfs_subr.c) shows what it is: the same lookup, but the mount
- * is rejected unless it belongs to the vfsops the caller expects -- a race guard against
- * getting a mount for a filesystem that was just replaced under it. In 8796 vfs_getvfs() is
- * literally "return mount_list_lookupby_fsid(fsid, 0, 0);", so the faithful shim is that call
- * plus the same mnt_op comparison.
+ * Do NOT add bsd/ headers to this file: mount.h pulls bsd/sys/types.h and mount_internal.h
+ * needs uthread_t, which only exist when a bsd/ translation unit includes them. That is why
+ * the vfs peer below lives in vfs_subr.c instead of here (run52 failed on exactly that).
  */
 #include <arm/caches_internal.h>
 #include <mach/vm_types.h>
-#include <sys/mount.h>
-#include <sys/mount_internal.h>
 #include <stddef.h>
 
 void
@@ -171,17 +162,6 @@ CleanPoC_DcacheRegion_Force_nopreempt_nohid(vm_offset_t va, size_t length)
 void
 ml_enable_monitor(void)
 {
-}
-
-struct mount *
-vfs_getvfs_with_vfsops(fsid_t *fsid, const struct vfsops * const ops)
-{
-	struct mount *mp = vfs_getvfs(fsid);
-
-	if (mp != NULL && mp->mnt_op != ops) {
-		mp = NULL;
-	}
-	return mp;
 }
 """
 
@@ -357,6 +337,61 @@ def write_link_shims():
     return True
 
 
+VFS_PEER = (
+    '\n'
+    '/*\n'
+    ' * Added for this board. prelink stopped on the 20H392 kernelcache with\n'
+    ' *   "Kernel target 0xfffffff00734c520 has 0 native address candidates:\n'
+    ' *    [\'_vfs_getvfs_with_vfsops\']"\n'
+    ' * A kext inside that cache imports the symbol, so Apple\'s own 16.7.16 build exports it,\n'
+    ' * while the public xnu-8796.141.3 drop only has vfs_getvfs(). xnu-10063 is where the\n'
+    ' * definition is public -- same lookup, but the mount is dropped unless it belongs to the\n'
+    ' * vfsops the caller expected, which keeps a caller from racing a filesystem swap under it.\n'
+    ' * In 8796 vfs_getvfs() is already "mount_list_lookupby_fsid(fsid, 0, 0)", so this is a\n'
+    ' * faithful port rather than a stub.\n'
+    ' */\n'
+    'struct mount *\n'
+    'vfs_getvfs_with_vfsops(fsid_t *fsid, const struct vfsops * const ops)\n'
+    '{\n'
+    '\tstruct mount *mp = vfs_getvfs(fsid);\n'
+    '\n'
+    '\tif (mp != NULL && mp->mnt_op != ops) {\n'
+    '\t\tmp = NULL;\n'
+    '\t}\n'
+    '\treturn mp;\n'
+    '}\n'
+)
+
+VFS_ANCHOR = (
+    'struct mount *\n'
+    'vfs_getvfs(fsid_t *fsid)\n'
+    '{\n'
+    '\treturn mount_list_lookupby_fsid(fsid, 0, 0);\n'
+    '}\n'
+)
+
+
+def add_vfs_peer():
+    """prelink rebinds the prelinked kexts onto this kernel by name, so every kernel symbol a
+    kext imports has to exist here. 20H392 imports vfs_getvfs_with_vfsops, which the public
+    8796 sources never defined; it goes into vfs_subr.c because that is the only place where
+    mount_list_lookupby_fsid, struct mount and mnt_op are all in scope (see SHIM_C's note)."""
+    path = Path('.cache/xnu-work/bsd/vfs/vfs_subr.c')
+    if not path.is_file():
+        print('fixup: no vfs_subr.c, skip the vfs peer')
+        return False
+    text = path.read_text()
+    if 'vfs_getvfs_with_vfsops' in text:
+        print('fixup: vfs_getvfs_with_vfsops already present')
+        return False
+    if VFS_ANCHOR not in text:
+        print('fixup: vfs_getvfs anchor missing, skip the vfs peer')
+        return False
+    path.write_text(text.replace(VFS_ANCHOR, VFS_ANCHOR + VFS_PEER, 1))
+    print('fixup: added vfs_getvfs_with_vfsops to bsd/vfs/vfs_subr.c')
+    return True
+
+
 def place_late():
     """After installhdrs the kernel compiles against EXPORT_HDRS (and installhdrs re-creates
     the SDK fakeroot), so the libdispatch header has to be re-placed right before the build."""
@@ -419,6 +454,7 @@ def main():
     write_libpthread_patch()
     write_source_pthread_bootstrap()
     write_link_shims()
+    add_vfs_peer()
     print('fixup: done')
     return 0
 

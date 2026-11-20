@@ -1,0 +1,5 @@
+run53 2026-11-20T00:45:59Z
+run52 failed in the bootstrap pass, not at prelink: unixnu_shims.c cannot include
+bsd/sys/mount.h (typedef clash in bsd/sys/types.h) or bsd/sys/mount_internal.h
+(unknown type name 'uthread_t'). The vfs peer now goes into bsd/vfs/vfs_subr.c
+itself, where mount_list_lookupby_fsid, struct mount and mnt_op are all in scope.
