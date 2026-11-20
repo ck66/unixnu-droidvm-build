@@ -135,16 +135,29 @@ def write_ppl_shims():
     return True
 
 
-SHIM_C = """/* Synthesised for this board: two symbols that 8796's sources call but that live in Apple's
- * closed per-SoC / PPL sources. Neither does anything useful here.
+SHIM_C = """/* Synthesised for this board: symbols that 8796's sources do not have but the guest needs.
  *
+ * Two of them live in Apple's closed per-SoC / PPL sources and do nothing useful here:
  *  - CleanPoC_DcacheRegion_Force_nopreempt_nohid: the "no preemption, no HID" variant of a PoC
  *    dcache clean. This board has coherent DMA and no PPL, so the plain flush is the right
  *    behaviour; the callers only need the lines written back.
  *  - ml_enable_monitor: enables the PPL/monitor mode. There is no monitor on a non-Apple SoC.
+ *
+ * The third is a generation delta. prelink (run51) failed with
+ *   "Kernel target 0xfffffff00734c520 has 0 native address candidates:
+ *    ['_vfs_getvfs_with_vfsops']"
+ * i.e. a kext inside the 20H392 prelinked kernelcache imports this symbol, so Apple's own
+ * 16.7.16 build exports it, while the public xnu-8796.141.3 drop we compile has only
+ * vfs_getvfs(). 10063 (bsd/vfs/vfs_subr.c) shows what it is: the same lookup, but the mount
+ * is rejected unless it belongs to the vfsops the caller expects -- a race guard against
+ * getting a mount for a filesystem that was just replaced under it. In 8796 vfs_getvfs() is
+ * literally "return mount_list_lookupby_fsid(fsid, 0, 0);", so the faithful shim is that call
+ * plus the same mnt_op comparison.
  */
 #include <arm/caches_internal.h>
 #include <mach/vm_types.h>
+#include <sys/mount.h>
+#include <sys/mount_internal.h>
 #include <stddef.h>
 
 void
@@ -158,6 +171,17 @@ CleanPoC_DcacheRegion_Force_nopreempt_nohid(vm_offset_t va, size_t length)
 void
 ml_enable_monitor(void)
 {
+}
+
+struct mount *
+vfs_getvfs_with_vfsops(fsid_t *fsid, const struct vfsops * const ops)
+{
+	struct mount *mp = vfs_getvfs(fsid);
+
+	if (mp != NULL && mp->mnt_op != ops) {
+		mp = NULL;
+	}
+	return mp;
 }
 """
 

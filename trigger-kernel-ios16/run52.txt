@@ -1,0 +1,8 @@
+run52 2026-11-20T00:17:13Z
+run51 reached prelink and stopped on a symbol, not a path:
+  ValueError: Kernel target 0xfffffff00734c520 has 0 native address candidates:
+              ['_vfs_getvfs_with_vfsops']
+A kext inside the 20H392 kernelcache imports it, so Apple 16.7.16 exports it; the
+public xnu-8796.141.3 sources only have vfs_getvfs(). fixup-8796.py now appends the
+10063 implementation to unixnu_shims.c (same lookup, mount rejected unless its
+mnt_op is the vfsops the caller expected).
