@@ -1,34 +1,77 @@
-run 44309089034
-xnu tree commit: 56023cd
-xnu version: 
+run 44750662912
+--- first errors from kernel-bootstrap.log ---
+--- link diagnostics ---
+2864736:ld: warning: -new_linker is obsolete
+2864737:ld: warning: search path '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/lib/kernel/platform' not found
+2864738:ld: warning: -segment_order should list all segments, __PRELINK_TEXT is missing
+2864739:ld: warning: -segment_order should list all segments, __PRELINK_INFO is missing
+2864740:ld: warning: -segment_order should list all segments, __PLK_TEXT_EXEC is missing
+2864741:ld: warning: -segment_order should list all segments, __PRELINK_DATA is missing
+2864742:ld: warning: -segment_order should list all segments, __PLK_DATA_CONST is missing
+2864743:ld: warning: -segment_order should list all segments, __PLK_LLVM_COV is missing
+--- compile records ---
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json
+records:      977  objects:      120
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/lastkerneldataconst.o.json
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/libsa/DEVELOPMENT/bootstrap.cpo.json
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/security/DEVELOPMENT/mac_base.o.json
+conf
+DEVELOPMENT
+DriverKit
+IOKit
+--- firehose kernel lib ---
+total 176
+-rw-r--r--  1 runner  staff  44344 Nov 20 14:13 libfirehose_kernel.a
+-rw-r--r--  1 runner  staff  44344 Nov 20 14:13 liblibfirehose_kernel.a
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-project-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/Objects-normal/arm64/libfirehose_kernel_libtool_dependency_info.dat
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/Objects-normal/arm64/libfirehose_kernel.LinkFileList
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-own-target-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel.DependencyMetadataFileList
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-all-target-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel.hmap
+3644:    /usr/sbin/chown -RH runner:staff /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a
+3646:SetMode u+w,go-w,a+rX /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a (in target 'libfirehose_kernel' from project 'libdispatch')
+3648:    /bin/chmod -RH u+w,go-w,a+rX /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a
+3650:warning: Traditional headermap style is no longer supported; please migrate to using separate headermaps and set 'ALWAYS_SEARCH_USER_PATHS' to NO. (in target 'libfirehose_kernel' from project 'libdispatch')
+3653:Non-fat file: .cache/fakeroot/usr/local/lib/kernel/libfirehose_kernel.a is architecture: arm64
+3656:late: /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/lib/kernel/libfirehose_kernel.a
+--- archive diagnostics ---
+--- fixups ---
+fixup: added libkern/os/firehose_buffer_private.h (4644 bytes)
+fixup: placed .cache/fakeroot/usr/local/include/os/firehose_buffer_private.h in the kernel SDK include path
+fixup: pmap.h reserved10 2 -> 1
+fixup: wrote osfmk/arm64/ppl/{sart.h,uat.h} (no-op IOMMU hooks)
+fixup: dropped options MOCKFS from MASTER
+fixup: disabled 4 "#if MOCKFS" block(s) in vfs_conf.c
+fixup: added -MJ $(@:o=o.json) to 3 compile rules
+fixup: wrote patches/libpthread/zzzz-8796-no-jit-entitled.patch
+fixup: wrote .cache/xnu-work/bsd/kern/source_pthread_bootstrap.c
+fixup: registered osfmk/arm64/unixnu_shims.c
+fixup: added vfs_getvfs_with_vfsops to bsd/vfs/vfs_subr.c
+fixup: config tables repaired (dropped 1 empty item, platform entries added)
+--- step log ---
+--- what the resolver says about xnu ---
+xnu tree commit: not a git tree
 --- tail ---
-             CC main.o
-13 warnings generated.
-             LD kextsymboltool
-             CC mkheaders.o
-             CC mkioconf.o
-             CC mkmakefile.o
-             CC lexer.yy.o
-/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/xnu-work/SETUP/config/mkmakefile.c:625:6: warning: variable 'lpos' set but not used [-Wunused-but-set-variable]
-  625 |         int lpos, len = 0; /* dvw: init to 0 */
-      |             ^
-1 warning generated.
-             LD config
-             CC setsegname.o
-       CODESIGN kextsymboltool
-       CODESIGN config
-             LD setsegname
-       CODESIGN setsegname
-             CC installfile.o
-             CC decomment.o
-             LD installfile
-             LD decomment
-             CC replacecontents.o
-       CODESIGN installfile
-       CODESIGN decomment
-             LD replacecontents
-       CODESIGN replacecontents
-make[1]: *** [build_setup_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
-make: *** [installhdrs] Error 2
-build-xnu-4k-baseline.sh: line 151: make -C .cache/xnu-work installhdrs SDKROOT=macosx ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" MAKEJOBS=-j"${JOBS:-4}" OBJROOT="$ROOT/build/xnu/obj" SYMROOT="$ROOT/build/xnu/sym" DSTROOT="$KERNEL_SDKROOT" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} failed
-unixnu: bash failed (2); full log: /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/logs/kernel-bootstrap.log
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/prepare-storage-headers.py
+== kernel: archive-01-build-corecrypto-14
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-corecrypto-14.py
+== kernel: archive-02-build-corecrypto-14
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-corecrypto-14.py --namespace
+== kernel: archive-03-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py ArmDTPlatform
+== kernel: archive-04-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py ArmCpu
+== kernel: archive-05-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py NativeAES
+== kernel: archive-06-build-native-aes-bindings
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-native-aes-bindings.py
+== kernel: archive-07-build-libpthread-kernel
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-libpthread-kernel.py
++ bash /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-xnu-4k-baseline.sh
+== kernel: prelink
+== ipsw: remote https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/kits/NativePrelink/emit_prelink.py --kernel /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped --prelinked /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/20H392/kernelcache.decompressed --slide=-0x1000000 --output /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/kernel/kernel.macho --root com.apple.AppleFSCompression.AppleFSCompressionTypeZlib --root com.apple.driver.AppleARMPlatform --root com.apple.driver.AppleARMWatchdogTimer --root com.apple.driver.AppleAudioClockLibs --root com.apple.driver.AppleEffaceableStorage --root com.apple.driver.AppleIISController --root com.apple.driver.AppleM2ScalerCSCDriver --root com.apple.driver.AppleMobileFileIntegrity --root com.apple.driver.ApplePMGR --root com.apple.driver.IODARTFamily --root com.apple.filesystems.apfs --root com.apple.iokit.CoreAnalyticsFamily --root com.apple.iokit.IOAVFamily --root com.apple.iokit.IOAudio2Family --root com.apple.iokit.IOCECFamily --root com.apple.iokit.IOCryptoAcceleratorFamily --root com.apple.iokit.IOGPUFamily --root com.apple.iokit.IOHDCPFamily --root com.apple.iokit.IOMobileGraphicsFamily --root com.apple.iokit.IOReportFamily --root com.apple.iokit.IOSlowAdaptiveClockingFamily --root com.apple.iokit.IOStorageFamily --root com.apple.iokit.IOSurface --root com.apple.kec.Libm --root com.apple.kec.corecrypto --root com.apple.kext.AppleMatch --root com.apple.kext.CoreTrust --root com.apple.security.AppleImage4 --root com.apple.security.sandbox --root com.apple.iokit.IOHIDFamily --early-security-init com.apple.driver.AppleMobileFileIntegrity=0xfffffff005703c54
+== kernel: /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/kernel/kernel.macho sha256 e8a8a523483149e14d62bf1b0d2fb21438fb7b06cce20efbdb0293c3c32a59db
