@@ -540,11 +540,17 @@ def add_stage_probes():
     if 'droidvm_ios16_stage' in text:
         print('ios16 stage probes already present')
         return
+    # The declaration goes next to arm_init's forward declaration, never inside the definition:
+    # inserting it before `arm_init(` splits the `void` return type from the name, which clang
+    # reports as "array has incomplete element type 'volatile void'" (run57 died exactly there).
+    decl = 'void arm_init(boot_args * args);\n'
+    if text.count(decl) != 1:
+        fail('arm_init forward declaration anchor not unique')
+    text = text.replace(
+        decl, decl + '\nextern volatile unsigned int droidvm_ios16_stage[8];\n', 1)
     anchor = 'arm_init(\n\tboot_args       *args)\n{\n'
     if anchor not in text:
         fail('arm_init signature anchor missing')
-    text = text.replace(anchor,
-                        'extern volatile unsigned int droidvm_ios16_stage[8];\n\n' + anchor, 1)
     # (source line, stage index): the value written after that call returns is index+1, so 0
     # means "the first step never finished" and 8 means "arm_init ran to machine_startup".
     probes = [
