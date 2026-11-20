@@ -1,0 +1,7 @@
+k37 2026-11-20T06:49:09Z
+The legacy family forwards every selector to [this+0xd8]->[+0xd8]->vtable[slot], and
+that chain ends on the GOP nub, an IOService: this image carries no
+IOMobileFramebuffer/AppleDisplay vtable at all. So every answer the compositor gets is
+a value read by an unrelated method. This build records what each selector actually
+returned (first/second scalar output, the sel 3 port) and, under legacy-size=1, answers
+sel 8 with the real panel geometry.

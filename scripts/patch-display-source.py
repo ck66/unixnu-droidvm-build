@@ -428,6 +428,56 @@ static IOReturn droidvm_emulate_selector(uint32_t selector,IOExternalMethodArgum
     }
     return kIOReturnUnsupported;
 }
+// (68) Every legacy selector is a thin forwarder.  Disassembling the family's own dispatch
+// table (90 entries x 24 bytes, shared by all three external paths) shows each handler doing
+// [this+0xd8] -> [+0xd8] -> vtable[slot] and nothing else, and the k36 image carries no
+// IOMobileFramebuffer/AppleDisplay vtable at all -- that chain therefore ends on the GOP nub,
+// which is an IOService.  Every slot lands on an unrelated method, so the compositor is handed
+// garbage; the display size answer is the one that decides whether it renders at all.
+// This records what each selector actually returned and, with legacy-size=1, replaces the
+// size answer with the geometry the backend really scans out.
+volatile uint64_t droidvm_sel_out_first[96];
+volatile uint32_t droidvm_sel_out_calls[96];
+volatile uint64_t droidvm_sel_out_second[96];
+volatile uint64_t droidvm_sel8_raw[2];
+volatile uint32_t droidvm_sel8_calls;
+volatile uint64_t droidvm_sel3_port;
+volatile uint32_t droidvm_sel3_calls;
+volatile uint32_t droidvm_sel_18_out;
+volatile uint32_t droidvm_sel_size_fix;
+static int droidvm_sel_size_loaded;
+static void droidvm_after_dispatch(uint32_t selector,IOExternalMethodArguments *args,IOReturn status) {
+    (void)status;
+    if(!args)return;
+    if(selector<96) {
+        droidvm_sel_out_calls[selector]=droidvm_sel_out_calls[selector]+1;
+        if(args->scalarOutput && args->scalarOutputCount>0 && !droidvm_sel_out_first[selector])
+            droidvm_sel_out_first[selector]=args->scalarOutput[0];
+        if(args->scalarOutput && args->scalarOutputCount>1 && !droidvm_sel_out_second[selector])
+            droidvm_sel_out_second[selector]=args->scalarOutput[1];
+    }
+    if(selector==8) {
+        droidvm_sel8_calls=droidvm_sel8_calls+1;
+        if(!droidvm_sel_size_loaded) {
+            droidvm_sel_size_loaded=1;
+            unsigned on=0;PE_parse_boot_argn("legacy-size",&on,sizeof on);droidvm_sel_size_fix=on;
+        }
+        if(args->scalarOutput && args->scalarOutputCount>=2) {
+            droidvm_sel8_raw[0]=args->scalarOutput[0];
+            droidvm_sel8_raw[1]=args->scalarOutput[1];
+            if(droidvm_sel_size_fix) {
+                args->scalarOutput[0]=1024;
+                args->scalarOutput[1]=1366;
+            }
+        }
+    }
+    if(selector==3) {
+        droidvm_sel3_calls=droidvm_sel3_calls+1;
+        if(args->scalarOutput && args->scalarOutputCount>0) droidvm_sel3_port=args->scalarOutput[0];
+    }
+    if(selector==18 && args->scalarOutput && args->scalarOutputCount>0)
+        droidvm_sel_18_out=(uint32_t)args->scalarOutput[0];
+}
 """
 
 
@@ -457,8 +507,14 @@ def patch_emulate(root):
             fail('wrappedExternal entry anchor missing')
         text = text.replace(entry,
             '    if(selector<64)droidvm_selector_hits[selector]=droidvm_selector_hits[selector]+1;\n' + entry, 1)
+    ret_anchor = '    return status;\n}\nstatic IOReturn wrappedRegister'
+    if 'droidvm_after_dispatch(selector' not in text:
+        if ret_anchor not in text:
+            fail('wrappedExternal return anchor missing: cannot sample selector outputs')
+        text = text.replace(ret_anchor,
+            '    droidvm_after_dispatch(selector,args,status);\n' + ret_anchor, 1)
     path.write_text(text)
-    print('selector emulation installed (legacy-emulate=1), selector counters on')
+    print('selector emulation installed (legacy-emulate=1), selector counters on, output sampler on')
 
 
 READY_GLOBALS = """// DroidVM (§61): the display-ready plumbing. macOS's DroidVMDisplay, on this same VM and the same
