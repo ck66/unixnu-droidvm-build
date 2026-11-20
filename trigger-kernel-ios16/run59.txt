@@ -1,0 +1,37 @@
+run59 2026-11-20T13:56:00Z
+
+run58 got the kernel talking: once the panic region was moved into real RAM, the guest
+printed
+
+  panic(cpu 0 caller 0xfffffff00794d6bc): IOCatalogue.cpp:121 Assertion failed:
+    array && gIOClassKey && gIOProbeScoreKey && gIOModuleIdentifierKey
+
+The three OSSymbols are valid pointers, so the NULL one is `array =
+OSUnserialize(gIOKernelConfigTables)`.  Read out of the shipped kernel, the table is
+
+  ( { IOPanicPlatform ... }, ,{ NativeAES ... } )
+                             ^^ empty item
+
+N1709's native-aes patch appends "   }," to the entry in front of the #if blocks, and
+every one of those blocks already opens with "   ,{".  Trailing comma plus leading comma
+is an empty item, which the serialiser rejects outright.
+
+fix_config_tables() (new, in fixup-8796.py) repairs the tree the kernel is built from:
+
+  * it drops the trailing comma, but only on the line that sits immediately before a
+    `#if defined(XNU_NATIVE_` -- trailing commas between plain entries are legal and stay;
+  * it adds ArmCpu and ArmDTPlatform, which the 17.7.11 kernel has and 8796's public table
+    does not.  make-droidvm-adt.py names the ADT root 'device-tree' with compatible
+    'droidvm,crosvm-gunyah', so ArmDTPlatform is the entry that attaches here;
+    ArmVirtPlatform's 'linux,dummy-virt' can never match this board and the ios16 archive
+    list builds no class for it, so it is deliberately left out.
+
+The step is idempotent and prints which of the two halves it changed, so a second run on
+an already-correct tree says so and touches nothing.
+
+Same tree, same run: fail() now exists.  add_stage_probes() has been calling it since
+run58 but it was never defined, so anchor drift would have surfaced as a NameError instead
+of a message.
+
+With the array non-NULL the kernel gets past IOCatalogue::init() and into IOKit matching --
+the first run that can reach past machine_startup().

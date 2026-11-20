@@ -22,6 +22,7 @@ Usage: python3 fixup-8796.py            (from out/<board>/tree)
 """
 from pathlib import Path
 import os
+import re
 import sys
 import urllib.request
 
@@ -41,6 +42,11 @@ HEADERS = {
 }
 
 TOKEN = os.environ.get('GITHUB_TOKEN') or os.environ.get('GH_TOKEN')
+
+
+def fail(message):
+    """An anchor this board cannot live without moved; stop instead of building quietly."""
+    raise SystemExit('fixup: ' + message)
 
 
 def fetch_headers():
@@ -573,6 +579,71 @@ def add_stage_probes():
     print('ios16 stage probes placed: 8 steps in arm_init')
 
 
+PLATFORM_ENTRIES = '''    "   {"
+    "     'IOClass'         = ArmCpu;"
+    "     'IOProviderClass' = IOPlatformDevice;"
+    "     'IOProbeScore'    = 2000:32;"
+    "   },"
+    "   {"
+    "     'IOClass'         = ArmDTPlatform;"
+    "     'IOProviderClass' = IOPlatformExpertDevice;"
+    "     'IONameMatch'     = 'device-tree';"
+    "     'IOProbeScore'    = 5000:32;"
+    "   },"
+'''
+
+
+def fix_config_tables():
+    """Repair gIOKernelConfigTables: no empty item, and the platform entries iOS 16 needs.
+
+    Two separate faults, both fatal before userland:
+
+    1. The device series inserts an optional block for each XNU_NATIVE_* driver.  Every block
+       opens with "   ,{" (a leading comma), but the same patch also appends a trailing comma
+       to the entry in front of them, so the serialised text reads "}, ,{".  OSUnserialize()
+       rejects that, gIOKernelConfigTables' array comes back NULL, and IOCatalogue::init()
+       panics on it:
+           IOCatalogue.cpp:121 Assertion failed: array && gIOClassKey && ...
+       Only the line that sits immediately before a `#if defined(XNU_NATIVE_` is touched --
+       trailing commas between plain entries are legal and must stay.
+
+    2. 8796's public table lists IOPanicPlatform alone.  The 17.7.11 kernel that boots to
+       SpringBoard also carries ArmCpu and ArmDTPlatform, and the platform expert is the one
+       that actually attaches: make-droidvm-adt.py names the root node 'device-tree' with
+       compatible 'droidvm,crosvm-gunyah', so ArmDTPlatform's IONameMatch matches the root
+       while ArmVirtPlatform's 'linux,dummy-virt' can never match here.  ArmVirtPlatform is
+       therefore left out on purpose -- ios16's archive list has no class for it.
+    """
+    path = Path('.cache/xnu-work/iokit/KernelConfigTables.cpp')
+    if not path.is_file():
+        print('fixup: no iokit/KernelConfigTables.cpp, skip config tables')
+        return False
+    text = path.read_text()
+    before = text
+
+    # The comma lives inside the string literal ("   },"), and only the entry that sits
+    # immediately before a `#if defined(XNU_NATIVE_` is guilty: "   }," followed by "   ,{"
+    # serialises to "}, ,{" -- an empty item.  Trailing commas between plain entries are
+    # legal and stay as they are.
+    text, dropped = re.subn(r'    "   },"\n(?=\s*#if )', '    "   }"\n', text)
+
+    anchor = 'const char * gIOKernelConfigTables =\n    "("\n'
+    added = False
+    if "'IOClass'         = ArmDTPlatform;" not in text:
+        if anchor not in text:
+            fail('gIOKernelConfigTables anchor missing: cannot add the platform entries')
+        text = text.replace(anchor, anchor + PLATFORM_ENTRIES, 1)
+        added = True
+
+    if text == before:
+        print('fixup: config tables already sane')
+        return False
+    path.write_text(text)
+    print('fixup: config tables repaired (dropped %d empty item, platform entries %s)'
+          % (dropped, 'added' if added else 'already present'))
+    return True
+
+
 def main():
     if '--late' in sys.argv:
         place_late()
@@ -587,6 +658,7 @@ def main():
     write_link_shims()
     add_vfs_peer()
     add_stage_probes()
+    fix_config_tables()
     patch_prelink_tool()
     print('fixup: done')
     return 0
