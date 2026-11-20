@@ -163,6 +163,12 @@ void
 ml_enable_monitor(void)
 {
 }
+
+/* Boot-stage word for this board (see add_stage_probes): arm_init writes one value after each
+ * bring-up step, in order, so a kernel that stopped says exactly how far it got. It lives in
+ * this translation unit because that is the one every configuration links, and __startup_func
+ * code may reference it. */
+volatile unsigned int droidvm_ios16_stage[8];
 """
 
 
@@ -517,6 +523,50 @@ def place_late():
     return placed > 0
 
 
+def add_stage_probes():
+    """arm_init writes one stage word after each bring-up step.
+
+    The prelinked image loads at slide 0 (DarwinBoot's `va=` is __PRELINK_TEXT's vmaddr) and the
+    image verifies byte for byte in guest memory, yet _PE_state stays all zero while one vCPU
+    burns ~54% -- so the kernel starts executing and stops before PE_init finishes. Guessing
+    which step is hopeless here: the whole boot happens inside arm_init, and every one of its
+    steps is a different subsystem (rebase, cpu_data, platform expert, VM, printf, timers).
+    One word per step turns that into a single read.
+    """
+    path = Path('.cache/xnu-work/osfmk/arm/arm_init.c')
+    if not path.exists():
+        fail('osfmk/arm/arm_init.c missing: cannot place the stage probes')
+    text = path.read_text()
+    if 'droidvm_ios16_stage' in text:
+        print('ios16 stage probes already present')
+        return
+    anchor = 'arm_init(\n\tboot_args       *args)\n{\n'
+    if anchor not in text:
+        fail('arm_init signature anchor missing')
+    text = text.replace(anchor,
+                        'extern volatile unsigned int droidvm_ios16_stage[8];\n\n' + anchor, 1)
+    # (source line, stage index): the value written after that call returns is index+1, so 0
+    # means "the first step never finished" and 8 means "arm_init ran to machine_startup".
+    probes = [
+        ('\tcpu_data_init(&BootCpuData);\n', 0),
+        ('\tPE_init_platform(FALSE, args); /* Get platform expert set up */\n', 1),
+        ('\tarm_vm_init(xmaxmem, args);\n', 2),
+        ('\tkernel_startup_initialize_upto(STARTUP_SUB_KPRINTF);\n', 3),
+        ('\tPE_init_printf(FALSE);\n', 4),
+        ('\tPE_init_platform(TRUE, &BootCpuData);\n', 5),
+        # __stack_chk_guard is outside every #if, so this one always compiles (pal_hib_init
+        # sits under #if HIBERNATION).
+        ('\t__stack_chk_guard = (unsigned long)early_random();\n', 6),
+        ('\tmachine_startup(args);\n', 7),
+    ]
+    for line, index in probes:
+        if text.count(line) != 1:
+            fail('stage probe anchor not unique: %r' % line.strip())
+        text = text.replace(line, line + '\tdroidvm_ios16_stage[%d]=%d;\n' % (index, index + 1), 1)
+    path.write_text(text)
+    print('ios16 stage probes placed: 8 steps in arm_init')
+
+
 def main():
     if '--late' in sys.argv:
         place_late()
@@ -530,6 +580,7 @@ def main():
     write_source_pthread_bootstrap()
     write_link_shims()
     add_vfs_peer()
+    add_stage_probes()
     patch_prelink_tool()
     print('fixup: done')
     return 0

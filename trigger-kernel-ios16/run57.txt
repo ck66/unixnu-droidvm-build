@@ -1,0 +1,7 @@
+run57 2026-11-20T06:55:29Z
+The prelinked kernel loads at slide 0 (DarwinBoot va= is __PRELINK_TEXT), verifies byte
+for byte in guest memory, does not panic, and runs one vCPU at ~54 percent -- yet
+_PE_state is all zero, so it stopped inside arm_init. arm_init now writes one stage word
+after each step (cpu_data_init 1, PE_init_platform(FALSE) 2, arm_vm_init 3,
+kernel_startup_initialize_upto 4, PE_init_printf 5, PE_init_platform(TRUE) 6,
+stack guard 7, machine_startup 8).
