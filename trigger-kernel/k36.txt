@@ -1,0 +1,7 @@
+k36 2026-11-20T00:03:09Z
+scripts/patch-display-source.py: record the status the CLIENT finally receives.
+k35 records the family answer inside wrappedExternal before emulate / lie-mask
+rewrite it, so the lie-mask A/B cannot distinguish "the client got success and
+still does not swap" from "the client never got success": both show 0xe00002c7.
+New table native_legacy_sel_final[96][4] = calls, fails, last final status,
+successes, written on the way out after both rewrites.

@@ -183,6 +183,13 @@ PROBE_SHAPE_HEAD = """// Plain types on purpose: this block is prepended before 
 // different language linkage than the declaration (run 44221920492).
 extern "C" {
 volatile unsigned int native_legacy_sel_shape[96][6];
+// k36: the status the CLIENT actually received. `native_legacy_sel_shape[sel][5]` and the
+// per-client stats are written before emulate/lie-mask rewrite the family's answer, so they
+// only say what the driver returned. This table is written last, on the way out:
+//   [sel][0] calls   [sel][1] failures (final != 0)   [sel][2] last final status
+// Without it the lie-mask A/B cannot be read at all: "client got success and still does not
+// swap" and "client never got success" produce the same raw-status table.
+volatile unsigned int native_legacy_sel_final[96][4];
 volatile unsigned int native_legacy_sel_in[96][16];
 volatile unsigned long long native_legacy_sel_scalar[96][4];
 volatile unsigned long long native_legacy_sel_out[96][4];
@@ -224,6 +231,15 @@ PROBE_SHAPE_NEW = """        if(selector<kSelectors){++stat->selector_calls[sele
     if(status==kIOReturnUnsupported) {
         if(selector<64 && ((native_legacy_lie_mask>>selector)&1ULL))status=kIOReturnSuccess;
         else if(selector>=64 && selector<96 && ((native_legacy_lie_mask_hi>>(selector-64))&1ULL))status=kIOReturnSuccess;
+    }
+    if(selector<96) {
+        native_legacy_sel_final[selector][0]=native_legacy_sel_final[selector][0]+1;
+        if(status)native_legacy_sel_final[selector][1]=native_legacy_sel_final[selector][1]+1;
+        native_legacy_sel_final[selector][2]=(unsigned int)status;
+        // The two selectors whose *success* is the open question: 8 (getInformation) is the
+        // one that already succeeds before any masking, 9 (setVSyncNotifications) has never
+        // been called at all, 6 (swap) is called once and then never again.
+        native_legacy_sel_final[selector][3]=(unsigned int)(status==kIOReturnSuccess?1:0);
     }
     return status;
 }"""
