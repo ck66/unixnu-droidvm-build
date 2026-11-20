@@ -1,0 +1,8 @@
+run54 2026-11-20T01:07:50Z
+run53 cleared the symbol (vfs_getvfs_with_vfsops resolved) and stopped in prelink's
+instruction inventory:/n  ValueError: External PC-relative encoding at 0xfffffff005b8c1cc
+That address is inside __PLK_TEXT_EXEC and the word there is part of a float constant
+pool (-32768, -0.538853, 0, 0.0313307 repeated); its third word decodes as an ADRP into
+nowhere. fixup-8796.py now patches kits/NativePrelink/emit_prelink.py: a target outside
+the image's whole span is inline data and is recorded in unrecognised_inline_data,
+while a target inside the span but between extents still raises.

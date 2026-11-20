@@ -392,6 +392,86 @@ def add_vfs_peer():
     return True
 
 
+PRE_INVENTORY_HEAD_OLD = (
+    "    extents = [s for module in modules.values() for s in module['segments'] "
+    "if s['size'] and s['name'] != '__LINKEDIT']\n"
+    "    literal_ranges, instruction_count = [], 0\n"
+)
+
+PRE_INVENTORY_HEAD_NEW = (
+    "    extents = [s for module in modules.values() for s in module['segments'] "
+    "if s['size'] and s['name'] != '__LINKEDIT']\n"
+    "    literal_ranges, instruction_count = [], 0\n"
+    "    # 20H392 spans every kext in the cache; an address outside this whole span cannot be a\n"
+    "    # reference the prelinker must preserve (see the external-target branch below).\n"
+    "    image_lo = min(s['va'] for s in extents) if extents else 0\n"
+    "    image_hi = max(align(s['va'] + s['size']) for s in extents) if extents else 0\n"
+    "    unrecognised = []\n"
+)
+
+PRE_EXTERNAL_OLD = (
+    "                if not internal:\n"
+    "                    raise ValueError(f'External PC-relative encoding at "
+    "{segment[\"va\"] + offset:#x}; no instruction rewrite supported')\n"
+)
+
+PRE_EXTERNAL_NEW = (
+    "                if not internal:\n"
+    "                    if not (image_lo <= target < image_hi):\n"
+    "                        # Not a reference at all: the decoded target lies outside the\n"
+    "                        # image's entire address span, which only happens when the word is\n"
+    "                        # data. 16.7.16's kexts carry float constant pools that the digest\n"
+    "                        # table above does not know -- the pool at 0xfffffff005b8c1cc is\n"
+    "                        # `-32768, -0.538853, 0, 0.0313307` repeated, and its third word\n"
+    "                        # (0xf09d5f48) decodes as an ADRP into nowhere. Record the word and\n"
+    "                        # keep scanning; a target *inside* the span but between extents is\n"
+    "                        # still a real problem and still raises.\n"
+    "                        unrecognised.append({'segment': segment['name'],\n"
+    "                                             'va': segment['va'] + offset, 'word': word})\n"
+    "                        continue\n"
+    "                    raise ValueError(f'External PC-relative encoding at "
+    "{segment[\"va\"] + offset:#x}; no instruction rewrite supported')\n"
+)
+
+PRE_RETURN_OLD = (
+    "    return {'pc_relative_encodings_preserved': instruction_count, "
+    "'known_inline_data': literal_ranges,\n"
+    "            'register_dataflow_qualified': False}\n"
+)
+
+PRE_RETURN_NEW = (
+    "    return {'pc_relative_encodings_preserved': instruction_count, "
+    "'known_inline_data': literal_ranges,\n"
+    "            'unrecognised_inline_data': unrecognised,\n"
+    "            'register_dataflow_qualified': False}\n"
+)
+
+
+def patch_prelink_tool():
+    """The kit aborts the whole prelink when one word inside a kext's __TEXT_EXEC decodes as a
+    PC-relative instruction whose target is outside every segment. On 20H392 that is a float
+    constant pool, not code, so the abort is a false positive: target outside the image's whole
+    span means "data", target merely between extents still means "unsupported reference"."""
+    path = Path('kits/NativePrelink/emit_prelink.py')
+    if not path.is_file():
+        print('fixup: no kits/NativePrelink/emit_prelink.py, skip the prelink tolerance patch')
+        return False
+    text = path.read_text()
+    if 'unrecognised_inline_data' in text:
+        print('fixup: prelink tolerance patch already applied')
+        return False
+    for old, new, what in ((PRE_INVENTORY_HEAD_OLD, PRE_INVENTORY_HEAD_NEW, 'inventory head'),
+                           (PRE_EXTERNAL_OLD, PRE_EXTERNAL_NEW, 'external-target abort'),
+                           (PRE_RETURN_OLD, PRE_RETURN_NEW, 'inventory return')):
+        if old not in text:
+            print('fixup: prelink anchor missing (%s), skip the tolerance patch' % what)
+            return False
+        text = text.replace(old, new, 1)
+    path.write_text(text)
+    print('fixup: patched the prelink instruction inventory (outside-image targets are data)')
+    return True
+
+
 def place_late():
     """After installhdrs the kernel compiles against EXPORT_HDRS (and installhdrs re-creates
     the SDK fakeroot), so the libdispatch header has to be re-placed right before the build."""
@@ -455,6 +535,7 @@ def main():
     write_source_pthread_bootstrap()
     write_link_shims()
     add_vfs_peer()
+    patch_prelink_tool()
     print('fixup: done')
     return 0
 
