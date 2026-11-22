@@ -62,7 +62,9 @@ ARCHIVES_NEW = '''archives = [
   # original kernelcache (fixed SHA + 190-slot dispatch shape) and needs a prelink plan from
   # a second "reference candidate" kernel -- neither exists for iOS 16. Everything that
   # consumed its output (virtio/ram bindings, verified-root probe, gpu, legacy display) is
-  # therefore out too, for this milestone.
+  # therefore out too. The one exception is the bare VirtIO block transport itself: it does
+  # not consume the audit, it is what the audit would have been an audit *of*. See the note
+  # on its entry below.
   #
   # The first six all built successfully once 8796 was taught `-MJ $(@:o=o.json)`
   # (fixup-8796.py writes the per-object compile records the archive builders replay).
@@ -72,6 +74,16 @@ ARCHIVES_NEW = '''archives = [
   "build-arm-driver.py ArmCpu",
   "build-arm-driver.py NativeAES",
   "build-native-aes-bindings.py",
+  # Storage. The defconfig turns XNU_NATIVE_VIRTIO_BLOCK on, and the link force-loads
+  # build/virtio-mmio-block/libVirtioMmioBlock.a, so that archive has to exist first.
+  # Deliberately the bare transport, without --verified-root and without
+  # build-native-virtio-bindings.py: the binding step rewrites the driver's vtable into
+  # the reference candidate's 190-slot IOStorage dispatch shape, and that candidate is a
+  # Darwin 23 artifact (the comment above audit-storage-interface-static.py says why it
+  # cannot be produced here). The driver itself only needs standard IOKit headers, and
+  # compiling it against this tree's own IOPlatformExpert.cpo.json is what makes its
+  # vtable match 8796's IOBlockStorageDevice instead of 10063's.
+  "build-arm-driver.py VirtioMmioBlock",
   "build-libpthread-kernel.py",
 ]'''
 
