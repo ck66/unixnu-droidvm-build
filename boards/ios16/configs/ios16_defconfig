@@ -10,9 +10,16 @@
 # The OS layer's own fragment (os:configs/ios.config in S7) is already folded in here:
 # TRUST_CACHE_RUNTIME, SOURCE_MOCKFS, NATIVE_CS_HASH_CACHE, CRYPTO_BOOTSTRAP="prelinked".
 #
-# First milestone: a kernel. Storage, display, GPU and owner-root are separate steps and
-# are explicitly off, exactly as the whyred board has them.
+# First milestone was a kernel. It boots: AMFI is past, PE_init returns, IOCatalogue
+# builds, and the only remaining panic is "Failed to mount root device" -- because the
+# board had no storage transport at all. ios16's KernelConfigTables.cpp already carries
+# the `XNU_NATIVE_VIRTIO_BLOCK` personality (IOClass NativeVirtioBlock over
+# IOPlatformDevice), and build-xnu-4k-baseline.sh force-loads
+# build/virtio-mmio-block/libVirtioMmioBlock.a when this is 1, so storage is one switch
+# plus one archive builder (boards/ios16/make-board.py). Display, GPU and owner-root stay
+# off for now, as the whyred board has them.
 CONFIG_XNU_BUILD_ARCHIVES=y
+CONFIG_XNU_NATIVE_VIRTIO_BLOCK=y
 CONFIG_XNU_ARM_DT_PLATFORM=y
 CONFIG_XNU_ARMCPU=y
 CONFIG_XNU_SOURCE_CORECRYPTO14=y

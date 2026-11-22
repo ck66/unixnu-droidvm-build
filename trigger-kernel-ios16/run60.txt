@@ -1,0 +1,1 @@
+run60 2026-11-22: link the VirtIO block transport (defconfig switch + bare archive builder)
