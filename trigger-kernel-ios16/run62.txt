@@ -1,0 +1,12 @@
+run62 2026-11-23: actually build the VirtIO archive
+
+Run 9dd1c88 (the archive-builder entry) never ran: this workflow only fires on
+trigger-kernel-ios16/**, and that commit touched boards/ios16/make-board.py
+alone.  The 13:56 run (45030077972) therefore checked out 342f1b7, printed
+"archives 7", and died at build-xnu-4k-baseline.sh:787 with
+`test -f build/virtio-mmio-block/libVirtioMmioBlock.a` failing -- the exact
+failure 9dd1c88 was meant to remove.
+
+So this run is the first one whose board.toml lists 8 archives, with
+"build-arm-driver.py VirtioMmioBlock" (bare transport, no --verified-root and
+no bindings step) in front of build-libpthread-kernel.py.
