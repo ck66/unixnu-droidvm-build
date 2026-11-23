@@ -1,0 +1,64 @@
+{
+  "aliases": {
+    "__ZN20IOBlockStorageDevice10gMetaClassE": 18446744005101261264,
+    "__ZN20IOBlockStorageDevice11requestIdleEv": 18446744005063319632,
+    "__ZN20IOBlockStorageDevice13doSetPriorityEP26IOBlockStorageDeviceExtentjh": 18446744005063319656,
+    "__ZN20IOBlockStorageDevice13setPropertiesEP8OSObject": 18446744005063319352,
+    "__ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP35IOBlockStorageProvisionDeviceExtenty": 18446744005063319692,
+    "__ZN20IOBlockStorageDevice4initEP12OSDictionary": 18446744005063319088,
+    "__ZN20IOBlockStorageDevice7doUnmapEP26IOBlockStorageDeviceExtentjj": 18446744005063319644,
+    "__ZN20IOBlockStorageDeviceC2EPK11OSMetaClass": 18446744005063318936,
+    "__ZN20IOBlockStorageDeviceD2Ev": 18446744005063318968,
+    "__ZNK20IOBlockStorageDevice11getPropertyEPK8OSSymbol": 18446744005063319176,
+    "__ZTV20IOBlockStorageDevice": 18446744005087018832
+  },
+  "kext": "com.apple.iokit.IOStorageFamily",
+  "length": 190,
+  "needed": {
+    "__ZN20IOBlockStorageDevice10gMetaClassE": [
+      "special",
+      "metaclass"
+    ],
+    "__ZN20IOBlockStorageDevice11requestIdleEv": [
+      "slot",
+      185
+    ],
+    "__ZN20IOBlockStorageDevice13doSetPriorityEP26IOBlockStorageDeviceExtentjh": [
+      "slot",
+      187
+    ],
+    "__ZN20IOBlockStorageDevice13setPropertiesEP8OSObject": [
+      "slot",
+      44
+    ],
+    "__ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP35IOBlockStorageProvisionDeviceExtenty": [
+      "slot",
+      189
+    ],
+    "__ZN20IOBlockStorageDevice4initEP12OSDictionary": [
+      "slot",
+      21
+    ],
+    "__ZN20IOBlockStorageDevice7doUnmapEP26IOBlockStorageDeviceExtentjj": [
+      "slot",
+      186
+    ],
+    "__ZN20IOBlockStorageDeviceC2EPK11OSMetaClass": [
+      "special",
+      "constructor"
+    ],
+    "__ZN20IOBlockStorageDeviceD2Ev": [
+      "special",
+      "destructor"
+    ],
+    "__ZNK20IOBlockStorageDevice11getPropertyEPK8OSSymbol": [
+      "slot",
+      33
+    ],
+    "__ZTV20IOBlockStorageDevice": [
+      "special",
+      "table"
+    ]
+  },
+  "source": "kernel.macho"
+}

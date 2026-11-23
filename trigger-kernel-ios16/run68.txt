@@ -1,0 +1,31 @@
+run68 2026-11-23: bind the virtio transport to the measured kext addresses
+
+run67 linked (placeholders), reached the prelink step and measured:
+
+  IOStorageFamily __TEXT      0xfffffff003dcf280
+                  __TEXT_EXEC 0xfffffff0045d7000
+                  __DATA_CONST 0xfffffff005c72c80
+                  __DATA      0xfffffff006a09000
+  dispatch table 0xfffffff005c73f50, 190 slots
+  gMetaClass 0xfffffff006a091d0   ctor 0xfffffff0045d9d98   dtor 0xfffffff0045d9db8
+  plus the 7 inherited slots the driver actually imports:
+    init(OSDictionary*)           slot  21 -> 0xfffffff0045d9e30
+    getProperty(OSSymbol const*)  slot  33 -> 0xfffffff0045d9e88
+    setProperties(OSObject*)      slot  44 -> 0xfffffff0045d9f38
+    requestIdle()                 slot 185 -> 0xfffffff0045da050
+    doUnmap(Extent, u32, u32)     slot 186 -> 0xfffffff0045da05c
+    doSetPriority(Extent, u32, u8)slot 187 -> 0xfffffff0045da068
+    doGetProvisionStatus(...)     slot 189 -> 0xfffffff0045da08c
+
+Those are byte for byte the numbers run59's image produced, so adding the driver to
+the kernel did not move the prelinked kexts: the prelink layout is a function of the
+kext set, not of the kernel's own size.  Worth knowing, but it is not what the build
+relies on -- it relies on the record plus `--verify`.
+
+This run commits that record as boards/ios16/virtio-record.json, so the archive is
+bound to real addresses instead of the stubs, and "What came out" re-resolves them
+against the finished image.  If the kernel that comes out says "all 11 bindings still
+current", it is the first one whose NativeVirtioBlock can actually probe a
+virtio-mmio block device.
+
+The driver is now 190 slots, 190 named, 7 inherited, and the archive is 205440 bytes.
