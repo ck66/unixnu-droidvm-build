@@ -79,16 +79,15 @@ jobs:
           MNT="$PWD/.cache/firmware/target-volumes/os-mount"
           rm -rf "$MNT"; mkdir -p "$MNT"
           hdiutil attach -readonly -nobrowse -owners off -mountpoint "$MNT" "$DMG" || {
-            echo "--- hdiutil attach failed, retrying as a raw disk image ---"
+            echo '--- hdiutil attach failed, retrying as a raw disk image ---'
             hdiutil attach -imagekey diskimage-class=CRawDiskImage -readonly -nobrowse -owners off \
               -mountpoint "$MNT" "$DMG"
           }
           ls "$MNT" | head -20
-          echo "--- launchd ---"
+          echo '--- launchd ---'
           ls -l "$MNT/sbin/launchd"
-          echo "--- private/var ---"
+          echo '--- private/var ---'
           ls "$MNT/private/var" | head -20
-          find "$MNT/private/var" -type f 2>/dev/null | wc -l
       - name: Make the Data seed
         working-directory: UniXNU
         run: |
@@ -97,10 +96,22 @@ jobs:
           OUT="$PWD/out/data-seed"
           rm -rf "$OUT"; mkdir -p "$OUT"
           SHA=$(shasum -a 256 "$MNT/sbin/launchd" | cut -d' ' -f1)
-          echo "launchd sha256 $SHA" | tee "$OUT/inputs.txt"
-          echo "dmg sha256 $(shasum -a 256 $(ls out/ipsw/*/*.dmg | head -1) | cut -d' ' -f1)" | tee -a "$OUT/inputs.txt"
-          python3 scripts/prepare-owner-data-fixture.py --output "$OUT/fixture" --launchd-sha256 "$SHA" \
-            2>&1 | tee "$OUT/prepare.log"
+          printf 'launchd sha256 %s\n' "$SHA" > "$OUT/inputs.txt"
+          printf 'private/var files %s\n' "$(find "$MNT/private/var" -type f 2>/dev/null | wc -l)" >> "$OUT/inputs.txt"
+          cat "$OUT/inputs.txt"
+          # prepare-owner-data-fixture.py refuses an OS mount whose /sbin/launchd is not the one
+          # it was written for, and the pinned UniXNU has 21H461's hash as a literal (no
+          # --launchd-sha256 yet).  Put 20H392's value into that literal instead.
+          python3 - "$SHA" <<'PYEOF' 2>&1 | tee -a "$OUT/inputs.txt"
+          import re, sys
+          path = 'scripts/prepare-owner-data-fixture.py'
+          text = open(path).read()
+          text, n = re.subn(r"'[0-9a-f]{64}'", "'%s'" % sys.argv[1], text, count=1)
+          assert n == 1, 'no sha256 literal in %s to pin' % path
+          open(path, 'w').write(text)
+          print('pinned launchd sha256 %s in %s' % (sys.argv[1], path))
+          PYEOF
+          python3 scripts/prepare-owner-data-fixture.py --output "$OUT/fixture" 2>&1 | tee "$OUT/prepare.log"
           python3 - "$OUT" <<'PYEOF' 2>&1 | tee "$OUT/pack.log"
           import sys
           from pathlib import Path
@@ -109,11 +120,13 @@ jobs:
           out = Path(sys.argv[1])
           print(packed_ramdisk.pack(out / 'fixture/owner-data-32.cdr', out / 'data-32.dbr'))
           PYEOF
-          python3 scripts/seed-data-grow.py --volatile --gib "$GROW_GIB" "$OUT/data-32.dbr" "$OUT/data-2g.dbr" \
-            2>&1 | tail -20
-          sed -i '' "s/BUILD, VERSION = '21H461', '17.7.11'/BUILD, VERSION = '20H392', '16.7.16'/" \
-            scripts/seed-data-skip-setup.py
-          grep -n "^BUILD, VERSION" scripts/seed-data-skip-setup.py
+          # --volatile: at most 2 GiB, which NativeRamBlock serves from RAM; a bigger container
+          # is only usable through the persistent store window on the third virtio-mmio disk.
+          python3 scripts/seed-data-grow.py --volatile --gib "$GROW_GIB" "$OUT/data-32.dbr" "$OUT/data-2g.dbr" 2>&1 | tail -20
+          # 21H461 is the build this script was written for; LastSystemVersion must name the
+          # build that boots, or com.apple.migration runs a migration on every start.
+          sed -i '' "s/BUILD, VERSION = '21H461', '17.7.11'/BUILD, VERSION = '20H392', '16.7.16'/" scripts/seed-data-skip-setup.py
+          grep -n '^BUILD, VERSION' scripts/seed-data-skip-setup.py
           python3 scripts/seed-data-skip-setup.py "$OUT/data-2g.dbr" "$OUT/data-2g-skip.dbr" 2>&1 | tail -20
           ls -l "$OUT"/*.dbr
           cat "$OUT/fixture/seed.json"
@@ -125,11 +138,11 @@ jobs:
           ls -l "$OUT" 2>/dev/null
           for f in "$OUT"/*.dbr; do
             [ -f "$f" ] || continue
-            echo "$f: $(stat -f%z "$f") bytes head=$(head -c 8 "$f" | od -c | head -1)"
+            echo "$f: $(stat -f%z "$f") bytes"
+            head -c 8 "$f" | od -c | head -1
             shasum -a 256 "$f"
           done
-          echo "--- volume uuid ---"
-          python3 -c "import json;print(json.load(open('$OUT/fixture/seed.json'))['volume_uuid'])" 2>/dev/null
+          cat "$OUT/fixture/seed.json" 2>/dev/null
           hdiutil info | grep -E 'image-path|/dev/disk' | head -10
       - name: Publish the last diagnostics into the status branch
         if: always()
@@ -139,16 +152,16 @@ jobs:
           OUT=UniXNU/out/data-seed
           {
             echo "run $GITHUB_RUN_ID"
-            echo "--- inputs ---"; cat "$OUT/inputs.txt" 2>/dev/null
-            echo "--- prepare ---"; tail -40 "$OUT/prepare.log" 2>/dev/null
-            echo "--- pack ---"; cat "$OUT/pack.log" 2>/dev/null
-            echo "--- seed.json ---"; cat "$OUT/fixture/seed.json" 2>/dev/null
-            echo "--- artefacts ---"; ls -l "$OUT" 2>/dev/null
+            echo '--- inputs ---'; cat "$OUT/inputs.txt" 2>/dev/null
+            echo '--- prepare ---'; tail -40 "$OUT/prepare.log" 2>/dev/null
+            echo '--- pack ---'; cat "$OUT/pack.log" 2>/dev/null
+            echo '--- seed.json ---'; cat "$OUT/fixture/seed.json" 2>/dev/null
+            echo '--- artefacts ---'; ls -l "$OUT" 2>/dev/null
             shasum -a 256 "$OUT"/*.dbr 2>/dev/null
           } > self/status/ios16-data-last.txt
           cp self/status/ios16-data-last.txt "self/status/ios16-data-$GITHUB_RUN_ID.txt"
-          git -C self config user.email "action@users.noreply.github.com"
-          git -C self config user.name "ios16 data seed"
+          git -C self config user.email 'action@users.noreply.github.com'
+          git -C self config user.name 'ios16 data seed'
           git -C self checkout -q -B ios16-status
           git -C self add status/
           git -C self commit -m "status: ios16 data run $GITHUB_RUN_ID" || true
