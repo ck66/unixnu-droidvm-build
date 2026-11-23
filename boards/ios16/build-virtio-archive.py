@@ -56,7 +56,11 @@ SCRIPT = TREE / 'scripts' / 'build-arm-driver.py'
 CATALOG = TREE / 'components.toml'
 SOURCE = 'NativeVirtioBlock.cpp'
 BUNDLE = 'com.apple.iokit.IOStorageFamily'
-CLASS = '__ZN20IOBlockStorageDevice'
+CLASS = '20IOBlockStorageDevice'          # as it appears inside a mangled name
+VTT = '__ZTV' + CLASS
+META = '__ZN' + CLASS + '10gMetaClassE'
+CTOR = '__ZN' + CLASS + 'C2EPK11OSMetaClass'
+DTOR = '__ZN' + CLASS + 'D2Ev'
 TRAP = b'\x20\x00\x20\xd4'          # brk #0x1, the abstract-destructor slot
 TARGETS = [
     TREE / 'build/virtio-mmio-block/libVirtioMmioBlock.a',
@@ -74,6 +78,25 @@ def fail(message):
 
 def note(message):
     print('virtio: ' + message)
+
+
+def of_class(symbol):
+    """True for everything mangled from IOBlockStorageDevice: its methods, vtable, typeinfo.
+
+    The qualifier run after `__ZN` is what run66 missed: `getProperty(OSSymbol const*) const`
+    mangles as __ZNK20IOBlockStorageDevice..., so a plain `__ZN20...` prefix left exactly that
+    one vtable slot unbound and the link failed on it alone.
+    """
+    if symbol.startswith('__ZN'):
+        rest = symbol[4:]
+        while rest[:1] in ('K', 'V', 'r', 'R'):
+            rest = rest[1:]
+        return rest.startswith(CLASS)
+    if symbol.startswith('__ZTh'):           # adjustor thunks carry the name inside
+        return CLASS in symbol
+    if symbol.startswith('__ZT'):            # __ZTV / __ZTI / __ZTS + the class name
+        return symbol[5:].startswith(CLASS)
+    return False
 
 
 # ---------------------------------------------------------------- 1. the build
@@ -229,14 +252,17 @@ def derived_vtable(object_path):
     run = 0
     while run in named:
         run += 1
-    length = max(run, max(named) + 1 if named else 0)
-    holes = [slot for slot in range(length) if slot not in named]
-    if holes:
-        note('driver vtable %s: %d slots, %d without a relocation (first at %d)'
-             % (symbol[0], length, len(holes), holes[0]))
-    inherited = sum(1 for name in named.values() if name and name.startswith(CLASS))
-    note('driver vtable %s: %d slots, %d named, %d of them inherited from IOBlockStorageDevice'
-         % (symbol[0], length, sum(1 for name in named.values() if name), inherited))
+    # The run is the vtable.  run66 stretched it to the last relocation in the section (207) so
+    # the 190-slot table could never match; the gap is the end of this vtable.
+    length = run
+    beyond = sorted(slot for slot in named if slot >= length)
+    if beyond:
+        note('%d relocated slots follow the vtable (first at %d): other objects in %s'
+             % (len(beyond), beyond[0], section['name']))
+    inherited = sum(1 for slot, name in named.items() if slot < length and name and of_class(name))
+    note('driver vtable %s: %d slots, %d named, %d inherited from IOBlockStorageDevice'
+         % (symbol[0], length, sum(1 for slot, name in named.items()
+                                  if slot < length and name), inherited))
     return [named.get(index) for index in range(length)]
 
 
@@ -361,17 +387,17 @@ def needed_symbols(object_path, slots):
     imports = {item[0] for item in symbols_of(object_path) if item[2] == 1}
     where = {}
     for index, symbol in enumerate(slots):
-        if symbol and symbol.startswith(CLASS):
+        if symbol and of_class(symbol):
             where[symbol] = ['slot', index]
     for symbol, kind in {
-        '__ZTV20IOBlockStorageDevice': 'table',
-        CLASS + 'D2Ev': 'destructor',
-        CLASS + 'C2EPK11OSMetaClass': 'constructor',
-        CLASS + '10gMetaClassE': 'metaclass',
+        VTT: 'table',
+        DTOR: 'destructor',
+        CTOR: 'constructor',
+        META: 'metaclass',
     }.items():
         where[symbol] = ['special', kind]
     selected = {name: where[name] for name in where if name in imports}
-    missed = sorted(name for name in imports if name.startswith(CLASS) and name not in selected)
+    missed = sorted(name for name in imports if of_class(name) and name not in selected)
     note('%d imports, %d bound to %s (%d slots, %d special)'
          % (len(imports), len(selected), BUNDLE,
             sum(1 for kind, _ in selected.values() if kind == 'slot'),

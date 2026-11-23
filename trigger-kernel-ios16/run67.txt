@@ -1,0 +1,26 @@
+run67 2026-11-23: const members, and the vtable ends where the gap is
+
+run66 got all the way to the link with placeholders and left one symbol:
+
+  "IOBlockStorageDevice::getProperty(OSSymbol const*) const", referenced from
+      vtable for NativeVirtioBlock in libVirtioMmioBlock.a[2](NativeVirtioBlock.o)
+
+Two things the log settled:
+
+1. A `const` member mangles as __ZNK20IOBlockStorageDevice..., so the plain `__ZN20...`
+   prefix used to recognise the class left exactly that one vtable slot unbound.  The
+   test is now the qualifier run after __ZN (K/V/r/R) plus the __ZTV/__ZTI/__ZTS and
+   thunk spellings.
+
+2. The driver's vtable is 190 slots, not 207.  Slots 190+ have no relocation -- the
+   section simply continues with other objects -- and stretching the length to the
+   last relocation in the section made the 190-slot table in IOStorageFamily
+   unfindable.  The length is now the contiguous run from slot 0, and the slots past
+   it are reported instead of used.
+
+Both are pure plumbing: with them the link should succeed, the build reaches the
+prelink step, and `--measure` writes out/ios16/virtio-record.json for the next run.
+
+The workflow also measures when `--verify` fails, so a record that went stale (the
+kext moving because the kernel grew) produces a usable record in the same run
+instead of costing another one.

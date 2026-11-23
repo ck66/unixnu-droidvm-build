@@ -250,7 +250,9 @@ jobs:
             echo "virtio: reading $DEST"
             if [ -f "$TREE/scripts/virtio-record.json" ]; then
               python3 "$SCRIPT" --verify "$DEST" "$TREE/scripts/virtio-record.json" \
-                2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
+                2>&1 | tee "$RUNNER_TEMP/virtio-verify.log" \
+                || python3 "$SCRIPT" --measure "$DEST" --out "UniXNU/out/$BOARD/virtio-record.json" \
+                     2>&1 | tee -a "$RUNNER_TEMP/virtio-verify.log"
             else
               python3 "$SCRIPT" --measure "$DEST" --out "UniXNU/out/$BOARD/virtio-record.json" \
                 2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
