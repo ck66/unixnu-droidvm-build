@@ -122,6 +122,9 @@ jobs:
           PYEOF
           # --volatile: at most 2 GiB, which NativeRamBlock serves from RAM; a bigger container
           # is only usable through the persistent store window on the third virtio-mmio disk.
+          # seed-data-grow.py makes its scratch directory under ROOT/build, which no earlier step
+          # creates here: run2 died on FileNotFoundError .../build/data-grow-*.
+          mkdir -p build
           python3 scripts/seed-data-grow.py --volatile --gib "$GROW_GIB" "$OUT/data-32.dbr" "$OUT/data-2g.dbr" 2>&1 | tail -20
           # 21H461 is the build this script was written for; LastSystemVersion must name the
           # build that boots, or com.apple.migration runs a migration on every start.
