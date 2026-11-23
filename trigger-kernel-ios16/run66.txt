@@ -1,0 +1,25 @@
+run66 2026-11-23: link with placeholders, then measure where the kext landed
+
+run65 died in the archive step, which settles the ordering question: run64's log
+shows the eight archives at lines 71-85 and the failed kernel link at 113, so the
+kernel link *consumes* this archive.  There is no linked kernel at binding time --
+the "kernel is linked before the archive step" comment in the workflow was wrong --
+and any absolute kext address baked there can only come from a previous run.
+
+So the step is now two-phase, and this run is the measuring half:
+
+  - no boards/ios16/virtio-record.json yet, so every import is aliased to a stub
+    in the archive's own object (`ret` in __TEXT, a 16-byte blob in __TEXT,__const).
+    That is in range for every branch and page reference, so the link succeeds and
+    the run produces the prelinked image that says where IOStorageFamily lands;
+  - "What came out" then runs `--measure kernel.macho`: it finds the class
+    dispatch table structurally (16 zero bytes then two brk #0x1 slots, and only
+    the table whose slot count equals the driver vtable's 190), derives gMetaClass,
+    the constructor and the base destructor from it, and writes
+    out/ios16/virtio-record.json -- which is uploaded with the artifacts.
+
+Committing that record is what run67 needs: with it present the aliases get the
+real addresses, and `--verify` re-resolves against the finished image and refuses
+to call it current if anything moved.
+
+The kernel this run uploads must not be booted: its vtable points at the stubs.

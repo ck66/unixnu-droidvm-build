@@ -143,6 +143,15 @@ jobs:
           # resolves archive scripts under <tree>/scripts -- same place the fixup already had
           # to be, so it is staged the same way.
           cp ../self/boards/ios16/build-virtio-archive.py "out/$BOARD/tree/scripts/build-virtio-archive.py"
+          # The archive is bound before the kernel is linked, so the kext addresses can only
+          # come from a previous run's measurement.  Absent, the script binds placeholders and
+          # the "What came out" step measures instead.
+          if [ -f ../self/boards/ios16/virtio-record.json ]; then
+            cp ../self/boards/ios16/virtio-record.json "out/$BOARD/tree/scripts/virtio-record.json"
+            echo "virtio record: $(wc -c < ../self/boards/ios16/virtio-record.json) bytes"
+          else
+            echo "virtio record: none, this run measures"
+          fi
           python3 - <<'PYEOF' 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           from pathlib import Path
           old = ('    git -C .cache/xnu-work apply --check "$PATCH"\n'
@@ -214,14 +223,6 @@ jobs:
           for cand in "$OBJ/mach.development.bcm2837.unstripped.noctf" "$OBJ/mach.development.bcm2837.unstripped"; do
             if [ -f "$cand" ]; then SRC="$cand"; break; fi
           done
-          if [ -n "$SRC" ]; then
-            # The virtio archive was bound to the kext layout of the kernel linked *before* the
-            # archive step; this is the image that would boot.  Re-resolve against it and print
-            # whether the baked addresses are still the right ones (see --verify in
-            # boards/ios16/build-virtio-archive.py).
-            python3 "UniXNU/out/$BOARD/tree/scripts/build-virtio-archive.py" \
-              --verify "$SRC" 2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
-          fi
           DEST="UniXNU/out/$BOARD/kernel/kernel.macho"
           # The prelink step writes the artifact this milestone is about straight to $DEST, and the
           # plain copy below then replaced it with the raw linked xnu: run 44653449412 printed
@@ -239,6 +240,22 @@ jobs:
             echo "no linked kernel image found under $OBJ"
           fi
           [ -n "$SRC" ] && cp "$SRC" "UniXNU/out/$BOARD/kernel/kernel.xnu.macho"
+          if [ -s "$DEST" ]; then
+            # The virtio archive was bound to the kext addresses of a previous run (or to
+            # placeholders when there was no record yet).  This image is the one that would boot:
+            # verify the recorded addresses against it, or measure them from it.  The kexts only
+            # exist in the prelinked image, so this reads $DEST, not the raw link output.
+            TREE="UniXNU/out/$BOARD/tree"
+            SCRIPT="$TREE/scripts/build-virtio-archive.py"
+            echo "virtio: reading $DEST"
+            if [ -f "$TREE/scripts/virtio-record.json" ]; then
+              python3 "$SCRIPT" --verify "$DEST" "$TREE/scripts/virtio-record.json" \
+                2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
+            else
+              python3 "$SCRIPT" --measure "$DEST" --out "UniXNU/out/$BOARD/virtio-record.json" \
+                2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
+            fi
+          fi
           shasum -a 256 "UniXNU/out/$BOARD/kernel/"*.macho | tee "$RUNNER_TEMP/sha.txt"
           ls -l "UniXNU/out/$BOARD/kernel/" 2>/dev/null
       - name: Publish the last diagnostics into the status branch
@@ -336,4 +353,5 @@ jobs:
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.macho
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.xnu.macho
             UniXNU/out/${{ env.BOARD }}/kernel/kernel.json
+            UniXNU/out/${{ env.BOARD }}/virtio-record.json
           if-no-files-found: warn

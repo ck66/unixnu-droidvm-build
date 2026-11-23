@@ -23,8 +23,7 @@ Two separate problems, both solved here.
        .set   __ZTV20IOBlockStorageDevice, <the kext's dispatch table>
 
    That is the mechanism the 17.7.11 board's build-native-virtio-bindings.py
-   uses; here the numbers are read out of the image being built instead of an
-   audit record, so they cannot drift from it.  The class dispatch table is found
+   uses with an audit record of the numbers.  The class dispatch table is found
    structurally -- sixteen zero bytes (offset-to-top, null typeinfo), then the
    two abstract-destructor slots pointing at BRK traps -- and its length must
    equal the slot count of the driver's own vtable, which is what pairs each
@@ -32,11 +31,15 @@ Two separate problems, both solved here.
    anything that cannot be resolved uniquely aborts the step, because a guessed
    address is worse than a failed build.
 
-   The kext layout is read from the kernel this board links before the archive step
-   runs, so it is the layout of this run, not a recorded one.  A second link then
-   force-loads this archive; if that moved anything, the baked addresses would be
-   stale.  `--verify <kernel>` re-resolves against the finished image and compares,
-   so drift is reported in the log instead of showing up as a fault at boot.
+   The order is what forces two runs.  This step runs *before* the kernel link --
+   the kernel link consumes this archive -- so at binding time there is no image
+   that says where the kext will land.  Without a record the aliases therefore
+   point at a stub in this object: in range for every branch and page reference,
+   so the link succeeds and produces the image; `--measure <kernel>` then reads
+   the placement out of it and writes the record (boards/ios16/virtio-record.json).
+   With a record present the aliases get the real addresses.  `--verify <kernel>`
+   re-resolves against the finished image and compares, so a kernel whose kext
+   moved is reported instead of producing a fault somewhere unrelated.
 """
 import json
 import re
@@ -59,6 +62,9 @@ TARGETS = [
     TREE / 'build/virtio-mmio-block/libVirtioMmioBlock.a',
     TREE / 'build/native-virtio-block/libNativeVirtioBlock.a',
 ]
+# Staged next to this script by the workflow from boards/ios16/virtio-record.json: the
+# addresses a previous run measured, because this step runs before the kernel is linked.
+RECORD = TREE / 'scripts' / 'virtio-record.json'
 
 
 def fail(message):
@@ -234,20 +240,13 @@ def derived_vtable(object_path):
     return [named.get(index) for index in range(length)]
 
 
-def kernel_image():
-    for name in ('mach.development.bcm2837.unstripped',
-                 'mach.development.bcm2837.unstripped.noctf'):
-        path = TREE / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837' / name
-        if path.is_file():
-            note('kernel image %s' % path.name)
-            return load(path)
-    fail('no linked kernel yet; the bindings need its kext placement')
-
-
 def storage_kext(data, image):
     """The IOStorageFamily Mach-O and its segments, located through __PRELINK_INFO."""
     module = prelink()
-    info = next(segment for segment in image['segments'] if segment['name'] == '__PRELINK_INFO')
+    info = next((segment for segment in image['segments'] if segment['name'] == '__PRELINK_INFO'), None)
+    if info is None:
+        fail('%s has no __PRELINK_INFO: it is the raw link output, not the prelinked image'
+             % 'the kernel')
     start = at(data, image, info['va'], info['filesize'])
     metadata = module.unserialize_xml(data[start:start + info['filesize']])
     item = next((entry for entry in metadata['_PrelinkInfoDictionary']
@@ -353,55 +352,94 @@ def destructor(data, image, pointers):
     return target
 
 
-def bind(archive, object_path):
-    slots = derived_vtable(object_path)
-    kernel_data, kernel = kernel_image()
-    exports = prelink().exports(kernel_data, kernel)
-    by_name = {name: va for va, names in exports.items() for name in names}
-    kext, segments = storage_kext(kernel_data, kernel)
-    text = segments['__TEXT_EXEC']
-    table, pointers = dispatch_table(kernel_data, kernel, segments, len(slots))
+def needed_symbols(object_path, slots):
+    """Which undefined symbols have to come from the kext, and where each one lives in it.
 
-    aliases = {}
+    A slot index is the driver's own numbering, so it is also how `--measure` and `--verify`
+    find the address again in a kernel image.
+    """
+    imports = {item[0] for item in symbols_of(object_path) if item[2] == 1}
+    where = {}
     for index, symbol in enumerate(slots):
-        if symbol is None or not symbol.startswith(CLASS):
-            continue
-        if symbol in by_name:
-            continue  # the kernel already exports it
-        aliases[symbol] = pointers[index]
+        if symbol and symbol.startswith(CLASS):
+            where[symbol] = ['slot', index]
+    for symbol, kind in {
+        '__ZTV20IOBlockStorageDevice': 'table',
+        CLASS + 'D2Ev': 'destructor',
+        CLASS + 'C2EPK11OSMetaClass': 'constructor',
+        CLASS + '10gMetaClassE': 'metaclass',
+    }.items():
+        where[symbol] = ['special', kind]
+    selected = {name: where[name] for name in where if name in imports}
+    missed = sorted(name for name in imports if name.startswith(CLASS) and name not in selected)
+    note('%d imports, %d bound to %s (%d slots, %d special)'
+         % (len(imports), len(selected), BUNDLE,
+            sum(1 for kind, _ in selected.values() if kind == 'slot'),
+            sum(1 for kind, _ in selected.values() if kind == 'special')))
+    for name in missed:
+        note('  not in the class table and not exported by the kernel: ' + name)
+    if missed:
+        fail('%d IOBlockStorageDevice symbols are neither virtual nor derivable; a non-virtual '
+             'member cannot be located from the class table' % len(missed))
+    return selected
 
-    def exported(symbol):
-        """Names come out of an nlist either way, so compare both spellings."""
-        return (symbol in by_name or symbol[1:] in by_name or '_' + symbol in by_name)
 
-    imports = [item[0] for item in symbols_of(object_path) if item[2] == 1]
+def resolve(kernel_path, plan):
+    """Address of every needed symbol, read out of a prelinked kernel image."""
+    data, image = load(kernel_path)
+    kext, segments = storage_kext(data, image)
+    text = segments['__TEXT_EXEC']
+    table, pointers = dispatch_table(data, image, segments, plan['length'])
     special = {
-        '__ZTV20IOBlockStorageDevice': lambda: table,
-        CLASS + 'D2Ev': lambda: destructor(kernel_data, kernel, pointers),
-        CLASS + 'C2EPK11OSMetaClass': lambda: constructor(kernel_data, kernel, text, table),
-        CLASS + '10gMetaClassE': lambda: metaclass(kernel_data, kernel, text, pointers),
+        'table': lambda: table,
+        'destructor': lambda: destructor(data, image, pointers),
+        'constructor': lambda: constructor(data, image, text, table),
+        'metaclass': lambda: metaclass(data, image, text, pointers),
     }
-    for symbol, value in special.items():
-        if symbol in imports:
-            aliases[symbol] = value()
+    done = {}
+    values = {}
+    for name, (kind, where) in sorted(plan['needed'].items()):
+        if kind == 'slot':
+            if where >= len(pointers):
+                fail('%s is slot %d of %d' % (name, where, len(pointers)))
+            values[name] = pointers[where]
+        else:
+            if where not in done:
+                done[where] = special[where]()
+            values[name] = done[where]
+    note('resolved %d symbols against %s (table %#x, %d slots)'
+         % (len(values), kernel_path.name, table, len(pointers)))
+    return values
 
-    unknown = sorted({symbol for symbol in imports
-                      if symbol not in aliases and not exported(symbol)})
-    kernel_side = len(set(imports) - set(aliases) - set(unknown))
-    note('%d imports: %d from %s, %d from the kernel, %d unknown'
-         % (len(set(imports)), len(aliases), BUNDLE, kernel_side, len(unknown)))
-    for symbol in sorted(aliases):
-        note('  %-52s %#x' % (symbol, aliases[symbol]))
-    for symbol in unknown:
-        note('  unknown: ' + symbol)
-    if unknown:
-        fail('%d imports neither the kext nor the kernel defines; not linking a guess'
-             % len(unknown))
 
+def aliases(plan, values):
+    """The assembly that defines the driver's imports: absolute addresses, or placeholders."""
+    if values is None:
+        # No kernel exists yet at archive time -- the kernel link consumes this archive, so a
+        # record can only come from a previous run.  Point every import at a stub in this same
+        # object instead: in range for every branch and page reference, so the link succeeds and
+        # produces the image `--measure` needs.
+        lines = ['.section __TEXT,__text,regular,pure_instructions',
+                 '.p2align 2', 'virtio_placeholder:', '\tret',
+                 '.section __TEXT,__const', '.p2align 3',
+                 'virtio_placeholder_data:', '\t.space 16']
+        for name, (kind, where) in sorted(plan['needed'].items()):
+            data = kind == 'special' and where in ('table', 'metaclass')
+            lines += ['.globl %s' % name,
+                      '.set %s, %s' % (name, 'virtio_placeholder_data' if data
+                                       else 'virtio_placeholder')]
+        return '\n'.join(lines) + '\n'
+    missing = sorted(set(plan['needed']) - set(values))
+    if missing:
+        fail('the record has no address for %s' % ', '.join(missing))
+    return ''.join('.globl %s\n.set %s, %#x\n' % (name, name, values[name])
+                   for name in sorted(values))
+
+
+def emit(archive, plan, values):
     assembly = archive.parent / 'original-bindings.S'
     assembly.write_text('# generated by boards/ios16/build-virtio-archive.py\n'
-                        + ''.join('.globl %s\n.set %s, %#x\n' % (item, item, value)
-                                  for item, value in sorted(aliases.items())))
+                        + aliases(plan, values))
     compiled = archive.parent / 'original-bindings.o'
     result = subprocess.run(['xcrun', 'clang', '-target', 'arm64-apple-ios17.0', '-Werror',
                              '-Wno-incompatible-sysroot', '-c', str(assembly), '-o', str(compiled)],
@@ -414,72 +452,94 @@ def bind(archive, object_path):
     if result.returncode:
         sys.stderr.write(result.stdout + result.stderr)
         fail('appending the aliases to %s failed' % archive)
-    note('bound into %s (%d bytes)' % (archive.name, archive.stat().st_size))
-    manifest = archive.parent / 'virtio-bindings.json'
-    manifest.write_text(json.dumps({
-        'table': table, 'length': len(slots), 'kext': BUNDLE,
-        'aliases': aliases}, indent=2) + '\n')
-    note('wrote %s' % manifest.name)
-    return archive
+    note('%s into %s (%d bytes)'
+         % ('bound' if values else 'placeholder-bound', archive.name, archive.stat().st_size))
 
 
-def verify(kernel_path, manifest_path):
-    """Re-resolve against the finished kernel and compare with what was linked in.
+def bind(archive, object_path):
+    slots = derived_vtable(object_path)
+    plan = {'length': len(slots), 'needed': needed_symbols(object_path, slots)}
+    if RECORD.is_file():
+        record = json.loads(RECORD.read_text())
+        if record.get('length') != plan['length']:
+            fail('the record was made for a %s-slot table, the driver has %d'
+                 % (record.get('length'), plan['length']))
+        note('using the recorded addresses in %s' % RECORD.name)
+        emit(archive, plan, record['aliases'])
+        return False
+    note('no %s yet, so this run only links: run --measure on the image it produces and '
+         'commit the result' % RECORD.name)
+    emit(archive, plan, None)
+    pending = archive.parent / 'virtio-needs.json'
+    pending.write_text(json.dumps(plan, indent=2) + '\n')
+    note('wrote %s' % pending.name)
+    return True
 
-    The archive step reads the kernel from the run that has not had virtio force-loaded yet;
-    if the kext layout moved between that link and the final one, every baked address would
-    be stale and the kernel would fault somewhere unrelated.  This says so directly.
-    """
-    report = json.loads(manifest_path.read_text())
-    kernel_data, kernel = load(kernel_path)
-    kext, segments = storage_kext(kernel_data, kernel)
-    text = segments['__TEXT_EXEC']
-    table, pointers = dispatch_table(kernel_data, kernel, segments, report['length'])
-    actual = {
-        '__ZTV20IOBlockStorageDevice': table,
-        CLASS + 'D2Ev': destructor(kernel_data, kernel, pointers),
-        CLASS + 'C2EPK11OSMetaClass': constructor(kernel_data, kernel, text, table),
-        CLASS + '10gMetaClassE': metaclass(kernel_data, kernel, text, pointers),
-    }
-    stale = [(name, value, report['aliases'].get(name))
-             for name, value in actual.items()
-             if report['aliases'].get(name) != value]
-    note('%s: dispatch table %#x, %d slots (linked with %#x)'
-         % (kernel_path.name, table, report['length'], report['table']))
 
-    def shown(value):
-        return ('%#x' % value) if isinstance(value, int) else str(value)
+def measure(kernel_path, pending_path, output_path):
+    """Write the record that the next run's archive will be bound with."""
+    plan = json.loads(pending_path.read_text())
+    values = resolve(kernel_path, plan)
+    record = {'length': plan['length'], 'kext': BUNDLE, 'needed': plan['needed'],
+              'aliases': values, 'source': kernel_path.name}
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(record, indent=2, sort_keys=True) + '\n')
+    for name in sorted(values):
+        note('  %-52s %#x' % (name, values[name]))
+    note('wrote %s' % output_path)
 
-    for name, value in sorted(actual.items()):
-        note('  %-52s %#x (linked %s)' % (name, value, shown(report['aliases'].get(name))))
+
+def verify(kernel_path, record_path):
+    """Re-resolve against the finished kernel and compare with what the archive was bound to."""
+    record = json.loads(record_path.read_text())
+    actual = resolve(kernel_path, record)
+    stale = [(name, value, record['aliases'].get(name))
+             for name, value in actual.items() if record['aliases'].get(name) != value]
+    for name in sorted(actual):
+        note('  %-52s %#x (bound %s)' % (name, actual[name],
+                                         '%#x' % record['aliases'][name]
+                                         if name in record['aliases'] else 'nothing'))
     if stale:
         for name, value, was in stale:
-            note('  STALE %s: now %#x, linked %s' % (name, value, shown(was)))
-        fail('the kext moved after the archive was built; the linked kernel is not usable')
-    note('bindings still current')
+            note('  STALE %s: now %#x, bound %s' % (name, value, '%#x' % was if was else 'nothing'))
+        fail('%d bindings moved after the archive was built; the linked kernel is not usable'
+             % len(stale))
+    note('all %d bindings still current' % len(actual))
 
 
 def main():
     started = time.time()
-    if '--verify' in sys.argv:
-        index = sys.argv.index('--verify')
-        if index + 1 >= len(sys.argv):
-            fail('--verify needs the kernel image to check')
-        kernel_path = Path(sys.argv[index + 1])
+    argv = sys.argv[1:]
+    output = None
+    while '--out' in argv:
+        at = argv.index('--out')
+        if at + 1 >= len(argv):
+            fail('--out needs a path')
+        output = Path(argv[at + 1])
+        del argv[at:at + 2]
+    if '--measure' in argv or '--verify' in argv:
+        mode = '--measure' if '--measure' in argv else '--verify'
+        rest = [item for item in argv if item != mode]
+        if not rest:
+            fail('%s needs the kernel image' % mode)
+        kernel_path = Path(rest[0])
         if not kernel_path.is_file():
-            fail('no %s to verify against' % kernel_path)
-        manifest = next((Path(item) for item in sys.argv
-                         if item.endswith('virtio-bindings.json')), None)
-        if manifest is None:
-            found = sorted((TREE / 'build').glob('*/virtio-bindings.json'))
-            if not found:
-                fail('no virtio-bindings.json under build/ to verify against')
-            manifest = found[0]
-        note('verifying %s against %s' % (kernel_path, manifest))
-        verify(kernel_path, manifest)
+            fail('no %s' % kernel_path)
+        given = [Path(item) for item in rest[1:]]
+        if mode == '--measure':
+            pending = given[0] if given else next(
+                iter(sorted((TREE / 'build').glob('*/virtio-needs.json'))), None)
+            if pending is None or not pending.is_file():
+                fail('no virtio-needs.json under build/ to measure for')
+            measure(kernel_path, pending, output or Path('virtio-record.json'))
+        else:
+            record = given[0] if given else RECORD
+            if not record.is_file():
+                fail('no record at %s; this archive was bound with placeholders' % record)
+            verify(kernel_path, record)
         return
     archive, object_file = compile_driver()
-    bind(archive, object_file)
+    placeholders = bind(archive, object_file)
     for target in TARGETS:
         if target == archive:
             continue
@@ -488,7 +548,8 @@ def main():
             target.unlink()
         shutil.copy2(archive, target)
         note('copied to %s' % target.relative_to(TREE))
-    note('done in %.1fs' % (time.time() - started))
+    note('done in %.1fs%s' % (time.time() - started,
+                              ', placeholders only' if placeholders else ''))
 
 
 if __name__ == '__main__':
