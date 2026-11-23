@@ -1,0 +1,14 @@
+run64 2026-11-23: ask build-arm-driver.py which name it takes
+
+run63 got past reading components.toml (it printed id 'VirtioMmioBlock',
+outputs ['build/virtio-mmio-block/libVirtioMmioBlock.a']) and then hit the same
+argparse wall: that tree's build-arm-driver.py keys its driver table by the
+legacy name, so 'VirtioMmioBlock' is not a choice while 'NativeVirtioBlock' is.
+
+The wrapper now runs `build-arm-driver.py --help`, takes the real choice list,
+prefers the catalog id and falls back to legacy_name, links drivers/<chosen>/
+to the drivers/VirtioMmioBlock submodule, builds, and copies the archive to
+both build/virtio-mmio-block/libVirtioMmioBlock.a and
+build/native-virtio-block/libNativeVirtioBlock.a.
+
+No other change: the defconfig switch and the archives list stay as they are.
