@@ -1,0 +1,38 @@
+run65 2026-11-23: bind the transport to the prelinked IOStorageFamily
+
+run64 compiled the archive and then the kernel link refused it:
+
+  Undefined symbols for architecture arm64:
+    "vtable for IOBlockStorageDevice", referenced from
+        NativeVirtioBlock::probe(IOService*, int*)
+    "IOBlockStorageDevice::gMetaClass", referenced from
+        NativeVirtioBlock::MetaClass::MetaClass()
+    ... requestIdle, setProperties, doGetProvisionStatus, doUnmap, getProperty
+
+and the kernel symbol table has no IOBlockStorageDevice at all: the class lives
+inside the prelinked com.apple.iokit.IOStorageFamily kext, which the kernel link
+cannot see.  A kext in the prelinked image keeps the address it was linked at,
+so `.set <symbol>, <kext address>` is a valid binding -- the same mechanism the
+17.7.11 board's build-native-virtio-bindings.py uses with recorded numbers.
+
+Here the numbers come out of the image this run links, and every one of them is
+checked before it is used:
+
+  - the class dispatch table is found in the kext's __DATA_CONST by shape --
+    sixteen zero bytes (offset-to-top, null typeinfo) then two slots pointing at
+    brk #0x1 -- and it must be the only table whose slot count equals the slot
+    count of the driver's own vtable (190 in 8796's IOStorageFamily; the other
+    candidate in that section has 180, which is why the count has to match);
+  - gMetaClass, the constructor and the base destructor are then derived from
+    that table and that object, not from recorded numbers;
+  - imports nothing accounts for abort the step and are listed, so a missing
+    alias is one log away from being added instead of a mystery at boot.
+
+Because the archive is bound to the kernel linked *before* the archive step while
+a second link force-loads it, `--verify <kernel>` re-resolves against the
+finished image; "What came out" runs it and puts the verdict in the status file,
+so a stale binding is reported instead of becoming a fault somewhere unrelated.
+
+Verified locally against the run59 kernel image: table 0xfffffff005c73f50 (190
+slots), gMetaClass 0xfffffff006a091d0, ctor 0xfffffff0045d9d98,
+dtor 0xfffffff0045d9db8 -- the same numbers the ad-hoc scan produced.

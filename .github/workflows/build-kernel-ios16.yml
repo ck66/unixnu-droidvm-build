@@ -214,6 +214,14 @@ jobs:
           for cand in "$OBJ/mach.development.bcm2837.unstripped.noctf" "$OBJ/mach.development.bcm2837.unstripped"; do
             if [ -f "$cand" ]; then SRC="$cand"; break; fi
           done
+          if [ -n "$SRC" ]; then
+            # The virtio archive was bound to the kext layout of the kernel linked *before* the
+            # archive step; this is the image that would boot.  Re-resolve against it and print
+            # whether the baked addresses are still the right ones (see --verify in
+            # boards/ios16/build-virtio-archive.py).
+            python3 "UniXNU/out/$BOARD/tree/scripts/build-virtio-archive.py" \
+              --verify "$SRC" 2>&1 | tee "$RUNNER_TEMP/virtio-verify.log"
+          fi
           DEST="UniXNU/out/$BOARD/kernel/kernel.macho"
           # The prelink step writes the artifact this milestone is about straight to $DEST, and the
           # plain copy below then replaced it with the raw linked xnu: run 44653449412 printed
@@ -285,6 +293,12 @@ jobs:
                 break
               fi
             done
+            echo "--- virtio bindings ---"
+            # What the archive step built and which kext addresses it baked (its stdout goes
+            # into the build log), then the post-link opinion on whether they are still right.
+            grep -E "^virtio:" "$RUNNER_TEMP/ios16.log" 2>/dev/null | head -60
+            grep -h -E "^virtio:" UniXNU/out/$BOARD/logs/archive-*.log 2>/dev/null | sort -u | head -60
+            [ -f "$RUNNER_TEMP/virtio-verify.log" ] && cat "$RUNNER_TEMP/virtio-verify.log"
             echo "--- fixups ---"
             grep -E "^fixup:|^late:" "$LOG" 2>/dev/null | head -12
             echo "--- step log ---"
@@ -310,6 +324,7 @@ jobs:
           path: |
             ${{ runner.temp }}/ios16.log
             ${{ runner.temp }}/sha.txt
+            ${{ runner.temp }}/virtio-verify.log
             UniXNU/out/${{ env.BOARD }}/logs/*.log
           if-no-files-found: warn
       - name: Keep the kernel
