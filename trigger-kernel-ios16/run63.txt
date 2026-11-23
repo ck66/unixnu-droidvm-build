@@ -1,0 +1,19 @@
+run63 2026-11-23: build the VirtIO archive by resolving its id from the tree
+
+run62 passed "build-arm-driver.py VirtioMmioBlock" and the tree answered
+`invalid choice: 'VirtioMmioBlock'`.  Its components.toml is an older snapshot
+whose ids are still the legacy names (NativeVirtioBlock, NativeUfs,
+NativeMobileDisplay ...), so that component did not build and the link died
+again at build-xnu-4k-baseline.sh:787.
+
+This run replaces the entry with boards/ios16/build-virtio-archive.py, which
+
+  - reads the id out of the tree's own components.toml instead of assuming it,
+  - bridges drivers/<id>/ to the drivers/VirtioMmioBlock submodule when the two
+    names differ (build-arm-driver.py takes the directory from the id),
+  - builds through the tree's own build-arm-driver.py,
+  - and leaves the archive at BOTH build/virtio-mmio-block/libVirtioMmioBlock.a
+    and build/native-virtio-block/libNativeVirtioBlock.a, because the tree's
+    kernel script and its catalog disagree about which one the link reads.
+
+Bare transport throughout: no --verified-root, no build-native-virtio-bindings.py.

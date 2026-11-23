@@ -139,6 +139,10 @@ jobs:
           mkdir -p "out/$BOARD/tree/scripts"
           cp ../self/boards/ios16/fixup-8796.py "out/$BOARD/tree/scripts/fixup-8796.py"
           cp ../self/boards/ios16/fixup-8796.py scripts/fixup-8796.py
+          # The archive list runs `build-virtio-archive.py`, and `unixnu build kernel` only
+          # resolves archive scripts under <tree>/scripts -- same place the fixup already had
+          # to be, so it is staged the same way.
+          cp ../self/boards/ios16/build-virtio-archive.py "out/$BOARD/tree/scripts/build-virtio-archive.py"
           python3 - <<'PYEOF' 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           from pathlib import Path
           old = ('    git -C .cache/xnu-work apply --check "$PATCH"\n'

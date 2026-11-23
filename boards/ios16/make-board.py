@@ -83,7 +83,14 @@ ARCHIVES_NEW = '''archives = [
   # cannot be produced here). The driver itself only needs standard IOKit headers, and
   # compiling it against this tree's own IOPlatformExpert.cpo.json is what makes its
   # vtable match 8796's IOBlockStorageDevice instead of 10063's.
-  "build-arm-driver.py VirtioMmioBlock",
+  #
+  # Not "build-arm-driver.py <name>" directly: run62 passed VirtioMmioBlock and the tree's
+  # components.toml answered `invalid choice` (its ids are still the legacy Native* names,
+  # and its output path is build/native-virtio-block/), while the tree's kernel script asks
+  # for build/virtio-mmio-block/. boards/ios16/build-virtio-archive.py resolves the id from
+  # that same catalog, builds through that same build-arm-driver.py, and leaves both paths
+  # in place, so the entry works whichever snapshot the tree was assembled from.
+  "build-virtio-archive.py",
   "build-libpthread-kernel.py",
 ]'''
 
