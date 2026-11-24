@@ -46,7 +46,7 @@
 +		return 0;
 +	}
 +	iterator = IOService::getMatchingServices(matching);
-+	if (iterator.get() == NULL) {
++	if (!iterator) {
 +		return 0;
 +	}
 +	while ((media = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != NULL) {

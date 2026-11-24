@@ -1,0 +1,1 @@
+run70: OSPtr<OSIterator> is a raw OSIterator* in 8796
