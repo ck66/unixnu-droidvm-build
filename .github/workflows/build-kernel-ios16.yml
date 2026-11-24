@@ -182,6 +182,20 @@ jobs:
               if old not in text:
                   raise SystemExit('patch loop anchor missing in %s' % script)
               text = text.replace(old, new, 1)
+              # The board has no VerifiedRoot kit: it needs a Darwin 23 reference candidate
+              # that iOS 16 cannot produce (see ARCHIVES_NEW in make-board.py).  Keeping
+              # XNU_VERIFIED_ROOT_PROBE on makes the script demand
+              # build/verified-root-xnu/libVerifiedRootProbe.a and abort before prelink;
+              # run71 linked a bare 18 MB xnu because of this.  The owner root audit is
+              # backed by the IOKitBSDInit.cpp shims instead, so drop that hard dependency.
+              audit_old = ('if [ "$OWNER_ROOT_AUDIT" = 1 ] && [ "$OWNER_ROOT_PROBE" != 1 ]; then\n'
+                           "  echo 'The root-binding audit requires real owner-verified block crypto' >&2\n"
+                           '  exit 1\n'
+                           'fi\n')
+              if audit_old in text:
+                  text = text.replace(audit_old,
+                      '# ios16: owner-root audit is backed by the DroidVM shims, no VerifiedRoot archive.\n', 1)
+                  print('owner-root audit dependency relaxed:', script)
               # xnu 8796 reads availability.pl from the SDK; the script already exports
               # XNU_AVAILABILITY_PL, so the tree's copy only needs the fallback that
               # UniXNU's local-availability.patch adds (and which cannot be applied here:
