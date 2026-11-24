@@ -1,0 +1,1 @@
+run71: stub native_verified_root_probe (last undefined symbol)
