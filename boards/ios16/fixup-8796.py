@@ -681,13 +681,18 @@ def enable_trust_cache_runtime():
 
 
 def drop_core_timer_routing():
-    """Remove common_start's BCM2837 core-timer routing write.
+    """Nop ONLY the BCM2837 core-timer routing store in common_start.
 
     osfmk/arm64/start.s writes 0xf0 to the ARM-local "Core Timers interrupt control" register at
     0x4000004X before the MMU is on.  That peripheral exists on a Pi 3 and nowhere else: in this
     guest the store raises a synchronous external abort (ESR 0x96000010, FAR 0x40000040) before
-    arm_init runs, which is the stage every probe read as "the kernel died at handoff".  Nop'ing
-    the single `str` in the finished image was enough to reach arm_init and stage 7.
+    arm_init runs.  The bring-up image that reached launchd had exactly this ONE `str` replaced
+    by a nop; the surrounding mrs/and/mov/add/isb were left in place.
+
+    An earlier version here changed the whole `#if defined(BCM2837)` block to `#if 0`.  That
+    build stalls before the first scheduler tick (sched_tick stays 0, bsd_init's root-auth
+    checkpoint never runs, owner-chain state is still at its compiled-in values), so keep the
+    block and replace just the store, byte-for-byte equivalent to the proven binary patch.
     """
     path = Path('.cache/xnu-work/osfmk/arm64/start.s')
     if not path.exists():
@@ -695,17 +700,22 @@ def drop_core_timer_routing():
     text = path.read_text()
     anchor = ('#if defined(BCM2837)\n'
               '\t// Setup timer interrupt routing; must be done before MMU is enabled\n')
-    if 'unixnu: no ARM-local core timer' in text:
-        print('core timer routing already dropped')
+    if 'unixnu: core timer store nopped' in text:
+        print('core timer store already nopped')
         return
     if anchor not in text:
         fail('start.s core timer anchor missing')
-    text = text.replace(
-        anchor,
-        '#if 0 /* unixnu: no ARM-local core timer in this guest; the store aborts before arm_init */\n'
-        '\t// Setup timer interrupt routing; must be done before MMU is enabled\n', 1)
-    path.write_text(text)
-    print('ios16 core timer routing dropped: start.s common_start')
+    i = text.index(anchor)
+    j = text.index('#endif', i)
+    block = text[i:j]
+    store = '\tstr\t\tw1, [x0]'
+    if store not in block:
+        fail('start.s core timer store not found inside the BCM2837 block')
+    block = block.replace(store,
+        '\tnop\t\t\t\t// unixnu: core timer store nopped (no ARM-local timer in this guest)', 1)
+    path.write_text(text[:i] + block + text[j:])
+    print('ios16 core timer store nopped: start.s common_start (block preserved)')
+
 
 
 def drop_kernel_pan():
