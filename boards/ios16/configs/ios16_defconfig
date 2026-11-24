@@ -27,6 +27,11 @@ CONFIG_XNU_SOURCE_PTHREAD=y
 CONFIG_XNU_NATIVE_AES=y
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
 CONFIG_XNU_TRUST_CACHE_RUNTIME=y
+# BCM2837.h's PLATFORM_PANIC_LOG_PADDR is 0x3c0fc000, which is no RAM in this guest: the kernel
+# mapped it as the panic log and every panic (and the console buffer that shares the region) was
+# unreadable/faulting. With the DT region on, pe_init takes /pram + /chosen/embedded-panic-log-size
+# from make-droidvm-adt.py instead, i.e. the top 512 KiB of guest RAM -- the region p3peek --panic reads.
+CONFIG_XNU_DT_PANIC_REGION=y
 # 8796's public mockfs sources are incomplete (mockfs_fsnode.c needs the private enum) and this
 # board mounts the payload's real APFS volumes; fixup-8796.py also turns the four #if MOCKFS
 # blocks in vfs_conf.c off. build-xnu-4k-baseline.sh otherwise insists on libmockfs_fixture.a.
@@ -38,3 +43,23 @@ CONFIG_XNU_NATIVE_UFS=n
 CONFIG_XNU_NATIVE_ADRENO=n
 CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n
 CONFIG_XNU_ARMVIRT_PLATFORM=n
+
+# Offline owner / SystemOS chain.  Without it launchd stops at the Image4 ignition query
+# (AppleImage4 waits for a service this VM never publishes), and even when that query is
+# stubbed, dyld cannot find libSystem.B.dylib: the shared cache lives in the SystemOS
+# cryptex, not on the root volume.  The UniXNU owner patches are already applied by
+# build-xnu-4k-baseline.sh (whyred carries offline-owner-systemos-mount.patch); these
+# switches compile them in, mount the cryptex at /private/preboot before launchd, and set
+# commpage dyld flag bit 3 ("no ignition").  build-xnu-4k-baseline.sh enforces the chain
+# VERIFIED_ROOT_PROBE -> OWNER_ROOT_AUDIT -> OWNER_ROOT_TRUST -> CACHE_MOUNT ->
+# CACHE_STARTUP -> CRYPTEX_FILES, so all six are required.  The two missing bsd_init.c
+# patches and the verified-block shims come from boards/ios16/patches/xnu-owner/.
+CONFIG_XNU_VERIFIED_ROOT_PROBE=y
+CONFIG_XNU_OWNER_ROOT_AUDIT=y
+CONFIG_XNU_OWNER_ROOT_TRUST=y
+CONFIG_XNU_OWNER_CACHE_MOUNT=y
+CONFIG_XNU_OWNER_CACHE_STARTUP=y
+CONFIG_XNU_OWNER_CRYPTEX_FILES=y
+# Measured from systemos.img's APFS volume superblock (APSB +0xe0): whyred's default
+# 8846FE78-... is the macOS/Sheng image and does not exist on this iOS 16.7.16 cryptex.
+CONFIG_XNU_OWNER_CACHE_VOLUME_UUID="96096B28-B6DC-4BC7-9D3A-2632A0FE53F1"

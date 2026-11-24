@@ -1,0 +1,82 @@
+--- a/iokit/bsddev/IOKitBSDInit.cpp
++++ b/iokit/bsddev/IOKitBSDInit.cpp
+@@ -1613,3 +1613,79 @@
+ 	}
+ 	return value;
+ }
++
++/*
++ * Offline owner verified-block shims (DroidVM / iOS 16 board).
++ *
++ * offline-owner-systemos-mount.patch (kern_exec.c) and
++ * offline-owner-root-binding-audit.patch (bsd_init.c) call these.  Their production
++ * implementations live in the out-of-tree verified-block storage which this board does
++ * not link, and a VM has no sealed, hardware-authenticated root: the virtio-mmio disks
++ * themselves are the trust boundary.  So accept any mounted media, and resolve the
++ * SystemOS cryptex by its APFS volume UUID (XNU_OWNER_CACHE_VOLUME_UUID, measured from
++ * systemos.img's APSB).  If 8796 does not publish the UUID property on IOMedia, fall back
++ * to the first non-root whole disk -- crosvm publishes SystemOS on the second transport.
++ */
++extern "C" dev_t rootdev;
++
++extern "C" int
++native_verified_block_root_authorized(dev_t device)
++{
++	return device != NODEV;
++}
++
++extern "C" int
++native_verified_block_volume_device(const char *volume_uuid, dev_t *device,
++    char *path, size_t path_size)
++{
++	OSDictionary *matching;
++	OSPtr<OSIterator> iterator;
++	IORegistryEntry *media;
++	OSNumber *major, *minor;
++	OSString *bsd_name, *media_uuid;
++	dev_t candidate = NODEV, fallback = NODEV;
++	char candidate_path[64] = {0}, fallback_path[64] = {0};
++	int exact = 0;
++
++	if (device == NULL || path == NULL || path_size < 16) {
++		return 0;
++	}
++	matching = IOService::serviceMatching("IOMedia");
++	if (matching == NULL) {
++		return 0;
++	}
++	iterator = IOService::getMatchingServices(matching);
++	if (iterator.get() == NULL) {
++		return 0;
++	}
++	while ((media = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != NULL) {
++		major = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMajorKey));
++		minor = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMinorKey));
++		bsd_name = OSDynamicCast(OSString, media->getProperty(kIOBSDNameKey));
++		if (major == NULL || minor == NULL || bsd_name == NULL) {
++			continue;
++		}
++		candidate = makedev(major->unsigned32BitValue(), minor->unsigned32BitValue());
++		strlcpy(candidate_path, "/dev/", sizeof(candidate_path));
++		strlcat(candidate_path, bsd_name->getCStringNoCopy(), sizeof(candidate_path));
++		media_uuid = OSDynamicCast(OSString, media->getProperty("UUID"));
++		if (volume_uuid != NULL && media_uuid != NULL &&
++		    strcmp(media_uuid->getCStringNoCopy(), volume_uuid) == 0) {
++			exact = 1;
++			break;
++		}
++		if (fallback == NODEV && candidate != rootdev) {
++			fallback = candidate;
++			strlcpy(fallback_path, candidate_path, sizeof(fallback_path));
++		}
++	}
++	if (!exact && fallback == NODEV) {
++		IOLog("owner: no IOMedia for SystemOS UUID %s\n",
++		    volume_uuid ? volume_uuid : "(unset)");
++		return 0;
++	}
++	*device = exact ? candidate : fallback;
++	strlcpy(path, exact ? candidate_path : fallback_path, path_size);
++	IOLog("owner: SystemOS %s -> %s\n", exact ? "UUID match" : "fallback", path);
++	return 1;
++}

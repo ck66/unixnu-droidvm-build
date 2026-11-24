@@ -644,6 +644,106 @@ def fix_config_tables():
     return True
 
 
+def enable_trust_cache_runtime():
+    """Compile the trust-cache runtime init on this machine config.
+
+    osfmk/kern/startup.c wraps the whole block in `#ifndef BCM2837`, and this build never gets
+    -DXNU_NATIVE_TRUST_CACHE into startup.o, so the kernel never ran it: trust_cache_rt stayed
+    NULL and trust_cache_rt_lock stayed zeroed.  Reading a zeroed rw lock makes it look
+    non-sleepable, and AMFI's first signature check (the exec of launchd) takes it with
+    preemption enabled:
+
+        panic: Taking non-sleepable RW lock with preemption enabled @lock_rw.c:1377
+          lck_rw_lock_shared <- query_trust_cache <- mac_vnode_check_signature
+
+    The block has to stay where it is -- after mac_policy_initmach(), before
+    kernel_startup_initialize_upto(STARTUP_SUB_LOCKDOWN) and machine_lockdown().  Calling the
+    same two functions any later faults instead, because trust_cache_runtime_init() writes the
+    static region that lockdown has since made read-only ("Unexpected fault in kernel static
+    region at pc _trust_cache_runtime_init+0x4c").
+    """
+    path = Path('.cache/xnu-work/osfmk/kern/startup.c')
+    if not path.exists():
+        fail('osfmk/kern/startup.c missing: cannot enable the trust cache runtime')
+    text = path.read_text()
+    anchor = '#ifndef BCM2837\n\tkernel_bootstrap_log("trust_cache_init");'
+    if 'unixnu: no PPL on BCM2837' in text:
+        print('trust cache runtime already enabled')
+        return
+    if anchor not in text:
+        fail('startup.c trust cache anchor missing')
+    text = text.replace(
+        anchor,
+        '#if 1 /* unixnu: no PPL on BCM2837, so the runtime lock has to be initialized here */\n'
+        '\tkernel_bootstrap_log("trust_cache_init");', 1)
+    path.write_text(text)
+    print('ios16 trust cache runtime enabled: startup.c runs trust_cache_runtime_init + load_static_trust_cache')
+
+
+def drop_core_timer_routing():
+    """Remove common_start's BCM2837 core-timer routing write.
+
+    osfmk/arm64/start.s writes 0xf0 to the ARM-local "Core Timers interrupt control" register at
+    0x4000004X before the MMU is on.  That peripheral exists on a Pi 3 and nowhere else: in this
+    guest the store raises a synchronous external abort (ESR 0x96000010, FAR 0x40000040) before
+    arm_init runs, which is the stage every probe read as "the kernel died at handoff".  Nop'ing
+    the single `str` in the finished image was enough to reach arm_init and stage 7.
+    """
+    path = Path('.cache/xnu-work/osfmk/arm64/start.s')
+    if not path.exists():
+        fail('osfmk/arm64/start.s missing: cannot drop the core timer routing')
+    text = path.read_text()
+    anchor = ('#if defined(BCM2837)\n'
+              '\t// Setup timer interrupt routing; must be done before MMU is enabled\n')
+    if 'unixnu: no ARM-local core timer' in text:
+        print('core timer routing already dropped')
+        return
+    if anchor not in text:
+        fail('start.s core timer anchor missing')
+    text = text.replace(
+        anchor,
+        '#if 0 /* unixnu: no ARM-local core timer in this guest; the store aborts before arm_init */\n'
+        '\t// Setup timer interrupt routing; must be done before MMU is enabled\n', 1)
+    path.write_text(text)
+    print('ios16 core timer routing dropped: start.s common_start')
+
+
+def drop_kernel_pan():
+    """Keep PSTATE.PAN out of the kernel's default cpsr.
+
+    osfmk/arm64/proc_reg.h adds PSR64_PAN to PSR64_KERNEL_DEFAULT whenever
+    __ARM_PAN_AVAILABLE__, and this build's SDK answers yes even though the board is BCM2837,
+    which has no PAN at all.  Nothing in the kernel then ever clears PAN again (there is not one
+    `msr pan` in __TEXT_EXEC: enable_user_access()/disable_user_access() compiled away), so a
+    kernel-mode user access takes a level-3 permission fault -- __bcopyin's plain `ldrb w3,[x0],#1`
+    -- and because the retry returns through the same saved state the fault repeats about 1.7
+    million times a second: the guest burns a core and never gets past dyld.
+
+    Measured on the device with no fix: ESR_EL1 0x9600000F (permission fault, level 3, same EL),
+    ELR __bcopyin+0x34, SPSR 0x22400204 (PAN set), SCTLR_EL1 0x3454599D (SPAN already 0, which is
+    why clearing the live PAN at boot does not help).  With the saved-state bit cleared the same
+    image goes from 3 BSD syscalls to 31, and the 1.7M/s exception storm stops.
+    """
+    path = Path('.cache/xnu-work/osfmk/arm64/proc_reg.h')
+    if not path.exists():
+        fail('osfmk/arm64/proc_reg.h missing: cannot drop PAN from the kernel default')
+    text = path.read_text()
+    if 'unixnu: no PAN on this part' in text:
+        print('kernel default PAN already dropped')
+        return
+    old = ('#if __ARM_PAN_AVAILABLE__\n'
+           '#define PSR64_KERNEL_DEFAULT    (PSR64_KERNEL_STANDARD | PSR64_PAN)')
+    if old not in text:
+        fail('proc_reg.h PSR64_KERNEL_DEFAULT anchor missing')
+    text = text.replace(
+        old,
+        '#if 0 /* unixnu: no PAN on this part, and nothing here ever clears it before a user '
+        'access */\n'
+        '#define PSR64_KERNEL_DEFAULT    (PSR64_KERNEL_STANDARD | PSR64_PAN)', 1)
+    path.write_text(text)
+    print('ios16 kernel default PAN dropped: PSR64_KERNEL_DEFAULT = PSR64_KERNEL_STANDARD')
+
+
 def main():
     if '--late' in sys.argv:
         place_late()
@@ -658,6 +758,9 @@ def main():
     write_link_shims()
     add_vfs_peer()
     add_stage_probes()
+    drop_core_timer_routing()
+    enable_trust_cache_runtime()
+    drop_kernel_pan()
     fix_config_tables()
     patch_prelink_tool()
     print('fixup: done')

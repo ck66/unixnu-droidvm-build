@@ -90,8 +90,13 @@ jobs:
           mkdir -p UniXNU-droidvm/patches/xnu
           cp whyred/patches/xnu/*.patch UniXNU-droidvm/patches/xnu/
           # whyred's series carries its own 8796 source-machine-layer, so nothing is replaced
-          # here; the board.toml now points patch_series at that list alone.
-          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD): $(ls UniXNU-droidvm/patches/xnu | wc -l)"
+          # here; the board.toml now points patch_series at that list alone.  The owner-root
+          # patches and the verified-block shims are ours: whyred ships the SystemOS mount but
+          # not the two bsd_init.c pieces it depends on, and its extern declarations had no
+          # implementation anywhere in this build.  build-xnu-4k-baseline.sh applies every
+          # patches/xnu/*.patch, so a file here is enough -- no series change is needed.
+          cp self/boards/ios16/patches/xnu-owner/*.patch UniXNU-droidvm/patches/xnu/
+          echo "device patches from whyred @ $(git -C whyred rev-parse --short HEAD) + owner: $(ls UniXNU-droidvm/patches/xnu | wc -l)"
       - name: Point the xnu source at 8796 (device-level feed override)
         run: |
           set -euo pipefail
