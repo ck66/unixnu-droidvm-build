@@ -1,0 +1,6 @@
+run78 2026-11-25: dump every IOMedia so the Data match failure is explained.
+
+run77 compiled and ran, but native_owner_data_media() matched nothing (stage 0,status 2).
+One boot with this build prints "owner-media: <name> maj/min size uuid" for up to 16
+media, which says whether the data-store2.img partition exists at all and what its
+Size/UUID properties actually are.
