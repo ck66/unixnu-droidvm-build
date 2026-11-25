@@ -1,0 +1,14 @@
+run80 2026-11-25: if /dev/md0 is missing, publish it through devfs_make_node.
+
+mount_common() resolves the device path itself: for VFC_VFSLOCALARGS filesystems it takes
+the first 8 bytes of the argument blob as a user pointer, copies it out and namei()s it
+(vfs_syscalls.c, "do_copyin_devpath").  Our blob points at "/dev/md0", so ENOENT there
+would look exactly like the panic we see.
+
+mdevadd() does call devfs_make_node(..., DEVFS_BLOCK, "md%d"), but it runs from
+IOFindBSDRoot() before /dev is mounted.  This build records the two lookups and, when the
+device lookup fails, publishes the node itself and retries, then mounts as before.
+
+  native_owner_data_mnt_lookup / _dev_lookup   0 = path resolves
+  native_owner_data_node_made                  1 = we had to create it
+  native_owner_data_nx_magic                   u32 at seed+0x20, expect 0x4253584e
