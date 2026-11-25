@@ -1,0 +1,12 @@
+run75 2026-11-25: Data volume from the virtio disk (mdev0 does not exist).
+
+run74 compiled DATA_MOUNT in, and the guest panicked at load_init_program with
+  offline scratch Data mount failed: 22 @kern_exec.c:7138
+because the md0 branch calls mdevlookup(0).  The live device tree explains why:
+DarwinBoot copies the packed seed to RAM and registers it under memory-map as
+"PackedRAMDisk" (0x890d1000, 0x12e090 = the packed size), and stock XNU only looks
+for "RAMDisk".  So there is no md0 at all.
+
+zzzzz-owner-data-disk.patch replaces that branch with native_verified_block_volume_device(),
+the UUID resolver the owner chain already uses for SystemOS.  Boot the test VM with
+data-store2.img (the GPT + APFS image, volume OwnerData, UUID B5224338-...).
