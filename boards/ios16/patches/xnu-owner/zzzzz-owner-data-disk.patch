@@ -1,18 +1,16 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6931,6 +6931,21 @@
+@@ -6931,6 +6931,19 @@
  uint8_t native_owner_data_seed_sha256[32];
  char native_owner_data_device_path[64];
  
-+/* Diagnostic scratch for the scratch-Data mount.  mount_common() resolves two paths --
-+ * the device path taken from the first 8 bytes of the argument blob, and the mount
-+ * point -- and both answer ENOENT when they fail, so record each separately.
-+ * Negative means "not reached yet". */
++/* Diagnostic scratch for the scratch-Data mount: the mount point lookup, the device
++ * lookup, whether the node had to be published, and the mount status.  Negative means
++ * "not reached yet". */
 +volatile int native_owner_data_mnt_lookup = -1;
 +volatile int native_owner_data_dev_lookup = -1;
 +volatile int native_owner_data_node_made = -1;
 +volatile int native_owner_data_mount_status = -1;
-+volatile int native_owner_data_alt_status = -1;
 +/* The md0 window's own container header, so the host can tell "DarwinBoot expanded our
 + * seed" from "the media holds something else": NXSB, block size, block count. */
 +volatile uint32_t native_owner_data_nx_magic;
@@ -22,7 +20,32 @@
  static int
  native_owner_data_prepare(proc_t p, user_addr_t scratch)
  {
-@@ -6959,6 +6974,33 @@
+@@ -6950,6 +6963,24 @@
+ 	device = mdevlookup(0);
+ 	if (device == NODEV || mdevgetrange(0, &base, &size) || base < VM_MIN_KERNEL_ADDRESS ||
+ 	    !size || size > UINT64_C(0x80000000) || (base & 4095) || (size & 4095)) goto done;
++	/* apfs_vfsop_mount picks the volume from the device name's slice index ("disk3s1"
++	 * is volume 1 of its container) and rejects a plain "md0" with ENOENT --
++	 * "invalid fsindex: -1".  Publish the same dev_t under both the container and the
++	 * slice name it would have had, and hand apfs the slice path only: a first failed
++	 * attempt leaves the container state poisoned for the same dev_t, so there is
++	 * exactly one mount call per boot. */
++	{
++		extern void *devfs_make_node(dev_t, int, uid_t, gid_t, int, const char *, ...);
++		void *container_node = devfs_make_node(device, 1 /* DEVFS_BLOCK */, 0, 0, 0600,
++		    "disk9");
++		void *slice_node = devfs_make_node(device, 1 /* DEVFS_BLOCK */, 0, 0, 0600,
++		    "disk9s1");
++		native_owner_data_node_made = (slice_node != NULL) ? 1 : 0;
++		if (container_node == NULL || slice_node == NULL) {
++			native_owner_data_node_made = -2;
++		}
++		strlcpy(device_path, "/dev/disk9s1", sizeof(device_path));
++	}
+ 	SHA256_CTX context;
+ 	SHA256_Init(&context);
+ 	SHA256_Update(&context, (const void *)base, size);
+@@ -6959,6 +6990,19 @@
  	native_owner_data_seed_size = size;
  	native_owner_data_stage = 1;
  	strlcpy(native_owner_data_device_path, device_path, sizeof(native_owner_data_device_path));
@@ -38,48 +61,15 @@
 +		native_owner_data_dev_lookup = vnode_lookup(device_path, 0, &probe_vp,
 +		    vfs_context_current());
 +		if (probe_vp != NULLVP) vnode_put(probe_vp);
-+		/* mdevadd() publishes the node through devfs_make_node(), but it runs from
-+		 * IOFindBSDRoot() before /dev is mounted; if the name never landed, make it now
-+		 * so mount_common()'s own lookup of the device path can succeed. */
-+		if (native_owner_data_dev_lookup != 0) {
-+			extern void *devfs_make_node(dev_t, int, uid_t, gid_t, int, const char *, ...);
-+			void *node = devfs_make_node(device, 1 /* DEVFS_BLOCK */, 0, 0, 0600, "md%d", 0);
-+			native_owner_data_node_made = (node != NULL) ? 1 : 0;
-+			probe_vp = NULLVP;
-+			native_owner_data_dev_lookup = vnode_lookup(device_path, 0, &probe_vp,
-+			    vfs_context_current());
-+			if (probe_vp != NULLVP) vnode_put(probe_vp);
-+		} else {
-+			native_owner_data_node_made = 0;
-+		}
 +	}
  	uint8_t payload[0x150] = {0};
  	user64_addr_t spec = scratch + 0x160;
  	uint16_t mode = 1;
-@@ -6976,7 +7018,25 @@
+@@ -6976,6 +7020,7 @@
  	    (error = copyout(payload, request.data, sizeof(payload)))) goto done;
  	native_owner_data_stage = 2;
  	error = mount(p, &request, &result);
--	if (error) goto done;
 +	native_owner_data_mount_status = error;
-+	if (error) {
-+		/* apfs_vfsop_mount derives the volume index from the device node name --
-+		 * "disk3s1" is volume 1 of its container -- and refuses a whole-disk name
-+		 * with ENOENT ("invalid fsindex: -1"), which is exactly what the md0 name
-+		 * produced.  Publish the same device under a slice-shaped name and retry. */
-+		extern void *devfs_make_node(dev_t, int, uid_t, gid_t, int, const char *, ...);
-+		int alt = 0;
-+		strlcpy(device_path, "/dev/disk9s1", sizeof(device_path));
-+		(void)devfs_make_node(device, 1 /* DEVFS_BLOCK */, 0, 0, 0600, "disk9s1");
-+		if ((alt = copyout(device_path, spec, strlen(device_path) + 1)) == 0) {
-+			result = 0;
-+			alt = mount(p, &request, &result);
-+		}
-+		native_owner_data_alt_status = alt;
-+		if (alt) goto done;
-+		strlcpy(native_owner_data_device_path, device_path,
-+		    sizeof(native_owner_data_device_path));
-+	}
+ 	if (error) goto done;
  	native_owner_data_stage = 3;
  	error = vnode_lookup("/private/var", 0, &data_root, vfs_context_current());
- 	if (error) goto done;
