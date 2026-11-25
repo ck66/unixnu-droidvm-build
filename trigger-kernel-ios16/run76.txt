@@ -1,0 +1,10 @@
+run76 2026-11-25: Data media by UUID, then by 32 MiB partition size.
+
+run75 compiled DATA_MOUNT and resolved a device, but native_verified_block_volume_device()
+fell through to its "first non-root whole disk" fallback (/dev/disk0, the boot disk) and
+mount("apfs") answered EACCES 13.
+
+New shim native_owner_data_media(): pass 1 matches the APFS volume UUID case-insensitively,
+pass 2 takes the IOMedia whose Size is exactly 33554432 -- the GPT partition data-disk.img
+carries -- because the fixture volume "OwnerData" has apfs_role 0 and this XNU does not
+publish a UUID property for it.
