@@ -1,0 +1,14 @@
+run82 2026-11-25: one mount attempt, under the slice name apfs expects.
+
+run81 mounted /dev/md0 first (apfs: "invalid fsindex: -1", ENOENT) and then retried the
+same dev_t as /dev/disk9s1; the retry got past the fsindex check (no such line) but died
+earlier, at apfs_vfsop_mount:2280 "unable to mount from /dev/disk9s1: 2" -- a first failed
+attempt leaves the container state for that dev_t poisoned, so the retry cannot be read as
+a clean experiment.
+
+This build publishes dev_t once as both "disk9" and "disk9s1" and makes a single mount
+call on /dev/disk9s1, so the fsindex path is exercised on a fresh device.
+
+  native_owner_data_node_made      1 = slice node published
+  native_owner_data_dev_lookup     0 = /dev/disk9s1 resolves
+  native_owner_data_mount_status   0 = mounted
