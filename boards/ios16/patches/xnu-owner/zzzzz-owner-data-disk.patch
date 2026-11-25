@@ -1,6 +1,6 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6947,13 +6947,20 @@
+@@ -6947,13 +6947,21 @@
  	/* The typed provider's disk may be far larger than 2 GiB (a persistent Data disk keeps only its seed's nonzero pages). */
  	if (!size || size > UINT64_C(0x10000000000) || (size & 4095)) goto done;
  #else
@@ -22,6 +22,7 @@
 +#ifndef XNU_OWNER_DATA_DISK_UUID
 +#define XNU_OWNER_DATA_DISK_UUID "B5224338-CBB2-4730-9E53-F481B269E006"
 +#endif
++	extern int native_owner_data_media(const char *, dev_t *, char *, size_t);
 +	if (!native_owner_data_media(XNU_OWNER_DATA_DISK_UUID, &device, device_path,
 +	    sizeof(device_path))) { error = ENOENT; goto done; }
 +	size = UINT64_C(0x2000000);
