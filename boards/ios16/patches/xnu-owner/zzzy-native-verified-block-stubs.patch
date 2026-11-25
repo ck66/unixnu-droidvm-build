@@ -1,6 +1,6 @@
 --- a/iokit/bsddev/IOKitBSDInit.cpp
 +++ b/iokit/bsddev/IOKitBSDInit.cpp
-@@ -1613,3 +1613,124 @@
+@@ -1613,3 +1613,221 @@
  	}
  	return value;
  }
@@ -123,5 +123,102 @@
 +	IOLog("owner: boot manifest shim root=%d cache=%d uuid=%s\n",
 +	    (int)root_device, (int)cache_device, b);
 +	return 1;
++}
++
++
++
++
++
++/* XNU_OWNER_DATA_MOUNT's device resolution.
++ *
++ * The scratch Data seed reaches the guest as /chosen/memory-map/PackedRAMDisk
++ * (DarwinBoot keeps the DBRDISK1 pack; stock XNU only ever looks for "RAMDisk"),
++ * so mdev0 does not exist and mdevlookup(0) returns NODEV.
++ *
++ * Resolve the Data media off the virtio disk instead.  Two passes:
++ *   1. an IOMedia whose "UUID" equals the Data volume UUID (case-insensitive --
++ *      the APFS kext and this string do not have to agree on case), and
++ *   2. otherwise the partition media that is exactly 32 MiB, which is what
++ *      data-disk.img carries (GPT partition 1, an APFS container of 8192 4K blocks).
++ * Pass 2 exists because the fixture volume is named "OwnerData" with apfs_role 0 and
++ * this XNU does not always publish a UUID property for it. */
++#define NATIVE_DATA_PARTITION_BYTES 33554432ULL
++
++static int
++native_owner_data_match_uuid(OSString *media_uuid, const char *volume_uuid)
++{
++	const char *a, *b;
++
++	if (media_uuid == NULL || volume_uuid == NULL) {
++		return 0;
++	}
++	a = media_uuid->getCStringNoCopy();
++	b = volume_uuid;
++	while (*a != '\0' && *b != '\0') {
++		char ca = *a++, cb = *b++;
++		if (ca >= 'a' && ca <= 'z') ca = (char)(ca - 'a' + 'A');
++		if (cb >= 'a' && cb <= 'z') cb = (char)(cb - 'a' + 'A');
++		if (ca != cb) {
++			return 0;
++		}
++	}
++	return *a == '\0' && *b == '\0';
++}
++
++extern "C" int
++native_owner_data_media(const char *volume_uuid, dev_t *device, char *path, size_t path_size)
++{
++	OSDictionary *matching;
++	OSPtr<OSIterator> iterator;
++	IORegistryEntry *media;
++	OSNumber *major, *minor, *size_prop;
++	OSString *bsd_name, *media_uuid;
++	dev_t by_size = NODEV;
++	char by_size_path[64] = {0};
++
++	if (device == NULL || path == NULL || path_size < 16) {
++		return 0;
++	}
++	matching = IOService::serviceMatching("IOMedia");
++	if (matching == NULL) {
++		return 0;
++	}
++	iterator = IOService::getMatchingServices(matching);
++	if (!iterator) {
++		return 0;
++	}
++	while ((media = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != NULL) {
++		major = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMajorKey));
++		minor = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMinorKey));
++		bsd_name = OSDynamicCast(OSString, media->getProperty(kIOBSDNameKey));
++		if (major == NULL || minor == NULL || bsd_name == NULL) {
++			continue;
++		}
++		media_uuid = OSDynamicCast(OSString, media->getProperty("UUID"));
++		if (native_owner_data_match_uuid(media_uuid, volume_uuid)) {
++			*device = makedev(major->unsigned32BitValue(), minor->unsigned32BitValue());
++			strlcpy(path, "/dev/", path_size);
++			strlcat(path, bsd_name->getCStringNoCopy(), path_size);
++			IOLog("owner: Data media by uuid -> %s\n", path);
++			return 1;
++		}
++		if (by_size == NODEV) {
++			size_prop = OSDynamicCast(OSNumber, media->getProperty("Size"));
++			if (size_prop != NULL && size_prop->unsigned64BitValue() == NATIVE_DATA_PARTITION_BYTES) {
++				by_size = makedev(major->unsigned32BitValue(), minor->unsigned32BitValue());
++				strlcpy(by_size_path, "/dev/", sizeof(by_size_path));
++				strlcat(by_size_path, bsd_name->getCStringNoCopy(), sizeof(by_size_path));
++			}
++		}
++	}
++	if (by_size != NODEV) {
++		*device = by_size;
++		strlcpy(path, by_size_path, path_size);
++		IOLog("owner: Data media by size -> %s\n", path);
++		return 1;
++	}
++	IOLog("owner: no Data media (uuid %s, size %llu)\n", volume_uuid ? volume_uuid : "(unset)",
++	    (unsigned long long)NATIVE_DATA_PARTITION_BYTES);
++	return 0;
 +}
 +
