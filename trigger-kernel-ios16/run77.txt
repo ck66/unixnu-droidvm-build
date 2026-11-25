@@ -1,0 +1,4 @@
+run77 2026-11-25: add the missing extern for native_owner_data_media.
+
+run76 failed at bsd/kern/kern_exec.c:6961 -- call to undeclared function
+native_owner_data_media (I replaced the old extern when switching the call).
