@@ -1,15 +1,17 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6931,6 +6931,18 @@
+@@ -6931,6 +6931,20 @@
  uint8_t native_owner_data_seed_sha256[32];
  char native_owner_data_device_path[64];
  
-+/* Diagnostic scratch for the scratch-Data mount.  mount(2) performs two lookups --
-+ * the device path and the mount point -- and both answer ENOENT when they fail, so
-+ * record each separately; a successful pair with a failing mount() means APFS itself
-+ * refused the media.  Negative means "not reached yet". */
++/* Diagnostic scratch for the scratch-Data mount.  mount_common() resolves two paths --
++ * the device path taken from the first 8 bytes of the argument blob, and the mount
++ * point -- and both answer ENOENT when they fail, so record each separately; a
++ * successful pair with a failing mount() means APFS itself refused the media.
++ * Negative means "not reached yet". */
 +volatile int native_owner_data_mnt_lookup = -1;
 +volatile int native_owner_data_dev_lookup = -1;
++volatile int native_owner_data_node_made = -1;
 +/* The md0 window's own container header, so the host can tell "DarwinBoot expanded our
 + * seed" from "the media holds something else": NXSB, block size, block count. */
 +volatile uint32_t native_owner_data_nx_magic;
@@ -19,7 +21,7 @@
  static int
  native_owner_data_prepare(proc_t p, user_addr_t scratch)
  {
-@@ -6959,6 +6971,19 @@
+@@ -6959,6 +6973,33 @@
  	native_owner_data_seed_size = size;
  	native_owner_data_stage = 1;
  	strlcpy(native_owner_data_device_path, device_path, sizeof(native_owner_data_device_path));
@@ -35,6 +37,20 @@
 +		native_owner_data_dev_lookup = vnode_lookup(device_path, 0, &probe_vp,
 +		    vfs_context_current());
 +		if (probe_vp != NULLVP) vnode_put(probe_vp);
++		/* mdevadd() publishes the node through devfs_make_node(), but it runs from
++		 * IOFindBSDRoot() before /dev is mounted; if the name never landed, make it now
++		 * so mount_common()'s own lookup of the device path can succeed. */
++		if (native_owner_data_dev_lookup != 0) {
++			extern void *devfs_make_node(dev_t, int, uid_t, gid_t, int, const char *, ...);
++			void *node = devfs_make_node(device, 1 /* DEVFS_BLOCK */, 0, 0, 0600, "md%d", 0);
++			native_owner_data_node_made = (node != NULL) ? 1 : 0;
++			probe_vp = NULLVP;
++			native_owner_data_dev_lookup = vnode_lookup(device_path, 0, &probe_vp,
++			    vfs_context_current());
++			if (probe_vp != NULLVP) vnode_put(probe_vp);
++		} else {
++			native_owner_data_node_made = 0;
++		}
 +	}
  	uint8_t payload[0x150] = {0};
  	user64_addr_t spec = scratch + 0x160;
