@@ -1,0 +1,20 @@
+run79 2026-11-25: md0 now exists; probe the two mount(2) lookups + the container header.
+
+The Data seed now really is md0: DarwinBoot only keeps the seed packed because the ADT
+names the property "PackedRAMDisk".  Renaming that property slot to "RAMDisk" (fixed
+32-byte name field, so it is an in-place byte edit) makes it expand the DBRDISK1 pack
+into contiguous RAM, and IOKitBSDInit's RAMDisk path then mdevadd()s it.  Booted with
+the 32 MiB seed the guest reached
+
+  data stage 2, status 2, device -1, path /dev/md0
+  panic: offline scratch Data mount failed: 2 @kern_exec.c:7138
+
+so the device is resolved and mount(2) itself answers ENOENT.  vfs_syscalls returns
+EINVAL when the fstype is unknown, so this build restores the plain mdevlookup(0)
+branch (the media-resolver hack is gone) and records which of mount(2)'s two path
+lookups fails, plus the NXSB/block-size/block-count found at the seed base:
+
+  native_owner_data_mnt_lookup   vnode_lookup("/private/var")
+  native_owner_data_dev_lookup   vnode_lookup("/dev/md0")
+  native_owner_data_nx_magic     u32 at seed+0x20 (expect 0x4253584e "NXSB")
+  native_owner_data_nx_block_size / _nx_block_count
