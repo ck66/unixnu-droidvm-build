@@ -1,6 +1,6 @@
 --- a/iokit/bsddev/IOKitBSDInit.cpp
 +++ b/iokit/bsddev/IOKitBSDInit.cpp
-@@ -1613,3 +1613,88 @@
+@@ -1613,3 +1613,124 @@
  	}
  	return value;
  }
@@ -89,3 +89,39 @@
 +{
 +	IOLog("owner: no verified-root backend in the DroidVM guest\n");
 +}
++
++
++/* XNU_OWNER_BOOT_MANIFEST's publisher is part of the same out-of-tree owner kit.
++ * 8796 calls it as (root device, root uuid, cache device, cache uuid) and treats a
++ * zero return as EAUTH.  The guest has no authenticated manifest to publish -- the
++ * virtio-mmio disks are its trust boundary -- so record what was asked for, derive a
++ * stable 48-byte value from the two volume UUIDs, and accept.  The globals keep the
++ * result inspectable from the host (see .tmp/guestps.py/gpeek usage notes). */
++volatile int native_owner_boot_manifest_status = -1;
++uint8_t native_owner_boot_manifest_hash[48];
++
++extern "C" int
++native_owner_publish_boot_manifest(dev_t root_device, const char *root_uuid,
++    dev_t cache_device, const char *cache_uuid)
++{
++	const char *a = root_uuid ? root_uuid : "";
++	const char *b = cache_uuid ? cache_uuid : "";
++	uint32_t h = 2166136261u;
++	size_t i;
++
++	for (i = 0; a[i] != '\0'; i++) {
++		h = (h ^ (uint8_t)a[i]) * 16777619u;
++	}
++	for (i = 0; b[i] != '\0'; i++) {
++		h = (h ^ (uint8_t)b[i]) * 16777619u;
++	}
++	for (i = 0; i < sizeof(native_owner_boot_manifest_hash); i++) {
++		h = (h ^ (uint32_t)i) * 16777619u;
++		native_owner_boot_manifest_hash[i] = (uint8_t)(h >> 24);
++	}
++	native_owner_boot_manifest_status = 0;
++	IOLog("owner: boot manifest shim root=%d cache=%d uuid=%s\n",
++	    (int)root_device, (int)cache_device, b);
++	return 1;
++}
++

@@ -67,3 +67,16 @@ CONFIG_XNU_OWNER_CRYPTEX_FILES=y
 # Measured from systemos.img's APFS volume superblock (APSB +0xe0): whyred's default
 # 8846FE78-... is the macOS/Sheng image and does not exist on this iOS 16.7.16 cryptex.
 CONFIG_XNU_OWNER_CACHE_VOLUME_UUID="96096B28-B6DC-4BC7-9D3A-2632A0FE53F1"
+
+# Scratch Data at /private/var.  whyred's series already implements it
+# (native_owner_data_prepare() in bsd/kern/kern_exec.c, called from load_init_program);
+# with NATIVE_RAM_BLOCK off it takes mdevlookup(0) -- the initrd DarwinBoot expands,
+# i.e. Payloads/scratch-data.img -- and mounts it "apfs" on /private/var before launchd
+# execs.  Needed because launchd's first boot tasks (tzinit, data-protection, keybagd)
+# want a writable /var: without it tzinit's symlink("/var/db/timezone/zoneinfo") returns
+# EROFS and launchd panics "boot task failure: tzinit".
+# The build chain requires BOOT_MANIFEST for DATA_MOUNT; its publisher
+# (native_owner_publish_boot_manifest) is shimmed in
+# boards/ios16/patches/xnu-owner/zzzy-native-verified-block-stubs.patch.
+CONFIG_XNU_OWNER_BOOT_MANIFEST=y
+CONFIG_XNU_OWNER_DATA_MOUNT=y
