@@ -1,6 +1,6 @@
 --- a/iokit/bsddev/IOKitBSDInit.cpp
 +++ b/iokit/bsddev/IOKitBSDInit.cpp
-@@ -1613,3 +1613,221 @@
+@@ -1613,3 +1613,283 @@
  	}
  	return value;
  }
@@ -176,9 +176,11 @@
 +	dev_t by_size = NODEV;
 +	char by_size_path[64] = {0};
 +
++	extern void native_owner_dump_media(void);
 +	if (device == NULL || path == NULL || path_size < 16) {
 +		return 0;
 +	}
++	native_owner_dump_media();
 +	matching = IOService::serviceMatching("IOMedia");
 +	if (matching == NULL) {
 +		return 0;
@@ -220,5 +222,65 @@
 +	IOLog("owner: no Data media (uuid %s, size %llu)\n", volume_uuid ? volume_uuid : "(unset)",
 +	    (unsigned long long)NATIVE_DATA_PARTITION_BYTES);
 +	return 0;
++}
++
++
++
++/* One-shot inventory of every IOMedia, so a failed Data match reports what the
++ * guest actually has instead of leaving us to guess (run77 matched nothing).
++ * Read it back with:  python .tmp/memgrep.py "owner-media:" */
++extern "C" void
++native_owner_dump_media(void)
++{
++	static int done = 0;
++	OSDictionary *matching;
++	OSPtr<OSIterator> iterator;
++	IORegistryEntry *media;
++	OSNumber *major, *minor, *size_prop;
++	OSString *bsd_name, *media_uuid;
++	int shown = 0;
++
++	if (done) {
++		return;
++	}
++	done = 1;
++	matching = IOService::serviceMatching("IOMedia");
++	if (matching == NULL) {
++		return;
++	}
++	iterator = IOService::getMatchingServices(matching);
++	if (!iterator) {
++		return;
++	}
++	while ((media = OSDynamicCast(IORegistryEntry, iterator->getNextObject())) != NULL && shown < 16) {
++		const char *name = "?";
++		const char *uuid = "-";
++		unsigned long long size = 0;
++		int maj = -1, min = -1;
++
++		bsd_name = OSDynamicCast(OSString, media->getProperty(kIOBSDNameKey));
++		if (bsd_name != NULL) {
++			name = bsd_name->getCStringNoCopy();
++		}
++		size_prop = OSDynamicCast(OSNumber, media->getProperty("Size"));
++		if (size_prop != NULL) {
++			size = size_prop->unsigned64BitValue();
++		}
++		media_uuid = OSDynamicCast(OSString, media->getProperty("UUID"));
++		if (media_uuid != NULL) {
++			uuid = media_uuid->getCStringNoCopy();
++		}
++		major = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMajorKey));
++		minor = OSDynamicCast(OSNumber, media->getProperty(kIOBSDMinorKey));
++		if (major != NULL) {
++			maj = (int)major->unsigned32BitValue();
++		}
++		if (minor != NULL) {
++			min = (int)minor->unsigned32BitValue();
++		}
++		IOLog("owner-media: %s maj=%d min=%d size=%llu uuid=%s\n", name, maj, min, size, uuid);
++		shown++;
++	}
++	IOLog("owner-media: end (%d entries)\n", shown);
 +}
 +
