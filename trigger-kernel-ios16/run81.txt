@@ -1,0 +1,19 @@
+run81 2026-11-25: apfs says "invalid fsindex: -1"; retry under a slice-shaped name.
+
+The msgbuf ring (read with .tmp/klog.py) shows apfs reaching our container and reading it:
+
+  dev_init:296: md0 device accelerated crypto: 0
+  dev_init:299: md0 device_handle block size 512 block count 65536 features 0 internal
+  nx_mount:1553: md0 checkpoint search: largest xid 4, best xid 4 @ 7
+  nx_mount:1580: md0 stable checkpoint indices: desc 6 data 10
+  spaceman_metazone_init:110: md0 no metazone for device 0, of size 33554432 bytes
+  apfs_vfsop_mount:2288: md0 invalid fsindex: -1
+  -> ENOENT
+
+So the container is fine and the device node resolves; apfs just cannot pick a volume
+because the node name carries no slice index ("disk3s1" mounts volume 1 of its
+container).  This build keeps the md0 attempt, records its status, then publishes the
+same dev_t as "disk9s1" and retries.
+
+  native_owner_data_mount_status   status of the /dev/md0 attempt (expect 2)
+  native_owner_data_alt_status     status of the /dev/disk9s1 retry (0 = mounted)
