@@ -1,31 +1,41 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6947,13 +6947,21 @@
- 	/* The typed provider's disk may be far larger than 2 GiB (a persistent Data disk keeps only its seed's nonzero pages). */
- 	if (!size || size > UINT64_C(0x10000000000) || (size & 4095)) goto done;
- #else
--	device = mdevlookup(0);
--	if (device == NODEV || mdevgetrange(0, &base, &size) || base < VM_MIN_KERNEL_ADDRESS ||
--	    !size || size > UINT64_C(0x80000000) || (base & 4095) || (size & 4095)) goto done;
--	SHA256_CTX context;
--	SHA256_Init(&context);
--	SHA256_Update(&context, (const void *)base, size);
--	SHA256_Final(native_owner_data_seed_sha256, &context);
-+	/* No iBoot-style RAMDisk exists in this guest: DarwinBoot copies the packed Data
-+	 * seed to RAM and registers it as /chosen/memory-map/PackedRAMDisk, a name stock
-+	 * XNU never looks up, so mdev0 is absent and mdevlookup(0) returns NODEV.  Take
-+	 * the Data media off the virtio disk instead -- resolved by APFS volume UUID with
-+	 * a size-based second pass (see native_owner_data_media in IOKitBSDInit.cpp).
-+	 * The UUID is this project's data-disk.img (volume "OwnerData"); the build defines
-+	 * XNU_OWNER_DATA_VOLUME_UUID only for NATIVE_RAM_BLOCK, which this board cannot
-+	 * link, so it is spelled out here. */
-+#ifndef XNU_OWNER_DATA_DISK_UUID
-+#define XNU_OWNER_DATA_DISK_UUID "B5224338-CBB2-4730-9E53-F481B269E006"
-+#endif
-+	extern int native_owner_data_media(const char *, dev_t *, char *, size_t);
-+	if (!native_owner_data_media(XNU_OWNER_DATA_DISK_UUID, &device, device_path,
-+	    sizeof(device_path))) { error = ENOENT; goto done; }
-+	size = UINT64_C(0x2000000);
- #endif
- 	native_owner_data_seed_base = base;
+@@ -6931,6 +6931,18 @@
+ uint8_t native_owner_data_seed_sha256[32];
+ char native_owner_data_device_path[64];
+ 
++/* Diagnostic scratch for the scratch-Data mount.  mount(2) performs two lookups --
++ * the device path and the mount point -- and both answer ENOENT when they fail, so
++ * record each separately; a successful pair with a failing mount() means APFS itself
++ * refused the media.  Negative means "not reached yet". */
++volatile int native_owner_data_mnt_lookup = -1;
++volatile int native_owner_data_dev_lookup = -1;
++/* The md0 window's own container header, so the host can tell "DarwinBoot expanded our
++ * seed" from "the media holds something else": NXSB, block size, block count. */
++volatile uint32_t native_owner_data_nx_magic;
++volatile uint32_t native_owner_data_nx_block_size;
++volatile uint64_t native_owner_data_nx_block_count;
++
+ static int
+ native_owner_data_prepare(proc_t p, user_addr_t scratch)
+ {
+@@ -6959,6 +6971,19 @@
  	native_owner_data_seed_size = size;
+ 	native_owner_data_stage = 1;
+ 	strlcpy(native_owner_data_device_path, device_path, sizeof(native_owner_data_device_path));
++	native_owner_data_nx_magic = *(const volatile uint32_t *)(uintptr_t)(base + 0x20);
++	native_owner_data_nx_block_size = *(const volatile uint32_t *)(uintptr_t)(base + 0x24);
++	native_owner_data_nx_block_count = *(const volatile uint64_t *)(uintptr_t)(base + 0x28);
++	{
++		vnode_t probe_vp = NULLVP;
++		native_owner_data_mnt_lookup = vnode_lookup("/private/var", 0, &probe_vp,
++		    vfs_context_current());
++		if (probe_vp != NULLVP) vnode_put(probe_vp);
++		probe_vp = NULLVP;
++		native_owner_data_dev_lookup = vnode_lookup(device_path, 0, &probe_vp,
++		    vfs_context_current());
++		if (probe_vp != NULLVP) vnode_put(probe_vp);
++	}
+ 	uint8_t payload[0x150] = {0};
+ 	user64_addr_t spec = scratch + 0x160;
+ 	uint16_t mode = 1;
