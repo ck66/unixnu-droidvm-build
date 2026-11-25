@@ -1,0 +1,30 @@
+--- a/bsd/kern/kern_exec.c
++++ b/bsd/kern/kern_exec.c
+@@ -6947,13 +6947,20 @@
+ 	/* The typed provider's disk may be far larger than 2 GiB (a persistent Data disk keeps only its seed's nonzero pages). */
+ 	if (!size || size > UINT64_C(0x10000000000) || (size & 4095)) goto done;
+ #else
+-	device = mdevlookup(0);
+-	if (device == NODEV || mdevgetrange(0, &base, &size) || base < VM_MIN_KERNEL_ADDRESS ||
+-	    !size || size > UINT64_C(0x80000000) || (base & 4095) || (size & 4095)) goto done;
+-	SHA256_CTX context;
+-	SHA256_Init(&context);
+-	SHA256_Update(&context, (const void *)base, size);
+-	SHA256_Final(native_owner_data_seed_sha256, &context);
++	/* No iBoot-style RAMDisk exists in this guest: DarwinBoot copies the packed Data
++	 * seed to RAM and registers it as /chosen/memory-map/PackedRAMDisk, a name stock
++	 * XNU never looks up, so mdev0 is absent and mdevlookup(0) returns NODEV.  Take
++	 * the Data volume off the virtio disk instead -- the media the rest of the owner
++	 * chain already trusts, resolved by APFS volume UUID exactly like SystemOS.
++	 * The UUID is this project's data-disk.img (volume "OwnerData"); the build defines
++	 * XNU_OWNER_DATA_VOLUME_UUID only for NATIVE_RAM_BLOCK, which this board cannot
++	 * link, so it is spelled out here. */
++#ifndef XNU_OWNER_DATA_DISK_UUID
++#define XNU_OWNER_DATA_DISK_UUID "B5224338-CBB2-4730-9E53-F481B269E006"
++#endif
++	if (!native_verified_block_volume_device(XNU_OWNER_DATA_DISK_UUID, &device,
++	    device_path, sizeof(device_path))) { error = ENOENT; goto done; }
++	size = UINT64_C(0x2000000);
+ #endif
+ 	native_owner_data_seed_base = base;
+ 	native_owner_data_seed_size = size;
