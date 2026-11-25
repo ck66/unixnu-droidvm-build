@@ -1,0 +1,13 @@
+run74 2026-11-25: mount the Data seed on /private/var (OWNER_DATA_MOUNT + BOOT_MANIFEST shim).
+
+launchd's mount-phase-1 is already fixed on the device by adding
+/chosen/boot-manifest-hash to the ADT (no kernel change).  The next boot task,
+tzinit, exits 30 because symlink('/var/db/timezone/zoneinfo') hits EROFS: /private/var
+is an empty directory on the sealed root.
+
+whyred's series already implements native_owner_data_prepare() and calls it from
+load_init_program(); with NATIVE_RAM_BLOCK off it takes mdevlookup(0) -- the initrd
+DarwinBoot expands from Payloads/scratch-data.img -- and mounts it "apfs" on
+/private/var before launchd execs.  It was never compiled in, and the build chain
+wants OWNER_BOOT_MANIFEST for it, so this run turns both on and shims the publisher
+(native_owner_publish_boot_manifest) in the verified-block stubs patch.
