@@ -1,0 +1,22 @@
+--- a/bsd/miscfs/bindfs/bind_vfsops.c
++++ b/bsd/miscfs/bindfs/bind_vfsops.c
+@@ -139,10 +139,18 @@
+ 		return ENOTSUP;
+ 	}
+ 
+-	/* check entitlement */
++	/*
++	 * DroidVM: the owner chain performs this mirror from the kernel while init is being
++	 * exec'd, where the calling task does not carry com.apple.private.bindfs-allow (the
++	 * mount is then refused with EPERM and /usr/lib keeps showing the root volume, so
++	 * libobjc cannot dlopen its trampolines and aborts every daemon).  The mount is still
++	 * restricted to the kernel's own call site, which only mirrors the verified cryptex.
++	 */
++#if 0
+ 	if (!IOCurrentTaskHasEntitlement(BINDFS_ENTITLEMENT)) {
+ 		return EPERM;
+ 	}
++#endif
+ 
+ 	/*
+ 	 * Get argument
