@@ -1,0 +1,12 @@
+run86 2026-11-26: why did the /usr/lib mirror not happen?
+
+run85 added a bindfs mount of <cryptex>/usr/lib onto /usr/lib but nothing changed and no
+bindfs log line appeared, so the block either did not run or its lookups failed.  This build
+is instrumented: it records
+
+  native_owner_cache_bind_lookup   vnode_lookup(<cryptex>/usr/lib)
+  native_owner_cache_bind_file     vnode_lookup(<cryptex>/usr/lib/libobjc-trampolines.dylib)
+  native_owner_cache_bind_status   mount("bindfs") result (only attempted when both are 0)
+
+so the host can tell "the cryptex has no /usr/lib", "the dylib is not there", or "the mount
+itself was refused" without another guess.
