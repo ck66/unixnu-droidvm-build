@@ -1,0 +1,15 @@
+run85 2026-11-26: mirror the cryptex /usr/lib so libobjc can load its trampolines.
+
+run84's DYLD_ROOT_PATH changed nothing: dyld ignores root-path overrides for platform
+binaries, so every daemon still aborts with
+
+  couldn't dlopen libobjc-trampolines.dylib:
+  dlopen(/usr/lib/libobjc-trampolines.dylib, 0x0106): tried: (no such file, not in dyld cache)
+
+The dylib is inside the cryptex (mounted at /private/preboot).  On a real device launchd
+bindfs-mounts the cryptex directories onto the root; that glue is absent here (the log shows
+`BindFS bindfs_mount: lookup of /private/preboot/<hash>/usr/standalone/firmware failed`),
+so /usr/lib never sees the cryptex tree.
+
+This build, right after the cryptex mount is verified and still inside launchd's exec path
+(where the bindfs entitlement is held), bindfs-mounts <cryptex>/usr/lib onto /usr/lib.
