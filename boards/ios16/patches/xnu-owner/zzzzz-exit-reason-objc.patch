@@ -1,0 +1,28 @@
+--- a/bsd/kern/kern_exit.c
++++ b/bsd/kern/kern_exit.c
+@@ -1902,6 +1902,25 @@
+ 				    "pid: %d -- process name: %s -- exit status %d",
+ 				    proc_getpid(p), proc_name, WEXITSTATUS(rv));
+ 			}
++			/*
++			 * DroidVM: an ObjC exception arrives as OS_REASON_OBJC, and the exception text
++			 * only lives inside the kcdata blob (EXIT_REASON_USER_DESC is empty for these),
++			 * so read the blob itself; the printable runs carry the class and reason strings.
++			 */
++			if (PROC_HAS_EXITREASON(p) &&
++			    p->p_exit_reason->osr_namespace == OS_REASON_OBJC &&
++			    p->p_exit_reason->osr_kcd_buf != NULL && p->p_exit_reason->osr_bufsize > 0) {
++				const uint8_t *kcd = (const uint8_t *)p->p_exit_reason->osr_kcd_buf;
++				uint32_t n = p->p_exit_reason->osr_bufsize;
++				printf("DROIDVM-OBJC %s[%d] ns %d code %#llx size %u: ",
++				    proc_name, proc_getpid(p), p->p_exit_reason->osr_namespace,
++				    p->p_exit_reason->osr_code, n);
++				for (uint32_t i = 0; i < n && i < 320; i++) {
++					uint8_t c = kcd[i];
++					printf("%c", (c >= 0x20 && c < 0x7f) ? c : '.');
++				}
++				printf("\n");
++			}
+ 		}
+ #endif
+ 
