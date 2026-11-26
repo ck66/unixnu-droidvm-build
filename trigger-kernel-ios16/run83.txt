@@ -1,0 +1,17 @@
+run83 2026-11-26: what ObjC exception kills every daemon?
+
+With `exception_log_max_pid=400` the kernel already reports each exit:
+
+  [Event: process exit] pid: 123 -- process name: SpringBoard --
+      exit reason namespace: 8 -- subcode: 0x1 -- description:
+  (namespace 8 = OS_REASON_OBJC in bsd/sys/reason.h)
+
+and the same namespace-8 death takes down powerd, chronod, CommCenter, corespeechd,
+accountsd, coreduetd and SpringBoard.  The description is empty because
+exit_reason_get_string_desc() only returns EXIT_REASON_USER_DESC, which libsystem does not
+fill for ObjC aborts -- the exception name and reason are other kcdata elements.
+
+This build prints the raw kcdata blob as text for OS_REASON_OBJC exits, so the log shows
+the exception text:
+
+  DROIDVM-OBJC <proc>[<pid>] ns 8 code <n> size <n>: <printable kcdata>
