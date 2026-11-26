@@ -1,0 +1,15 @@
+run87 2026-11-26: the mirror was refused, not impossible.
+
+run86 instrumented the /usr/lib mirror and settled the question:
+
+  native_owner_cache_bind_lookup = 0   <cryptex>/usr/lib exists
+  native_owner_cache_bind_file   = 0   <cryptex>/usr/lib/libobjc-trampolines.dylib exists
+  native_owner_cache_bind_status = 1   mount("bindfs") -> EPERM
+
+So the dylib is exactly where expected and only the bindfs entitlement check stands in the
+way: the mount is issued from the kernel while init is being exec'd, and that task does not
+carry com.apple.private.bindfs-allow.  This build compiles that check out so the kernel's own
+call site can perform the mirror; nothing else in the system loses the check.
+
+If the mirror lands, /usr/lib/libobjc-trampolines.dylib resolves and the daemons that were
+aborting with OS_REASON_OBJC (SpringBoard, powerd, chronod, CommCenter, ...) should survive.
