@@ -1,0 +1,16 @@
+run84 2026-11-26: every daemon dies because libobjc cannot dlopen its trampolines.
+
+With the ObjC exit-reason dump (run83) the kcdata text is unambiguous -- 12 processes,
+SpringBoard among them:
+
+  DROIDVM-OBJC SpringBoard[132] ns 8 code 0x1 size 236:
+    couldn't dlopen libobjc-trampolines.dylib:
+    dlopen(/usr/lib/libobjc-trampolines.dylib, 0x0106):
+    tried: '/usr/lib/libobjc-trampolines.dylib' (no such file, not in dyld cache)
+
+The dylib is inside the cryptex (its Mach-O with LC_ID_DYLIB "/usr/lib/libobjc-trampolines.dylib"
+sits at ~2.64 GB of systemos.img), but the guest's /usr/lib never sees the cryptex tree, and
+DYLD_FALLBACK_LIBRARY_PATH does not apply to the absolute path libobjc uses.
+
+This build also exports DYLD_ROOT_PATH=/private/preboot (where the cryptex is mounted), so an
+absolute /usr/lib/... lookup resolves under the cryptex.
