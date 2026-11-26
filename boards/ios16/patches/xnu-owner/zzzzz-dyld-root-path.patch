@@ -1,0 +1,27 @@
+--- a/bsd/kern/kern_exec.c
++++ b/bsd/kern/kern_exec.c
+@@ -6817,7 +6817,15 @@
+ #if !defined(XNU_OWNER_UNION_SYSTEMOS) || !XNU_OWNER_UNION_SYSTEMOS
+ #if defined(XNU_OWNER_CRYPTEX_FILES) && XNU_OWNER_CRYPTEX_FILES
+ 	const char *fallback = "DYLD_FALLBACK_LIBRARY_PATH=/private/preboot/usr/lib";
+-	user64_addr_t environment_vector[3] = {scratch + 0x400, scratch + 0x600, USER_ADDR_NULL};
++	/*
++	 * DroidVM: libobjc dlopen()s /usr/lib/libobjc-trampolines.dylib by absolute path from an
++	 * ObjC runtime path, and DYLD_FALLBACK_LIBRARY_PATH does not apply to absolute paths.  The
++	 * dylib is inside the cryptex, mounted at /private/preboot, so rooting absolute lookups
++	 * there is what makes it resolvable.  Without it every daemon that needs an IMP trampoline
++	 * dies with "couldn't dlopen libobjc-trampolines.dylib" (OS_REASON_OBJC, signal 6).
++	 */
++	const char *rootpath = "DYLD_ROOT_PATH=/private/preboot";
++	user64_addr_t environment_vector[4] = {scratch + 0x400, scratch + 0x600, scratch + 0x700, USER_ADDR_NULL};
+ #else
+ 	user64_addr_t environment_vector[2] = {scratch + 0x400, USER_ADDR_NULL};
+ #endif
+@@ -6879,6 +6887,7 @@
+ 	    (error = copyout(environment_vector, scratch + 0x500, sizeof(environment_vector))) != 0) goto done;
+ #if defined(XNU_OWNER_CRYPTEX_FILES) && XNU_OWNER_CRYPTEX_FILES
+ 	if ((error = copyout(fallback, scratch + 0x600, strlen(fallback) + 1)) != 0) goto done;
++	if ((error = copyout(rootpath, scratch + 0x700, strlen(rootpath) + 1)) != 0) goto done;
+ #endif
+ 	*envp = scratch + 0x500;
+ #else
