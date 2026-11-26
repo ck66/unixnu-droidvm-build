@@ -1,31 +1,49 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6873,6 +6873,30 @@
+@@ -6763,6 +6763,10 @@
+ extern int native_verified_block_root_authorized(dev_t);
+ volatile int native_owner_cache_stage = 0;
+ volatile int native_owner_cache_status = -1;
++/* DroidVM: what the cryptex /usr/lib mirror attempt did (read by the host probes). */
++volatile int native_owner_cache_bind_lookup = -1;   /* vnode_lookup(<cryptex>/usr/lib) */
++volatile int native_owner_cache_bind_file = -1;     /* vnode_lookup(.../libobjc-trampolines.dylib) */
++volatile int native_owner_cache_bind_status = -1;   /* mount("bindfs") result */
+ volatile int native_owner_cache_mount_status = -1;
+ volatile int native_owner_cache_readonly = 0;
+ volatile int native_owner_cache_authorized = 0;
+@@ -6873,6 +6877,37 @@
  	cache_authorized = cache_authorized && native_union;
  #endif
  	if (!cache_authorized) { error = EAUTH; goto done; }
 +	/*
-+	 * DroidVM: /usr/lib/libobjc-trampolines.dylib lives in the cryptex and never appears
-+	 * under the root's /usr/lib here, because the bindfs glue that normally mirrors the
-+	 * cryptex directories onto the root is not running.  libobjc dlopen()s that dylib by
-+	 * absolute path the first time a class needs an IMP trampoline, and on failure it
-+	 * aborts the process -- which is what was killing SpringBoard, powerd, chronod,
-+	 * CommCenter and the rest with OS_REASON_OBJC.  Mirror the one directory that matters
-+	 * while still in launchd's exec path, where the bindfs entitlement is held.
++	 * DroidVM: /usr/lib/libobjc-trampolines.dylib lives in the cryptex, and the bindfs glue
++	 * that normally mirrors the cryptex directories onto the root is not running here, so
++	 * libobjc's absolute dlopen of that path fails and it aborts the process -- which is what
++	 * was killing SpringBoard, powerd, chronod, CommCenter and the rest (OS_REASON_OBJC,
++	 * signal 6).  Mirror the directory while still inside launchd's exec path, and record
++	 * what happened so the outcome is visible from the host without another round trip.
 +	 */
-+	if (mountpoint && !strcmp(mountpoint, "/private/preboot") &&
-+	    !vnode_lookup("/usr/lib", 0, &mounted_root, vfs_context_current())) {
-+		char lower[128];
++	{
++		char lower[160];
++		vnode_t tvp = NULLVP;
 +		struct mount_args breq = {.type = scratch + 0x100, .path = scratch + 0x120,
 +		    .flags = MNT_RDONLY, .data = scratch + 0x200};
-+		int bind_result = 0;
-+		vnode_put(mounted_root);
-+		mounted_root = NULLVP;
 +		snprintf(lower, sizeof(lower), "%s/usr/lib", mountpoint);
-+		if (copyout("bindfs", breq.type, 7) == 0 &&
-+		    copyout("/usr/lib", breq.path, 9) == 0 &&
-+		    copyout(lower, breq.data, strlen(lower) + 1) == 0) {
-+			(void)mount(p, &breq, &bind_result);
++		native_owner_cache_bind_lookup = vnode_lookup(lower, 0, &tvp, vfs_context_current());
++		if (tvp != NULLVP) { vnode_put(tvp); tvp = NULLVP; }
++		snprintf(lower, sizeof(lower), "%s/usr/lib/libobjc-trampolines.dylib", mountpoint);
++		native_owner_cache_bind_file = vnode_lookup(lower, 0, &tvp, vfs_context_current());
++		if (tvp != NULLVP) { vnode_put(tvp); tvp = NULLVP; }
++		if (native_owner_cache_bind_lookup == 0 && native_owner_cache_bind_file == 0) {
++			int bind_result = 0;
++			int bind_flags = 0;
++			snprintf(lower, sizeof(lower), "%s/usr/lib", mountpoint);
++			if (copyout("bindfs", breq.type, 7) == 0 &&
++			    copyout("/usr/lib", breq.path, 9) == 0 &&
++			    copyout(lower, breq.data, strlen(lower) + 1) == 0) {
++				bind_result = mount(p, &breq, &bind_flags);
++			}
++			native_owner_cache_bind_status = bind_result;
 +		}
 +	}
  	native_owner_cache_stage = 5;
