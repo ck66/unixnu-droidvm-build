@@ -1,0 +1,15 @@
+run90 2026-11-26: the redirect works, the sandbox refuses the path it points at.
+
+run89 redirected libobjc's absolute dlopen at the cryptex copy under /private/preboot and the
+error changed from "(no such file, not in dyld cache)" to "(errno=1, not in dyld cache)" --
+errno 1 is EPERM: the file is now found, and the sandbox is what refuses it, because nothing
+may read under /private/preboot.
+
+So the cryptex root is bindfs-mirrored at /System/Cryptexes/OS instead -- the path Apple's own
+profiles allow -- and the redirect points at that copy:
+
+  /usr/lib/libobjc-trampolines.dylib ->
+      /System/Cryptexes/OS/usr/lib/libobjc-trampolines.dylib
+
+The instrumented globals now also record vnode_lookup("/System/Cryptexes/OS") so the next
+reading says whether that mount point exists in this image.
