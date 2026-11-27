@@ -67,7 +67,7 @@ static constexpr unsigned kLegacyVsyncClients=5592;
 static constexpr unsigned kRequestRect0=17,kRequestRect1=81,kRequestMasks=792,kRequestOptions=804,kRequestDims=816,kRequestSurfaces=2624;
 // Backend leaves: pure original slots the owned backend implements only as guards. Slot 345 is not one here: the backend
 // implements cancelSwapsAfterTimeout (NATIVE_LEGACY_CANCEL_SWAPS) instead of panicking when a swap misses 5 s.
-#define NATIVE_LEGACY_LEAVES(LEAF) LEAF(211) LEAF(245) LEAF(246) LEAF(306) LEAF(307) LEAF(338)
+#define NATIVE_LEGACY_LEAVES(LEAF) LEAF(211) LEAF(242) LEAF(243) LEAF(292) LEAF(293) LEAF(322)
 #define NATIVE_LEGACY_CANCEL_SWAPS 1
 class IOMobileFramebufferLegacy : public IOService {
  OSDeclareAbstractStructors(IOMobileFramebufferLegacy)
@@ -120,18 +120,19 @@ public:
 for i in range(168,338):
     if i==184:header+=' virtual bool isMainDisplay();\n'
     elif i==188:header+=' virtual IOReturn getDotPitch(uint32_t *);\n'
-    elif i==213:header+=' virtual IOReturn supportedFrameInfo(uint32_t,uint32_t *,char *,uint32_t *)=0;\n'
+    elif i==212:header+=' virtual IOReturn supportedFrameInfo(uint32_t,uint32_t *,char *,uint32_t *)=0;\n'
     elif i==249:header+=' virtual void getDisplayDimensions(uint32_t *,uint32_t *);\n'
     elif i==290:header+=' virtual void kickSwapQueue();\n'
     elif i==296:header+=' virtual bool validateSwap(const OriginalLegacySwapRequest *);\n'
     elif i==295:header+=' virtual void completeCurrentSwap();\n'
-    elif i==337:header+=' virtual IOReturn collectCompletionReports(uint32_t,void *,uint32_t *,uint32_t)=0;\n'
+    elif i==321:header+=' virtual IOReturn collectCompletionReports(uint32_t,void *,uint32_t *,uint32_t)=0;\n'
     elif i==288:header+=' virtual bool startHardware();\n'
     elif i==301:header+=' virtual bool getRefreshAttributes(uint64_t *,bool);\n'
     # swap_wait_gated calls it when a swap has not completed in 5 s ("CommandWake didn't happen even after 5 seconds ... cancelling
     # swaps"), logs its result and then cancels the family's own queue (slot 346): the platform's half of the cancel.
-    elif i==345:header+=' virtual bool cancelSwapsAfterTimeout()=0;\n'
-    elif i==354:header+=' virtual int applyStateRequest(OriginalLegacyStateRequest *,bool);\n'
+    elif i==329:header+=' virtual bool cancelSwapsAfterTimeout()=0;\n'
+    # iOS 16 board: slot 354 does not exist in this class (338 entries) and the state setter's
+    # real slot was not identified; the caller below is parked instead of guessing.
     # iOS 16 board: the tree's backend implements the abstract leaves of the 21H461 layout, and
     # this board's slots differ, so the leaves it does not cover are made concrete here with a
     # parking body instead of staying pure.  A leaf that is actually reached reports itself and
@@ -153,6 +154,9 @@ if _src.exists():
             _t=_t.replace('opaque%d' % _old,'opaque%d' % _new); _n+=1
     _src.write_text(_t)
     print('ios16 abstract-leaf rename: %d of 8 applied' % _n)
+    if 'applyStateRequest(&request,false);' in _t:
+        _t=_t.replace('applyStateRequest(&request,false);','(void)request; /* state setter slot undetermined on this class */')
+        _src.write_text(_t); print('ios16: parked announcePoweredByFirmware (slot undetermined)')
 print(run(['python3',ROOT/'scripts/build-arm-driver.py','NativeLegacyDisplay'],text=True),end='')
 obj=OUT/'NativeLegacyDisplay.o';raw=obj.read_bytes();image=macho(raw)
 st=next(p for c,p,_ in image['commands'] if c==2);sy,count,strings,_=struct.unpack_from('<4I',raw,st+8);symbols=[]
