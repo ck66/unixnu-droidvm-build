@@ -1,0 +1,1 @@
+skip32 2026-11-27: 32 MiB seed with the migration-skip edit
