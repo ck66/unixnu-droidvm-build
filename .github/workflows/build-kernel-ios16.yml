@@ -188,6 +188,11 @@ jobs:
           # resolves archive scripts under <tree>/scripts -- same place the fixup already had
           # to be, so it is staged the same way.
           cp ../self/boards/ios16/build-virtio-archive.py "out/$BOARD/tree/scripts/build-virtio-archive.py"
+          # The display archive step, retargeted at this board's own ABI (the published one is
+          # pinned to the 21H461 kernelcache: 358 legacy slots and fixed addresses; ours is the
+          # same class with 338 and different addresses).
+          cp ../self/boards/ios16/vendor/build-native-legacy-display-ios16.py "out/$BOARD/tree/scripts/"
+          cp ../self/boards/ios16/vendor/ios16-display-abi.json "out/$BOARD/tree/scripts/"
           # The archive is bound before the kernel is linked, so the kext addresses can only
           # come from a previous run's measurement.  Absent, the script binds placeholders and
           # the "What came out" step measures instead.
