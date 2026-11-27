@@ -1,0 +1,14 @@
+run88 2026-11-26: the mirror landed and broke the exec of init.
+
+run87's entitlement change worked -- with it the mount returns 0 -- but the guest then panics in
+load_init_program with OS_REASON_EXEC (SIGKILL of init): bindfs cannot union, so covering the
+root's /usr/lib with the cryptex copy hides dyld and libSystem.
+
+This build probes the cryptex first and only mirrors when <cryptex>/usr/lib carries dyld and
+libSystem.B.dylib, recording
+
+  native_owner_cache_bind_dyld        vnode_lookup(<cryptex>/usr/lib/dyld)
+  native_owner_cache_bind_libsystem   vnode_lookup(<cryptex>/usr/lib/libSystem.B.dylib)
+  native_owner_cache_bind_status      mount result (0 attempted/failed as reported, -1 = skipped)
+
+so the next step is decided by what the cryptex actually contains rather than by another guess.
