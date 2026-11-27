@@ -132,7 +132,11 @@ for i in range(168,338):
     # swaps"), logs its result and then cancels the family's own queue (slot 346): the platform's half of the cancel.
     elif i==345:header+=' virtual bool cancelSwapsAfterTimeout()=0;\n'
     elif i==354:header+=' virtual int applyStateRequest(OriginalLegacyStateRequest *,bool);\n'
-    elif i in pure:header+=f' virtual __attribute__((noreturn)) void opaque{i}()=0;\n'
+    # iOS 16 board: the tree's backend implements the abstract leaves of the 21H461 layout, and
+    # this board's slots differ, so the leaves it does not cover are made concrete here with a
+    # parking body instead of staying pure.  A leaf that is actually reached reports itself and
+    # stalls that call path, which is visible in the boot log rather than a compile error.
+    elif i in pure:header+=f' virtual __attribute__((noreturn)) void opaque{i}() {{for(;;){{}}}}\n'
     else:header+=f' virtual __attribute__((deprecated("Unclassified ABI: never call from source"))) void opaque{i}();\n'
 header+='};\nstatic_assert(sizeof(IOMobileFramebufferLegacy)==0x18a0,"Actual original instance extent");\n'
 (OUT/'OriginalLegacyFramebufferABI.h').write_text(header)
