@@ -131,6 +131,10 @@ jobs:
           sed -i '' "s/BUILD, VERSION = '21H461', '17.7.11'/BUILD, VERSION = '20H392', '16.7.16'/" scripts/seed-data-skip-setup.py
           grep -n '^BUILD, VERSION' scripts/seed-data-skip-setup.py
           python3 scripts/seed-data-skip-setup.py "$OUT/data-2g.dbr" "$OUT/data-2g-skip.dbr" 2>&1 | tail -20
+          # The same skip edit on the seed that fits the loader's ramdisk buffer: the grown
+          # container is refused with "Bad Buffer Size", so the 32 MiB seed is what this board
+          # can boot, and it has to stop com.apple.migration from refilling it every start.
+          python3 scripts/seed-data-skip-setup.py "$OUT/data-32.dbr" "$OUT/data-32-skip.dbr" 2>&1 | tail -20
           ls -l "$OUT"/*.dbr
           cat "$OUT/fixture/seed.json"
       - name: What came out
