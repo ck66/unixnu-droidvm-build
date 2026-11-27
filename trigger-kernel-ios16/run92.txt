@@ -1,0 +1,13 @@
+run92 2026-11-27: give the display audit its reference kernel.
+
+run91 died in archive-09-build-native-legacy-display: the audit globs
+build/xnu-prelink/native-owner-ufs-cpu-desktop-*-candidate.macho and stat()s a symlink that
+points nowhere, because the builder's reference is ROOT/build/reference-candidate/kernel.macho
+and nothing has been built yet when the archives run.
+
+Two fixes in this build:
+  - the audit script itself is not in the device repo; it is vendored from the iOS 17 device
+    package (boards/ios16/vendor/) and copied into UniXNU-droidvm/scripts before the build;
+  - the last good kernel (run 45924742593) is downloaded and the builder is pointed at it, so
+    the audit verifies the unchanged original IOMobileGraphicsFamily executable against a real
+    prelink plan instead of a dangling link.
