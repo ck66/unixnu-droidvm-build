@@ -136,6 +136,19 @@ for i in range(168,338):
     else:header+=f' virtual __attribute__((deprecated("Unclassified ABI: never call from source"))) void opaque{i}();\n'
 header+='};\nstatic_assert(sizeof(IOMobileFramebufferLegacy)==0x18a0,"Actual original instance extent");\n'
 (OUT/'OriginalLegacyFramebufferABI.h').write_text(header)
+# iOS 16 board: the tree's NativeLegacyDisplay.cpp implements the abstract leaves by the slot
+# numbers of the 21H461 kernelcache.  This board's class is the same lineage one version
+# earlier, so the nine abstract leaves sit at different slots; pair them in order (the leaf
+# order is what the class declares) and rename in the source before compiling.
+_IOS16_ABSTRACT={213:212,245:242,246:243,306:292,307:293,337:321,338:322,345:329}
+_src=ROOT/'drivers/GopFramebuffer/NativeLegacyDisplay.cpp'
+if _src.exists():
+    _t=_src.read_text(); _n=0
+    for _old,_new in sorted(_IOS16_ABSTRACT.items()):
+        if 'opaque%d' % _old in _t:
+            _t=_t.replace('opaque%d' % _old,'opaque%d' % _new); _n+=1
+    _src.write_text(_t)
+    print('ios16 abstract-leaf rename: %d of 8 applied' % _n)
 print(run(['python3',ROOT/'scripts/build-arm-driver.py','NativeLegacyDisplay'],text=True),end='')
 obj=OUT/'NativeLegacyDisplay.o';raw=obj.read_bytes();image=macho(raw)
 st=next(p for c,p,_ in image['commands'] if c==2);sy,count,strings,_=struct.unpack_from('<4I',raw,st+8);symbols=[]
