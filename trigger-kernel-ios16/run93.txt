@@ -1,0 +1,11 @@
+run93 2026-11-27: build the display archive from this board's own ABI.
+
+The published builder is pinned to the 21H461 kernelcache (358 legacy slots, fixed vtable and
+method addresses, byte-for-byte code checks).  This board's kernel has the same class one OS
+version earlier, and the differences are now measured: legacy 338 slots, base/service 252,
+base-vs-service still differ only at [0,1,7], and the first 168 slots differ at exactly the
+same places, so the class is the same lineage and only the tail changed.
+
+This run swaps in a builder that reads boards/ios16/vendor/ios16-display-abi.json (derived
+from the board's own kernel) instead of running the 21H461 audit, and turns the 21H461-only
+assertions into reports so the first real breakage is what we look at.
