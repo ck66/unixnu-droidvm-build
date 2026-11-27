@@ -92,6 +92,14 @@ ARCHIVES_NEW = '''archives = [
   # in place, so the entry works whichever snapshot the tree was assembled from.
   "build-virtio-archive.py",
   "build-libpthread-kernel.py",
+  # Display. build-native-legacy-display.py is the DroidVM cut of sheng's builder: the GOP
+  # framebuffer backend (NativeLegacyDisplay/NativeGOPPresenter), the HID source and the
+  # key-store event service. The kernel script force-loads
+  # build/native-legacy-display/libNativeLegacyDisplay.a whenever
+  # CONFIG_XNU_NATIVE_LEGACY_DISPLAY is on, and that is what gives backboardd an
+  # IOFramebuffer to attach to -- without it SpringBoard starts and dies because there is
+  # no display server to talk to.
+  "build-native-legacy-display.py",
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
