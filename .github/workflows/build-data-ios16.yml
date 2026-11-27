@@ -17,7 +17,7 @@ on:
       device_ref:
         default: b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13
       grow_gib:
-        default: "2"
+        default: "1"
   push:
     paths:
       - 'trigger-data-ios16/**'
@@ -27,7 +27,7 @@ env:
   BOARD: ios16
   UNIXNU_REF: ${{ inputs.unixnu_ref || '56023cdc363249d201328e9e147f7b05690eba4e' }}
   DEVICE_REF: ${{ inputs.device_ref || 'b8e5279d6c34a2aed8d72d4ec07ffdc5c2e6cb13' }}
-  GROW_GIB: ${{ inputs.grow_gib || '2' }}
+  GROW_GIB: ${{ inputs.grow_gib || '1' }}
 defaults:
   run:
     shell: bash
