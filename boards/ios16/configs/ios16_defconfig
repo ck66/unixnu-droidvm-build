@@ -42,6 +42,9 @@ CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
 CONFIG_XNU_NATIVE_UFS=n
 CONFIG_XNU_NATIVE_ADRENO=n
 CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n
+# CPU-rendered desktop: the GOP framebuffer backend publishes an IOFramebuffer, which is what
+# backboardd attaches to. Without it SpringBoard has no display server and exits on start.
+CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y
 CONFIG_XNU_ARMVIRT_PLATFORM=n
 
 # Offline owner / SystemOS chain.  Without it launchd stops at the Image4 ignition query
