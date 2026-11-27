@@ -1,0 +1,17 @@
+run89 2026-11-26: serve libobjc's trampolines by name instead of by directory.
+
+run88 probed the cryptex and answered the union question:
+
+  <cryptex>/usr/lib                       0 (exists)
+  <cryptex>/usr/lib/libobjc-trampolines.dylib   0 (exists)
+  <cryptex>/usr/lib/dyld                  2 (ENOENT)
+  <cryptex>/usr/lib/libSystem.B.dylib     2 (ENOENT)
+  mount("bindfs")                        -1 (skipped, correctly)
+
+so the cryptex /usr/lib is only the increment: dyld and libSystem stay on the read-only root
+and bindfs cannot union.  Covering /usr/lib would hide them (that is what run87's exec panic
+was), so the directory is not touched at all now.
+
+Instead namei() redirects exactly one absolute name -- the one libobjc uses:
+  /usr/lib/libobjc-trampolines.dylib -> /private/preboot/usr/lib/libobjc-trampolines.dylib
+Nothing else changes, and the earlier bind block stays in place but keeps skipping.
