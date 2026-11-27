@@ -83,6 +83,17 @@ jobs:
           python3 self/boards/ios16/patch-resolver.py UniXNU | tee "$RUNNER_TEMP/patch-resolver.log"
           echo '--- ios16_defconfig ---'
           cat UniXNU-droidvm/configs/ios16_defconfig
+      - name: Vendor the display audit
+        run: |
+          set -euo pipefail
+          # build-native-legacy-display.py calls scripts/audit-mobile-graphics-legacy.py to read
+          # the original IOMobileGraphicsFamily leaves out of the prelinked kernel, and the
+          # device repository does not carry that file (display was never built for droidvm
+          # before).  The kernel does contain the family (IOMobileFramebuffer/IOMobileGraphicsFamily
+          # are in the prelink), so the audit has its reference; only the script was missing.
+          cp self/boards/ios16/vendor/audit-mobile-graphics-legacy.py UniXNU-droidvm/scripts/
+          ls -l UniXNU-droidvm/scripts/audit-mobile-graphics-legacy.py
+
       - name: Swap in the iOS 16 kernel patches
         run: |
           set -euo pipefail
@@ -119,6 +130,35 @@ jobs:
           trustcache_tag = "xnu-8796.101.5"
           FEEDEOF
           tail -14 UniXNU-droidvm/feeds.toml
+      - name: Seed the display audit reference
+        env:
+          DISPLAY_REF_RUN: "45924742593"
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # build-native-legacy-display.py runs before the kernel is linked, and its audit needs
+          # a prelink plan (kernel.macho + kernel.json) of a kernel that carries the original
+          # IOMobileGraphicsFamily executable.  A fresh runner has none -- the archives run
+          # first, so out/$BOARD/kernel does not exist yet -- and the script then symlinks a
+          # dangling reference.  Stage the last good kernel run instead and point the builder at
+          # it; every later build of this board carries the same unchanged original family.
+          DIR="$RUNNER_TEMP/display-reference"
+          mkdir -p "$DIR"
+          gh run download "$DISPLAY_REF_RUN" --repo "$GITHUB_REPOSITORY" --name ios16-kernel --dir "$DIR"
+          ls -l "$DIR/kernel"
+          python3 - "$DIR/kernel" <<'PY'
+          import sys
+          from pathlib import Path
+          script = Path('UniXNU-droidvm/scripts/build-native-legacy-display.py')
+          text = script.read_text()
+          old = "    reference=ROOT/'build/reference-candidate'/('kernel'+suffix)"
+          new = "    reference=Path(%r)/('kernel'+suffix)" % sys.argv[1]
+          if old not in text:
+              raise SystemExit('reference anchor missing in %s' % script)
+          script.write_text(text.replace(old, new, 1))
+          print('display audit reference ->', sys.argv[1])
+          PY
+
       - name: Build the kernel
         working-directory: UniXNU
         run: |
