@@ -99,7 +99,7 @@ ARCHIVES_NEW = '''archives = [
   # CONFIG_XNU_NATIVE_LEGACY_DISPLAY is on, and that is what gives backboardd an
   # IOFramebuffer to attach to -- without it SpringBoard starts and dies because there is
   # no display server to talk to.
-  "build-native-legacy-display.py",
+  "build-native-legacy-display-ios16.py",
 ]'''
 
 BOARD_NAME_OLD = 'name = "droidvm"\nsoc = "crosvm-gunyah"\ndescription = "DroidVM guest (crosvm on Gunyah)"'
