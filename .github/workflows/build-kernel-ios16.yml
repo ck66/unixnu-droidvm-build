@@ -193,6 +193,7 @@ jobs:
           # same class with 338 and different addresses).
           cp ../self/boards/ios16/vendor/build-native-legacy-display-ios16.py "out/$BOARD/tree/scripts/"
           cp ../self/boards/ios16/vendor/ios16-display-abi.json "out/$BOARD/tree/scripts/"
+          export DISPLAY_REFERENCE="$RUNNER_TEMP/display-reference/kernel"
           # The archive is bound before the kernel is linked, so the kext addresses can only
           # come from a previous run's measurement.  Absent, the script binds placeholders and
           # the "What came out" step measures instead.
