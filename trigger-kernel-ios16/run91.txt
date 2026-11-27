@@ -1,0 +1,11 @@
+run91 2026-11-27: give backboardd an IOFramebuffer.
+
+SpringBoard starts and exits with SIGTRAP, and the log has no backboardd, no FrontBoard, no
+RunningBoard, no IOGraphics and no IOMobileFramebuffer at all -- there is no display driver in
+this kernel, so there is no display server for SpringBoard to attach to.
+
+The kernel script force-loads build/native-legacy-display/libNativeLegacyDisplay.a when
+CONFIG_XNU_NATIVE_LEGACY_DISPLAY is on, so this build adds the DroidVM cut of sheng's builder
+(build-native-legacy-display.py) to the archive list and turns the switch on.  Its audit wants
+a reference candidate kernel carrying the original IOMobileGraphicsFamily/IOHIDFamily
+executables; if that refuses, the log will say so and that is the next thing to fix.
