@@ -1,0 +1,1 @@
+grow1 2026-11-27: the 2 GiB seed needs more RAM than the pool can serve; rebuild at 1 GiB
