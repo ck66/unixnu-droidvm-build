@@ -1,0 +1,27 @@
+--- a/bsd/vfs/vfs_lookup.c
++++ b/bsd/vfs/vfs_lookup.c
+@@ -269,6 +269,24 @@
+ 	assert(bytes_copied <= MAXPATHLEN);
+ 	ndp->ni_pathlen = (u_int)bytes_copied;
+ 	bytes_copied = 0;
++	/*
++	 * DroidVM: libobjc loads its IMP trampolines with an absolute dlopen of
++	 * /usr/lib/libobjc-trampolines.dylib.  That dylib ships inside the cryptex, which this
++	 * board mounts at /private/preboot, and bindfs here cannot union it over the read-only
++	 * root (binding the whole directory would hide dyld and libSystem).  So this one
++	 * absolute name is redirected at the cryptex copy; every other path, and this path with
++	 * any trailing component, is left alone.  Without it libobjc aborts the process the
++	 * first time a class needs a trampoline -- which is what killed SpringBoard, powerd,
++	 * chronod, CommCenter and the rest with OS_REASON_OBJC.
++	 */
++	if (!strcmp(cnp->cn_pnbuf, "/usr/lib/libobjc-trampolines.dylib")) {
++		static const char tramp_path[] = "/private/preboot/usr/lib/libobjc-trampolines.dylib";
++		size_t tramp_len = sizeof(tramp_path);
++		if (tramp_len <= cnp->cn_pnlen) {
++			memcpy(cnp->cn_pnbuf, tramp_path, tramp_len);
++			ndp->ni_pathlen = (u_int)(tramp_len - 1);
++		}
++	}
+ 
+ 	/*
+ 	 * Since the name cache may contain positive entries of
