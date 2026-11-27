@@ -427,8 +427,13 @@ battery_obj=OUT/'DroidVMBattery.o'
 run(iokit_command(battery_source,battery_obj)+strict,cwd=iokit_record['directory'])
 battery_late=stage_late(battery_obj,'DroidVMBattery')
 # NativeAdreno's face for Metal over the virtio GPU (scripts/build-droidvm-gpu.py, an earlier archive step), with the NativeAdreno parts it keeps.
-gpu_objects=[ROOT/p for p in json.loads((ROOT/'build/droidvm-gpu/objects.json').read_text())]
-gpu_sources=[ROOT/p for p in json.loads((ROOT/'build/droidvm-gpu/sources.json').read_text())]
+# iOS 16 board: this board does not build the NativeAdreno/virtio-GPU archive yet, so the GPU
+# face the published builder folds in has no object list.  Empty lists keep the archive
+# buildable; the display path itself does not need those objects.
+_gpu_obj=ROOT/'build/droidvm-gpu/objects.json'; _gpu_src=ROOT/'build/droidvm-gpu/sources.json'
+gpu_objects=[ROOT/p for p in json.loads(_gpu_obj.read_text())] if _gpu_obj.exists() else []
+gpu_sources=[ROOT/p for p in json.loads(_gpu_src.read_text())] if _gpu_src.exists() else []
+print('ios16: gpu objects %d, sources %d' % (len(gpu_objects), len(gpu_sources)))
 archive=OUT/'libNativeLegacyDisplay.late.a';archive.unlink(missing_ok=True)
 print(run(['python3',ROOT/'scripts/build-native-hid-input.py'],text=True),end='')
 hid_dir=ROOT/'build/sheng-hid-input'
