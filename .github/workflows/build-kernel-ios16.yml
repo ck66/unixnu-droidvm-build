@@ -275,6 +275,17 @@ jobs:
           # switches it over. Applying it up front keeps the patch loop's reverse-check happy.
           ./unixnu ipsw fetch 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
           ./unixnu build kernel -j "$(sysctl -n hw.ncpu)" 2>&1 | tee -a "$RUNNER_TEMP/ios16.log"
+      - name: Dump the display driver source around the failures
+        if: always()
+        run: |
+          set +e
+          F=UniXNU/out/ios16/tree/drivers/GopFramebuffer/NativeLegacyDisplay.cpp
+          [ -f "$F" ] || { echo "no $F"; exit 0; }
+          echo "=== class declaration (first 120 lines) ==="; sed -n '1,120p' "$F"
+          echo "=== around 320-350 ==="; sed -n '320,350p' "$F"
+          echo "=== around 620-660 ==="; sed -n '620,660p' "$F"
+          echo "=== around 740-770 ==="; sed -n '740,770p' "$F"
+
       - name: What came out
         if: always()
         run: |
