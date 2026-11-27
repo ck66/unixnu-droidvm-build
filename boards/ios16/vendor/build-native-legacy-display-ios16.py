@@ -15,6 +15,7 @@ droidvm-candidate. The display audit's runtime observation of the original class
 available; as upstream does when that observation is pruned, its recorded hash is carried over.
 """
 import hashlib
+import os
 import json
 from pathlib import Path
 import struct
@@ -33,7 +34,7 @@ def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 prelink=ROOT/'build/xnu-prelink';prelink.mkdir(parents=True,exist_ok=True)
 for suffix in ('.macho','.json'):
     link=prelink/('native-owner-ufs-cpu-desktop-droidvm-candidate'+suffix)
-    reference=ROOT/'build/reference-candidate'/('kernel'+suffix)   # a kernel without the display/HID/storage drivers
+    reference=Path(os.environ.get('DISPLAY_REFERENCE',str(ROOT/'build/reference-candidate')))/('kernel'+suffix)   # a kernel without the display/HID/storage drivers
     link.unlink(missing_ok=True);link.symlink_to(reference if reference.exists() else ROOT.parent/'kernel'/('kernel'+suffix))
 # iOS 16 board: the published audit is pinned to the 21H461 kernelcache (fixed vtable
 # addresses, 358 legacy slots, byte-for-byte code checks).  This board's own prelinked
