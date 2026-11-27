@@ -1,17 +1,19 @@
 --- a/bsd/kern/kern_exec.c
 +++ b/bsd/kern/kern_exec.c
-@@ -6763,6 +6763,10 @@
+@@ -6763,6 +6763,12 @@
  extern int native_verified_block_root_authorized(dev_t);
  volatile int native_owner_cache_stage = 0;
  volatile int native_owner_cache_status = -1;
 +/* DroidVM: what the cryptex /usr/lib mirror attempt did (read by the host probes). */
 +volatile int native_owner_cache_bind_lookup = -1;   /* vnode_lookup(<cryptex>/usr/lib) */
++volatile int native_owner_cache_bind_dyld = -1;     /* vnode_lookup(.../usr/lib/dyld) */
++volatile int native_owner_cache_bind_libsystem = -1;/* vnode_lookup(.../usr/lib/libSystem.B.dylib) */
 +volatile int native_owner_cache_bind_file = -1;     /* vnode_lookup(.../libobjc-trampolines.dylib) */
 +volatile int native_owner_cache_bind_status = -1;   /* mount("bindfs") result */
  volatile int native_owner_cache_mount_status = -1;
  volatile int native_owner_cache_readonly = 0;
  volatile int native_owner_cache_authorized = 0;
-@@ -6873,6 +6877,37 @@
+@@ -6873,6 +6879,49 @@
  	cache_authorized = cache_authorized && native_union;
  #endif
  	if (!cache_authorized) { error = EAUTH; goto done; }
@@ -34,7 +36,19 @@
 +		snprintf(lower, sizeof(lower), "%s/usr/lib/libobjc-trampolines.dylib", mountpoint);
 +		native_owner_cache_bind_file = vnode_lookup(lower, 0, &tvp, vfs_context_current());
 +		if (tvp != NULLVP) { vnode_put(tvp); tvp = NULLVP; }
-+		if (native_owner_cache_bind_lookup == 0 && native_owner_cache_bind_file == 0) {
++		snprintf(lower, sizeof(lower), "%s/usr/lib/dyld", mountpoint);
++		native_owner_cache_bind_dyld = vnode_lookup(lower, 0, &tvp, vfs_context_current());
++		if (tvp != NULLVP) { vnode_put(tvp); tvp = NULLVP; }
++		snprintf(lower, sizeof(lower), "%s/usr/lib/libSystem.B.dylib", mountpoint);
++		native_owner_cache_bind_libsystem = vnode_lookup(lower, 0, &tvp, vfs_context_current());
++		if (tvp != NULLVP) { vnode_put(tvp); tvp = NULLVP; }
++		/*
++		 * Only mirror when the cryptex carries the whole /usr/lib: bindfs cannot union, so
++		 * covering the root's /usr/lib with a subset hides dyld and libSystem and the exec
++		 * of init then fails (OS_REASON_EXEC SIGKILL).
++		 */
++		if (native_owner_cache_bind_lookup == 0 && native_owner_cache_bind_file == 0 &&
++		    native_owner_cache_bind_dyld == 0 && native_owner_cache_bind_libsystem == 0) {
 +			int bind_result = 0;
 +			int bind_flags = 0;
 +			snprintf(lower, sizeof(lower), "%s/usr/lib", mountpoint);
