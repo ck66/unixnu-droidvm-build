@@ -483,6 +483,8 @@ void droidvm_motion_present() __attribute__((weak));
 void droidvm_motion_present() {}
 void *native_keyevents_allocate() __attribute__((weak));
 void *native_keyevents_allocate() { return 0; }
+void droidvm_battery_attach() __attribute__((weak));
+void droidvm_battery_attach() {}
 void ios16_hid_input_static_init() __asm__("__GLOBAL__sub_I_NativeHidInput.cpp");
 void ios16_hid_input_static_init() {}
 }
