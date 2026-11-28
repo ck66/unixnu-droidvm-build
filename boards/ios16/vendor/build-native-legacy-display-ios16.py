@@ -459,6 +459,30 @@ void sheng_gpu_power_probe() {}
 // "volatile int" and DroidVMLaunchPolicy stores 1 around its bindfs mount.  Defining it as a function
 // made that store land on code and the volume never came up (disk3: device is not ready on boot).
 volatile int native_bindfs_boot_mount __attribute__((weak));
+// The probes in this archive also reach the droidvm GPU/device faces, which this board does not
+// build (the archive keeps the framebuffer only).  Types are the ones those faces declare:
+// droidvm_virtio_display_refresh_hz is a variable the display reports to the compositor,
+// the rest are entry points.  Reporting "no virtio face" makes the display probe take the GOP
+// presenter path the loader's framebuffer already gave us.
+volatile uint32_t droidvm_virtio_display_refresh_hz __attribute__((weak)) = 60;
+void droidvm_virtio_gpu_display_start() __attribute__((weak));
+void droidvm_virtio_gpu_display_start() {}
+void droidvm_virtio_gpu_boot_dirty() __attribute__((weak));
+void droidvm_virtio_gpu_boot_dirty() {}
+bool droidvm_virtio_gpu_offer(void *, void *, unsigned long long, unsigned, unsigned) __attribute__((weak));
+bool droidvm_virtio_gpu_offer(void *, void *, unsigned long long, unsigned, unsigned) { return false; }
+void droidvm_input_start() __attribute__((weak));
+void droidvm_input_start() {}
+void droidvm_net_start() __attribute__((weak));
+void droidvm_net_start() {}
+void droidvm_snd_start() __attribute__((weak));
+void droidvm_snd_start() {}
+void droidvm_media_start() __attribute__((weak));
+void droidvm_media_start() {}
+void droidvm_motion_present() __attribute__((weak));
+void droidvm_motion_present() {}
+void *native_keyevents_allocate() __attribute__((weak));
+void *native_keyevents_allocate() { return 0; }
 void ios16_hid_input_static_init() __asm__("__GLOBAL__sub_I_NativeHidInput.cpp");
 void ios16_hid_input_static_init() {}
 }
