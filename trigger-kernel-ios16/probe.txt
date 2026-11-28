@@ -1,0 +1,1 @@
+probe 2026-11-28: checkpointed probe + early probe after IOKitBSDInit
