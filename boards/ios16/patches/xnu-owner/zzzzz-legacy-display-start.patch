@@ -1,6 +1,6 @@
 --- a/bsd/kern/bsd_init.c
 +++ b/bsd/kern/bsd_init.c
-@@ -1163,7 +1163,23 @@
+@@ -1163,7 +1163,40 @@
  		}
  	}
  
@@ -14,12 +14,29 @@
 +	 * driver and never runs it.
 +	 */
 +#if (DEVELOPMENT || DEBUG) && defined(XNU_NATIVE_LEGACY_DISPLAY) && XNU_NATIVE_LEGACY_DISPLAY
-+	{ extern void native_legacy_display_probe(void); native_legacy_display_probe(); }
++	{
++		extern void native_legacy_display_probe(void);
++		extern volatile unsigned int native_legacy_stage __attribute__((weak_import));
++		extern unsigned long long native_legacy_object __attribute__((weak_import));
++		printf("ios16: legacy display probe begin\n");
++		native_legacy_display_probe();
++		printf("ios16: legacy display probe returned stage=%u object=%#llx\n",
++		    &native_legacy_stage ? native_legacy_stage : 0u,
++		    &native_legacy_object ? native_legacy_object : 0ull);
++	}
 +#endif
 +	kern_return_t result = IOKitBSDInit();
 +#if (DEVELOPMENT || DEBUG) && defined(XNU_NATIVE_LEGACY_DISPLAY) && XNU_NATIVE_LEGACY_DISPLAY
 +	/* The original IOSurface personality requires the genuine IOBSD resource, so this waits for it. */
-+	{ extern void native_legacy_display_late_probe(void); native_legacy_display_late_probe(); }
++	{
++		extern void native_legacy_display_late_probe(void);
++		extern volatile unsigned int native_legacy_stage __attribute__((weak_import));
++		printf("ios16: legacy display late probe begin (stage=%u)\n",
++		    &native_legacy_stage ? native_legacy_stage : 0u);
++		native_legacy_display_late_probe();
++		printf("ios16: legacy display late probe returned stage=%u\n",
++		    &native_legacy_stage ? native_legacy_stage : 0u);
++	}
 +#endif
 +	return result;
  }
