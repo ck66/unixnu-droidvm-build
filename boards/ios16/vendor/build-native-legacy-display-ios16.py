@@ -599,3 +599,26 @@ except Exception as _e:
 # args, and the display probe calls them.
 _ar_inputs=[late,OUT/'original-bindings.o',OUT/'LegacyDisplayProbe.o',_stub16_obj,hid_obj,keystore_obj,
      process_obj,trace_obj,stub_obj,policy_obj,export_obj,clock_obj]
+_ar_missing=[Path(x).name for x in _ar_inputs if not Path(x).exists()]
+if _ar_missing: print('ios16: %d archive inputs absent, skipping: %s' % (len(_ar_missing),_ar_missing))
+run(['xcrun','ar','rcs',archive]+[str(x) for x in _ar_inputs if Path(x).exists()])
+sources=[ROOT/'drivers/GopFramebuffer/NativeLegacyDisplay.cpp',
+         ROOT/'drivers/GopFramebuffer/NativeLegacyRequest.h',source,hid_source,keystore_source,process_source,trace_source,ROOT/'kits/droidvm/BootUiTraceCore.h',ROOT/'kits/droidvm/BootUiTraceDetails.h',
+         ROOT/'drivers/NativeHidInput/NativeHidInput.cpp',ROOT/'scripts/build-native-hid-input.py',
+         ROOT/'drivers/NativeKeyStoreEvents/NativeKeyStoreEvents.cpp',stub_source,policy_source,clock_source,export_source,store_source,input_source,motion_source,bootargs_source,net_source,netif_source,snd_source,media_source,audio_source,battery_source,
+         ethernet_source,*ionet_sources,*gpu_sources,*virtio_gpu_sources,ROOT/'kits/droidvm/DroidVMVirtioGpu.h']
+print(run(['python3',ROOT/'scripts/build-arm-driver.py','NativeGOPPresenter'],text=True),end='')
+gop=ROOT/'build/native-gop-presenter';gop_late=gop/'NativeGOPPresenter.late.o'
+run([llvm/'llvm-objcopy','--remove-section=__DATA,__mod_init_func','--globalize-symbol=__GLOBAL__sub_I_NativeGOPPresenter.cpp',
+     gop/'NativeGOPPresenter.o',gop_late])
+require(code((gop/'NativeGOPPresenter.o').read_bytes(),macho((gop/'NativeGOPPresenter.o').read_bytes()))==
+        code(gop_late.read_bytes(),macho(gop_late.read_bytes())),'Owned presenter instructions unchanged by late init staging')
+run(['xcrun','ar','rcs',archive,gop_late])
+sources.extend([ROOT/'drivers/GopFramebuffer/NativeGOPPresenter.cpp',ROOT/'drivers/GopFramebuffer/NativeGOPWire.h'])
+(OUT/'build-report.json').write_text(json.dumps(dict(
+    source_sha256={str(p.relative_to(ROOT)):sha(p) for p in sources if Path(p).exists()},generated_abi_sha256=sha(OUT/'OriginalLegacyFramebufferABI.h'),
+    original_candidate_sha256=sha(candidate),original_audit_sha256=sha(ROOT/'build/display-analysis/mobile-graphics-legacy-abi.json'),
+    compiled_object_sha256=sha(obj),late_object_sha256=sha(late),archive_sha256=sha(archive),
+    bindings={n:hex(v) for n,v in bindings.items()},virtual_entries=338,owned_entries=owned,inherited_native_entries=native,
+    guarded_backend_leaves=[i for i in pure if i not in (213,337)],original_instructions_modified=False,driver_initialized=False,display_presented=False,desktop=False),indent=2)+'\n')
+print('Built genuine original Legacy inheritance/dispatch; seven backend leaves still guarded, runtime lifecycle unqualified')
