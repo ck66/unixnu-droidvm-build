@@ -1,0 +1,1 @@
+start 2026-11-28: bsd_init calls the two display probes
