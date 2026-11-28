@@ -260,6 +260,12 @@ def code(data,info):
 require(code(raw,image)==code(late.read_bytes(),macho(late.read_bytes())),'Only owned initializer section registration changes')
 r=json.loads((ROOT/'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json').read_text().strip().rstrip(','))
 cmd=[];args=r['arguments'];i=0;source=ROOT/'kits/droidvm/LegacyDisplayProbe.cpp'
+# iOS 16 board: compile this board's checkpointed copy of the probe in place, so the boot log says
+# which step of the probe the machine stops at (it hung at stage 2 with the stock source).
+_probe_staged=Path(__file__).resolve().parent/'LegacyDisplayProbe-ios16.cpp'
+if _probe_staged.exists() and (ROOT/'kits/droidvm/LegacyDisplayProbe.cpp').exists():
+    (ROOT/'kits/droidvm/LegacyDisplayProbe.cpp').write_text(_probe_staged.read_text())
+    print('ios16: checkpointed display probe staged')
 while i<len(args):
     value=args[i]
     if value==r['file']:cmd.append(str(source))
