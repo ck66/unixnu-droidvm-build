@@ -1,0 +1,1 @@
+trim 2026-11-28: archive keeps display+probes only (the kit was claiming the data disk)
