@@ -1,0 +1,1 @@
+bisect 2026-11-28: archive = driver + probe only
