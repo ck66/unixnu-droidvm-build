@@ -1,0 +1,1 @@
+trim2 2026-11-28: display-only archive, tail restored
