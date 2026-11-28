@@ -1,6 +1,6 @@
 --- a/bsd/kern/bsd_init.c
 +++ b/bsd/kern/bsd_init.c
-@@ -1163,7 +1163,40 @@
+@@ -1163,7 +1163,45 @@
  		}
  	}
  
@@ -23,6 +23,11 @@
 +		printf("ios16: legacy display probe returned stage=%u object=%#llx\n",
 +		    &native_legacy_stage ? native_legacy_stage : 0u,
 +		    &native_legacy_object ? native_legacy_object : 0ull);
++		{
++			extern int ios16_display_class_size(void) __attribute__((weak_import));
++			if (&ios16_display_class_size)
++				printf("ios16: legacy classSize=%d (header says 6304)\n", ios16_display_class_size());
++		}
 +	}
 +#endif
 +	kern_return_t result = IOKitBSDInit();
