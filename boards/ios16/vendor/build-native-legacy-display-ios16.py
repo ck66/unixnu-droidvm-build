@@ -492,6 +492,14 @@ void *native_keyevents_allocate() __attribute__((weak));
 void *native_keyevents_allocate() { return 0; }
 void droidvm_battery_attach() __attribute__((weak));
 void droidvm_battery_attach() {}
+// The display driver and the probe pace themselves on the virtio GPU's work counters.  This board
+// has no virtio GPU: report "nothing submitted, everything finished" so the waiters fall through
+// immediately instead of blocking on a device that will never answer.
+unsigned long long droidvm_virtgpu_submitted() __attribute__((weak));
+unsigned long long droidvm_virtgpu_submitted() { return 0ull; }
+bool droidvm_virtgpu_finished(unsigned long long) __attribute__((weak));
+bool droidvm_virtgpu_finished(unsigned long long) { return true; }
+volatile uint32_t droidvm_virtio_display_state __attribute__((weak));
 // The probe starts the board's other faces in order; on this board they are not built.
 void native_hid_input_probe() __attribute__((weak));
 void native_hid_input_probe() {}
