@@ -1,0 +1,123 @@
+run 46155935723
+--- first errors from kernel-bootstrap.log ---
+2864959:make[3]: *** [/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837//mach.development.bcm2837.unstripped] Error 1
+2864960:make[2]: *** [build_all] Error 2
+2864961:make[1]: *** [build_all_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
+--- link diagnostics ---
+2864942:ld: warning: -new_linker is obsolete
+2864943:ld: warning: search path '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/lib/kernel/platform' not found
+2864944:Undefined symbols for architecture arm64:
+2864957:ld: symbol(s) not found for architecture arm64
+Undefined symbols for architecture arm64:
+  "_ios16_display_class_size", referenced from:
+      _bsd_autoconf in bsd_init.o
+      _bsd_autoconf in bsd_init.o
+  "_native_legacy_display_late_probe", referenced from:
+      _bsd_autoconf in bsd_init.o
+      _bsd_autoconf in bsd_init.o
+  "_native_legacy_display_probe", referenced from:
+      _bsd_autoconf in bsd_init.o
+  "_native_legacy_object", referenced from:
+      _bsd_autoconf in bsd_init.o
+  "_native_legacy_stage", referenced from:
+      _bsd_autoconf in bsd_init.o
+ld: symbol(s) not found for architecture arm64
+clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+make[3]: *** [/Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837//mach.development.bcm2837.unstripped] Error 1
+make[2]: *** [build_all] Error 2
+make[1]: *** [build_all_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
+make: *** [build] Error 2
+build-xnu-4k-baseline.sh: line 833: make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iphoneos}" ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG=arm64 LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY ARM64_LINK_ADDR=0xfffffff007004000 ARM64_PLKSEG_ADDR=0xfffffff004004000 DEPLOYMENT_TARGET_FLAGS="-miphoneos-version-min=17.0 -DXNU_TARGET_OS_IOS" DEPLOYMENT_LINKER_FLAGS="-Wl,-ios_version_min,17.0" RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" BUILD_LTO=0 BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} OBJROOT="$ROOT/build/xnu/ios-obj" SYMROOT="$ROOT/build/xnu/ios-sym" DSTROOT="$ROOT/build/xnu/ios-dst" failed
+--- compile records ---
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/iokit/DEVELOPMENT/IOPlatformExpert.cpo.json
+records:      977  objects:      120
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/lastkerneldataconst.o.json
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/libsa/DEVELOPMENT/bootstrap.cpo.json
+UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/security/DEVELOPMENT/mac_base.o.json
+conf
+DEVELOPMENT
+DriverKit
+IOKit
+--- firehose kernel lib ---
+total 176
+-rw-r--r--  1 runner  staff  44344 Nov 28 14:46 libfirehose_kernel.a
+-rw-r--r--  1 runner  staff  44344 Nov 28 14:46 liblibfirehose_kernel.a
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-project-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/Objects-normal/arm64/libfirehose_kernel_libtool_dependency_info.dat
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/Objects-normal/arm64/libfirehose_kernel.LinkFileList
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-own-target-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel.DependencyMetadataFileList
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel-all-target-headers.hmap
+UniXNU/out/ios16/tree/build/firehose/obj/libdispatch.build/Release-iphoneos/libfirehose_kernel.build/libfirehose_kernel.hmap
+3826:    /usr/sbin/chown -RH runner:staff /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a
+3828:SetMode u+w,go-w,a+rX /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a (in target 'libfirehose_kernel' from project 'libdispatch')
+3830:    /bin/chmod -RH u+w,go-w,a+rX /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/.cache/fakeroot/usr/local/lib/kernel/liblibfirehose_kernel.a
+3832:warning: Traditional headermap style is no longer supported; please migrate to using separate headermaps and set 'ALWAYS_SEARCH_USER_PATHS' to NO. (in target 'libfirehose_kernel' from project 'libdispatch')
+3835:Non-fat file: .cache/fakeroot/usr/local/lib/kernel/libfirehose_kernel.a is architecture: arm64
+3838:late: /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/lib/kernel/libfirehose_kernel.a
+--- archive diagnostics ---
+--- virtio bindings ---
+virtio: 14 relocated slots follow the vtable (first at 193): other objects in __const
+virtio: 202 imports, 11 bound to com.apple.iokit.IOStorageFamily (7 slots, 4 special)
+virtio: bound into libNativeVirtioBlock.a (205240 bytes)
+virtio: build-arm-driver.py takes 'NativeVirtioBlock'
+virtio: built build/native-virtio-block/libNativeVirtioBlock.a (203400 bytes), object NativeVirtioBlock.o
+virtio: catalog id 'VirtioMmioBlock', legacy 'NativeVirtioBlock', outputs ['build/virtio-mmio-block/libVirtioMmioBlock.a']
+virtio: copied to build/virtio-mmio-block/libVirtioMmioBlock.a
+virtio: done in 0.8s
+virtio: driver vtable __ZTV17NativeVirtioBlock: 190 slots, 190 named, 7 inherited from IOBlockStorageDevice
+virtio: linked drivers/NativeVirtioBlock -> drivers/VirtioMmioBlock
+virtio: using the recorded addresses in virtio-record.json
+virtio: com.apple.iokit.IOStorageFamily: __DATA 0xfffffff006a09000+0x3b1, __DATA_CONST 0xfffffff005c72c80+0x5c20, __TEXT 0xfffffff003dcf280+0x1fc0, __TEXT_EXEC 0xfffffff0045d7000+0x14808
+virtio: dispatch table 0xfffffff005c73f50, 190 slots
+virtio: resolved 11 symbols against kernel.macho (table 0xfffffff005c73f50, 190 slots)
+virtio:   __ZN20IOBlockStorageDevice10gMetaClassE              0xfffffff006a091d0 (bound 0xfffffff006a091d0)
+virtio:   __ZN20IOBlockStorageDevice11requestIdleEv            0xfffffff0045da050 (bound 0xfffffff0045da050)
+virtio:   __ZN20IOBlockStorageDevice13doSetPriorityEP26IOBlockStorageDeviceExtentjh 0xfffffff0045da068 (bound 0xfffffff0045da068)
+virtio:   __ZN20IOBlockStorageDevice13setPropertiesEP8OSObject 0xfffffff0045d9f38 (bound 0xfffffff0045d9f38)
+virtio:   __ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP35IOBlockStorageProvisionDeviceExtenty 0xfffffff0045da08c (bound 0xfffffff0045da08c)
+virtio:   __ZN20IOBlockStorageDevice4initEP12OSDictionary      0xfffffff0045d9e30 (bound 0xfffffff0045d9e30)
+virtio:   __ZN20IOBlockStorageDevice7doUnmapEP26IOBlockStorageDeviceExtentjj 0xfffffff0045da05c (bound 0xfffffff0045da05c)
+virtio:   __ZN20IOBlockStorageDeviceC2EPK11OSMetaClass         0xfffffff0045d9d98 (bound 0xfffffff0045d9d98)
+virtio:   __ZN20IOBlockStorageDeviceD2Ev                       0xfffffff0045d9db8 (bound 0xfffffff0045d9db8)
+virtio:   __ZNK20IOBlockStorageDevice11getPropertyEPK8OSSymbol 0xfffffff0045d9e88 (bound 0xfffffff0045d9e88)
+virtio:   __ZTV20IOBlockStorageDevice                          0xfffffff005c73f50 (bound 0xfffffff005c73f50)
+virtio: all 11 bindings still current
+--- fixups ---
+fixup: added libkern/os/firehose_buffer_private.h (4644 bytes)
+fixup: placed .cache/fakeroot/usr/local/include/os/firehose_buffer_private.h in the kernel SDK include path
+fixup: pmap.h reserved10 2 -> 1
+fixup: wrote osfmk/arm64/ppl/{sart.h,uat.h} (no-op IOMMU hooks)
+fixup: dropped options MOCKFS from MASTER
+fixup: disabled 4 "#if MOCKFS" block(s) in vfs_conf.c
+fixup: added -MJ $(@:o=o.json) to 3 compile rules
+fixup: wrote patches/libpthread/zzzz-8796-no-jit-entitled.patch
+fixup: wrote .cache/xnu-work/bsd/kern/source_pthread_bootstrap.c
+fixup: registered osfmk/arm64/unixnu_shims.c
+fixup: added vfs_getvfs_with_vfsops to bsd/vfs/vfs_subr.c
+fixup: config tables repaired (dropped 1 empty item, platform entries added)
+--- step log ---
+--- what the resolver says about xnu ---
+xnu tree commit: not a git tree
+--- tail ---
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-corecrypto-14.py --namespace
+== kernel: archive-03-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py ArmDTPlatform
+== kernel: archive-04-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py ArmCpu
+== kernel: archive-05-build-arm-driver
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-arm-driver.py NativeAES
+== kernel: archive-06-build-native-aes-bindings
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-native-aes-bindings.py
+== kernel: archive-07-build-virtio-archive
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-virtio-archive.py
+== kernel: archive-08-build-libpthread-kernel
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-libpthread-kernel.py
+== kernel: archive-09-build-native-legacy-display-ios16
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-native-legacy-display-ios16.py
++ bash /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/scripts/build-xnu-4k-baseline.sh
+== kernel: prelink
+== ipsw: remote https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw
++ python3 /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/kits/NativePrelink/emit_prelink.py --kernel /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped --prelinked /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ipsw/20H392/kernelcache.decompressed --slide=-0x1000000 --output /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/kernel/kernel.macho --root com.apple.AppleFSCompression.AppleFSCompressionTypeZlib --root com.apple.driver.AppleARMPlatform --root com.apple.driver.AppleARMWatchdogTimer --root com.apple.driver.AppleAudioClockLibs --root com.apple.driver.AppleEffaceableStorage --root com.apple.driver.AppleIISController --root com.apple.driver.AppleM2ScalerCSCDriver --root com.apple.driver.AppleMobileFileIntegrity --root com.apple.driver.ApplePMGR --root com.apple.driver.IODARTFamily --root com.apple.filesystems.apfs --root com.apple.iokit.CoreAnalyticsFamily --root com.apple.iokit.IOAVFamily --root com.apple.iokit.IOAudio2Family --root com.apple.iokit.IOCECFamily --root com.apple.iokit.IOCryptoAcceleratorFamily --root com.apple.iokit.IOGPUFamily --root com.apple.iokit.IOHDCPFamily --root com.apple.iokit.IOMobileGraphicsFamily --root com.apple.iokit.IOReportFamily --root com.apple.iokit.IOSlowAdaptiveClockingFamily --root com.apple.iokit.IOStorageFamily --root com.apple.iokit.IOSurface --root com.apple.kec.Libm --root com.apple.kec.corecrypto --root com.apple.kext.AppleMatch --root com.apple.kext.CoreTrust --root com.apple.security.AppleImage4 --root com.apple.security.sandbox --root com.apple.iokit.IOHIDFamily --early-security-init com.apple.driver.AppleMobileFileIntegrity=0xfffffff005703c54
+== kernel: /Users/runner/work/unixnu-droidvm-build/unixnu-droidvm-build/UniXNU/out/ios16/kernel/kernel.macho sha256 2dffe8bf66c79aa03e0ecbb4d4a13aa2b1d9d2a2d632acc8996e043fca76f6f3
