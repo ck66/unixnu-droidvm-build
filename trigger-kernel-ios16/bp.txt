@@ -1,0 +1,1 @@
+bp 2026-11-28: boot_progress + ufs dpu stubs
