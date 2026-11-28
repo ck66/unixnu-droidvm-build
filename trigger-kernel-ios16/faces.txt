@@ -1,0 +1,1 @@
+faces 2026-11-28: weak stubs for the virtio/GPU entry points the probes call
