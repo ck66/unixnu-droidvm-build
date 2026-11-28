@@ -515,22 +515,22 @@ void native_legacy_display_probe(void) {
 #else
     native_legacy_stage=1;native_legacy_meta_status=0;   // registered as the kext loaded
 #endif
-    IOLog("ios16: probe: registered meta=%d, reading console\n",native_legacy_meta_status);
+    IOLog("ios16: probe: registered meta=%d, reading console\n",(int)native_legacy_meta_status);
     PE_Video video={};native_legacy_stage=2;
     if(PE_current_console(&video) || !video.v_baseAddr || !video.v_width || !video.v_height || video.v_depth!=32
         || video.v_rotate || video.v_width>16384 || video.v_height>16384 || video.v_rowBytes<video.v_width*4
         || video.v_rowBytes>UINT64_MAX/video.v_height){native_legacy_display_checkpoint();return;}
-    IOLog("ios16: probe: console base=%#llx %ux%u row=%u depth=%u\n",(unsigned long long)video.v_baseAddr,video.v_width,video.v_height,(unsigned)video.v_rowBytes,video.v_depth);
+    IOLog("ios16: probe: console base=%#llx w=%u h=%u row=%u depth=%u\n",(unsigned long long)video.v_baseAddr,(unsigned)video.v_width,(unsigned)video.v_height,(unsigned)video.v_rowBytes,(unsigned)video.v_depth);
     IOLog("ios16: probe: allocating\n");
     IOService *display=native_legacy_display_allocate();native_legacy_object=(uintptr_t)display;
-    IOLog("ios16: probe: allocated %p\n",display);
+    IOLog("ios16: probe: allocated %#llx\n",(unsigned long long)native_legacy_object);
     if(!display){native_legacy_display_checkpoint();return;}
     native_legacy_object_size=display->getMetaClass()->getClassSize();
-    IOLog("ios16: probe: classSize=%u\n",native_legacy_object_size);
+    IOLog("ios16: probe: classSize=%u\n",(unsigned)native_legacy_object_size);
     native_legacy_parent_match=(display->metaCast("IOMobileFramebufferLegacy") && display->metaCast("IOMobileFramebuffer") && display->metaCast("IOService"));
     IOLog("ios16: probe: calling init\n");
     native_legacy_stage=3;native_legacy_init_result=display->init();
-    IOLog("ios16: probe: init=%d\n",native_legacy_init_result);
+    IOLog("ios16: probe: init=%d\n",(int)native_legacy_init_result);
     unsigned phase=1;PE_parse_boot_argn("offline-legacy-phase",&phase,sizeof(phase));
     if(native_legacy_init_result && (phase==2 || phase==3 || phase==4)) {
         // IOSurface matches the real IOBSD resource, published by bsd_autoconf.
@@ -576,14 +576,14 @@ void native_legacy_display_late_probe(void) {
     native_hid_input_probe();
 #endif
 #endif
-    IOLog("ios16: late: pending display %p\n",(void *)pendingLegacyDisplay);
+    IOLog("ios16: late: pending display %#llx\n",(unsigned long long)(uintptr_t)pendingLegacyDisplay);
     IOService *display=pendingLegacyDisplay;if(!display)return;pendingLegacyDisplay=nullptr;
     native_legacy_surface_status=OSKextLoadKextWithIdentifier("com.apple.iokit.IOSurface");
-    IOLog("ios16: late: IOSurface load=%d\n",native_legacy_surface_status);
+    IOLog("ios16: late: IOSurface load=%d\n",(int)native_legacy_surface_status);
     OSDictionary *matching=IOService::nameMatching("IOCoreSurfaceRoot");
     IOService *surface=matching?IOService::waitForMatchingService(matching,5000000000ULL):nullptr;
     native_legacy_surface_found=surface!=nullptr;OSSafeReleaseNULL(surface);OSSafeReleaseNULL(matching);
-    IOLog("ios16: late: surface found=%d\n",native_legacy_surface_found);
+    IOLog("ios16: late: surface found=%d\n",(int)native_legacy_surface_found);
     PE_Video video={};
     if(!native_legacy_surface_status && native_legacy_surface_found && !PE_current_console(&video)
         && video.v_baseAddr && video.v_width && video.v_height && video.v_depth==32
