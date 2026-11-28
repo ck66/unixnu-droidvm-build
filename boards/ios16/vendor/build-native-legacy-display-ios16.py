@@ -485,6 +485,17 @@ void *native_keyevents_allocate() __attribute__((weak));
 void *native_keyevents_allocate() { return 0; }
 void droidvm_battery_attach() __attribute__((weak));
 void droidvm_battery_attach() {}
+// The probe starts the board's other faces in order; on this board they are not built.
+void native_hid_input_probe() __attribute__((weak));
+void native_hid_input_probe() {}
+void native_keystore_probe() __attribute__((weak));
+void native_keystore_probe() {}
+void native_touch_probe() __attribute__((weak));
+void native_touch_probe() {}
+void sheng_cpufreq_probe() __attribute__((weak));
+void sheng_cpufreq_probe() {}
+void native_legacy_request_probe() __attribute__((weak));
+void native_legacy_request_probe() {}
 void ios16_hid_input_static_init() __asm__("__GLOBAL__sub_I_NativeHidInput.cpp");
 void ios16_hid_input_static_init() {}
 // KeyStoreProbe calls the source event service's static initializer the same way.
@@ -626,8 +637,11 @@ except Exception as _e:
 # owner made the data volume stop answering (disk3: device is not ready / err 16 on every
 # read, launchd then dies paging its own image in).  Probes stay: they only run on their boot
 # args, and the display probe calls them.
-_ar_inputs=[late,OUT/'original-bindings.o',OUT/'LegacyDisplayProbe.o',_stub16_obj,hid_obj,keystore_obj,
-     process_obj,trace_obj,stub_obj,policy_obj,export_obj,clock_obj]
+# Bisect: the display probe and the driver, nothing else.  Every other object in this archive
+# (HID, key-store, boot-UI trace, launch policy, file export, clock, the board stubs) came from
+# the kit and is not needed to publish a framebuffer; the probe's calls into them are answered
+# by the weak stand-ins below.
+_ar_inputs=[late,OUT/'original-bindings.o',OUT/'LegacyDisplayProbe.o',_stub16_obj]
 _ar_missing=[Path(x).name for x in _ar_inputs if not Path(x).exists()]
 if _ar_missing: print('ios16: %d archive inputs absent, skipping: %s' % (len(_ar_missing),_ar_missing))
 run(['xcrun','ar','rcs',archive]+[str(x) for x in _ar_inputs if Path(x).exists()])
