@@ -496,6 +496,19 @@ void sheng_cpufreq_probe() __attribute__((weak));
 void sheng_cpufreq_probe() {}
 void native_legacy_request_probe() __attribute__((weak));
 void native_legacy_request_probe() {}
+// The boot-progress layer (ShengUfs display bank) and its UFS DPU window are not built on this
+// board.  prepare_scanout answers 1, which the display probe reads as "no diagnostic writer".
+int boot_progress_prepare_scanout() __attribute__((weak));
+int boot_progress_prepare_scanout() { return 1; }
+void boot_progress_cancel_scanout() __attribute__((weak));
+void boot_progress_cancel_scanout() {}
+void boot_progress_stage(const char *) __attribute__((weak));
+void boot_progress_stage(const char *) {}
+int boot_progress_pulse_anchor(unsigned long, unsigned long long, unsigned, unsigned, unsigned) __attribute__((weak));
+int boot_progress_pulse_anchor(unsigned long, unsigned long long, unsigned, unsigned, unsigned) { return 0; }
+volatile uint32_t native_ufs_dpu_state __attribute__((weak));
+int native_ufs_dpu_map() __attribute__((weak));
+int native_ufs_dpu_map() { return 0; }
 void ios16_hid_input_static_init() __asm__("__GLOBAL__sub_I_NativeHidInput.cpp");
 void ios16_hid_input_static_init() {}
 // KeyStoreProbe calls the source event service's static initializer the same way.
