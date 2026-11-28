@@ -1,0 +1,1 @@
+ckpt 2026-11-28: printf checkpoints around the display probes
