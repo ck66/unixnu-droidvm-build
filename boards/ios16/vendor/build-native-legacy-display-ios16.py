@@ -435,113 +435,135 @@ gpu_objects=[ROOT/p for p in json.loads(_gpu_obj.read_text())] if _gpu_obj.exist
 gpu_sources=[ROOT/p for p in json.loads(_gpu_src.read_text())] if _gpu_src.exists() else []
 print('ios16: gpu objects %d, sources %d' % (len(gpu_objects), len(gpu_sources)))
 archive=OUT/'libNativeLegacyDisplay.late.a';archive.unlink(missing_ok=True)
-print(run(['python3',ROOT/'scripts/build-native-hid-input.py'],text=True),end='')
+# Both stages below are pinned to the 21H461 kernelcache (byte-exact instructions, fixed vtable
+# addresses).  The display archive does not need either of them to publish an IOFramebuffer, so a
+# failure is reported and the archive is built from what this board can produce.  These two paths
+# are pre-set because the archive list below names them whether or not the stages ran.
 hid_dir=ROOT/'build/sheng-hid-input'
-# The HID device also sends its report 1, the boot keyboard its descriptor already declares, when the board's keyboard driver tells it
-# (native_keyboard_set_sink: kits/droidvm/DroidVMVirtioInput.c, the app's virtio keyboard): NativeHidInput sends only the Home button
-# and touch, so no key typed on the phone reached iOS. Compiled from a staged copy with build-arm-driver.py's own command, after the
-# HID build's audit: only static members are added, its vtable and original bindings stay as audited.
-hid_original=ROOT/'drivers/NativeHidInput/NativeHidInput.cpp';hid_text=hid_original.read_text()
-hid_keyboard=('    // DroidVM (build-native-legacy-display.py): the keyboard driver calls keyboardNotify with each boot keyboard state (modifier\n'
-              '    // byte, reserved byte, six usages), sent as report 1.\n'
-              '    static void keyboardNotify(void *context,const uint8_t *keys) {\n'
-              '        NativeHidInput *self=static_cast<NativeHidInput *>(context);\n'
-              '        if(self && self->inputLoop && keys)self->inputLoop->runAction(&NativeHidInput::keyboardAction,self,const_cast<uint8_t *>(keys));\n'
-              '    }\n'
-              '    static IOReturn keyboardAction(OSObject *owner,void *keys,void *,void *,void *) {\n'
-              '        NativeHidInput *self=OSDynamicCast(NativeHidInput,owner);if(!self)return kIOReturnSuccess;\n'
-              '        if(!self->hasEventDriverCached())return kIOReturnNotReady;\n'
-              '        unsigned char report[9]={1};\n'
-              '        memcpy(report+1,keys,8);\n'
-              '        IOBufferMemoryDescriptor *buffer=IOBufferMemoryDescriptor::withBytes(report,sizeof(report),kIODirectionNone);\n'
-              '        IOReturn result=buffer?self->handleReport(buffer,0,0):kIOReturnNoMemory;\n'
-              '        OSSafeReleaseNULL(buffer);\n'
-              '        return result;\n'
-              '    }\n')
-for anchor,replacement in (
-        ('extern "C" void native_buttons_set_sink(void (*)(void *, uint32_t), void *) __attribute__((weak_import));\n',
-         'extern "C" void native_buttons_set_sink(void (*)(void *, uint32_t), void *) __attribute__((weak_import));\n'
-         'extern "C" void native_keyboard_set_sink(void (*)(void *, const uint8_t *), void *);\n'),
-        ('    bool hasEventDriverCached() {\n',hid_keyboard+'    bool hasEventDriverCached() {\n'),
-        ('        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(&NativeHidInput::buttonsNotify,this);\n',
-         '        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(&NativeHidInput::buttonsNotify,this);\n'
-         '        if(!touchOnly)native_keyboard_set_sink(&NativeHidInput::keyboardNotify,this);\n'),
-        ('        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(nullptr,nullptr);\n',
-         '        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(nullptr,nullptr);\n'
-         '        if(!touchOnly)native_keyboard_set_sink(nullptr,nullptr);\n')):
-    require(hid_text.count(anchor)==1,'NativeHidInput.cpp no longer has exactly one '+anchor.strip())
-    hid_text=hid_text.replace(anchor,replacement)
-# The board's motion sensors as HID devices, in the same translation unit so the same late initializer registers their metaclass.
-hid_text+='\n'+(ROOT/'kits/droidvm/DroidVMMotionHid.inc').read_text()
-# the same file name: the late static initializer is named after it (__GLOBAL__sub_I_NativeHidInput.cpp)
-hid_staged=hid_dir/'droidvm'/'NativeHidInput.cpp';hid_staged.parent.mkdir(exist_ok=True);hid_staged.write_text(hid_text)
-hid_command=json.loads((hid_dir/'compile-command.json').read_text())
-require(hid_command.count(str(hid_original))==1,'build-arm-driver.py compiles NativeHidInput.cpp once')
-run([str(hid_staged) if a==str(hid_original) else a for a in hid_command],cwd=r['directory'])
-run([llvm/'llvm-objcopy','--remove-section=__DATA,__mod_init_func','--globalize-symbol=__GLOBAL__sub_I_NativeHidInput.cpp',
-     hid_dir/'NativeHidInput.o',hid_dir/'NativeHidInput.late.o'])
-print(run(['python3',ROOT/'scripts/build-arm-driver.py','NativeKeyStoreEvents'],text=True),end='')
-keyevents=ROOT/'build/native-keystore-events'
-# The keystore's user client also wraps and unwraps keys for securityd (aks_wrap_key, selector 10; aks_unwrap_key, 11: scalars
-# {keybag, class}, the key in and out as structures, and for 10 the class used as the one scalar out, as libaks calls them).
-# NativeKeyStoreEvents refuses both (kIOReturnUnsupported), so every keychain item add failed (ks_crypt e00002c7 'oe') and
-# bluetoothd, cloudd and the rest stored nothing. A wrapped key here is an 8-byte header ('DVMK' and the class) and the key:
-# like the rest of this keystore it protects nothing. Compiled from a staged copy with build-arm-driver.py's own command.
-keystore_original=ROOT/'drivers/NativeKeyStoreEvents/NativeKeyStoreEvents.cpp';keystore_text=keystore_original.read_text()
-keystore_helper='''// DroidVM (build-native-legacy-display.py): aks_wrap_key (10) and aks_unwrap_key (11) without keys.
-IOReturn droidvmWrap(uint32_t selector, IOExternalMethodArguments *args) {
-    const bool wrap = selector == 10;
-    if (args->scalarInputCount != 2 || !args->scalarInput) return kIOReturnBadArgument;
-    if (wrap ? (args->scalarOutputCount < 1 || !args->scalarOutput) : args->scalarOutputCount != 0) return kIOReturnBadArgument;
-    uint8_t in[512], out[520];
-    uint32_t length = 0, produced = 0;
-    if (args->structureInputDescriptor) {
-        length = (uint32_t)args->structureInputDescriptor->getLength();
-        if (length > sizeof in || args->structureInputDescriptor->readBytes(0, in, length) != length) return kIOReturnBadArgument;
-    } else {
-        length = args->structureInputSize;
-        if (length > sizeof in || (length && !args->structureInput)) return kIOReturnBadArgument;
-        memcpy(in, args->structureInput, length);
+keyevents_late=ROOT/'build/native-keystore-events'/'NativeKeyStoreEvents.late.o'
+_HID_OK=True
+try:
+    print(run(['python3',ROOT/'scripts/build-native-hid-input.py'],text=True),end='')
+    hid_dir=ROOT/'build/sheng-hid-input'
+    # The HID device also sends its report 1, the boot keyboard its descriptor already declares, when the board's keyboard driver tells it
+    # (native_keyboard_set_sink: kits/droidvm/DroidVMVirtioInput.c, the app's virtio keyboard): NativeHidInput sends only the Home button
+    # and touch, so no key typed on the phone reached iOS. Compiled from a staged copy with build-arm-driver.py's own command, after the
+    # HID build's audit: only static members are added, its vtable and original bindings stay as audited.
+    hid_original=ROOT/'drivers/NativeHidInput/NativeHidInput.cpp';hid_text=hid_original.read_text()
+    hid_keyboard=('    // DroidVM (build-native-legacy-display.py): the keyboard driver calls keyboardNotify with each boot keyboard state (modifier\n'
+                  '    // byte, reserved byte, six usages), sent as report 1.\n'
+                  '    static void keyboardNotify(void *context,const uint8_t *keys) {\n'
+                  '        NativeHidInput *self=static_cast<NativeHidInput *>(context);\n'
+                  '        if(self && self->inputLoop && keys)self->inputLoop->runAction(&NativeHidInput::keyboardAction,self,const_cast<uint8_t *>(keys));\n'
+                  '    }\n'
+                  '    static IOReturn keyboardAction(OSObject *owner,void *keys,void *,void *,void *) {\n'
+                  '        NativeHidInput *self=OSDynamicCast(NativeHidInput,owner);if(!self)return kIOReturnSuccess;\n'
+                  '        if(!self->hasEventDriverCached())return kIOReturnNotReady;\n'
+                  '        unsigned char report[9]={1};\n'
+                  '        memcpy(report+1,keys,8);\n'
+                  '        IOBufferMemoryDescriptor *buffer=IOBufferMemoryDescriptor::withBytes(report,sizeof(report),kIODirectionNone);\n'
+                  '        IOReturn result=buffer?self->handleReport(buffer,0,0):kIOReturnNoMemory;\n'
+                  '        OSSafeReleaseNULL(buffer);\n'
+                  '        return result;\n'
+                  '    }\n')
+    for anchor,replacement in (
+            ('extern "C" void native_buttons_set_sink(void (*)(void *, uint32_t), void *) __attribute__((weak_import));\n',
+             'extern "C" void native_buttons_set_sink(void (*)(void *, uint32_t), void *) __attribute__((weak_import));\n'
+             'extern "C" void native_keyboard_set_sink(void (*)(void *, const uint8_t *), void *);\n'),
+            ('    bool hasEventDriverCached() {\n',hid_keyboard+'    bool hasEventDriverCached() {\n'),
+            ('        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(&NativeHidInput::buttonsNotify,this);\n',
+             '        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(&NativeHidInput::buttonsNotify,this);\n'
+             '        if(!touchOnly)native_keyboard_set_sink(&NativeHidInput::keyboardNotify,this);\n'),
+            ('        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(nullptr,nullptr);\n',
+             '        if(!touchOnly && &native_buttons_set_sink)native_buttons_set_sink(nullptr,nullptr);\n'
+             '        if(!touchOnly)native_keyboard_set_sink(nullptr,nullptr);\n')):
+        require(hid_text.count(anchor)==1,'NativeHidInput.cpp no longer has exactly one '+anchor.strip())
+        hid_text=hid_text.replace(anchor,replacement)
+    # The board's motion sensors as HID devices, in the same translation unit so the same late initializer registers their metaclass.
+    hid_text+='\n'+(ROOT/'kits/droidvm/DroidVMMotionHid.inc').read_text()
+    # the same file name: the late static initializer is named after it (__GLOBAL__sub_I_NativeHidInput.cpp)
+    hid_staged=hid_dir/'droidvm'/'NativeHidInput.cpp';hid_staged.parent.mkdir(exist_ok=True);hid_staged.write_text(hid_text)
+    hid_command=json.loads((hid_dir/'compile-command.json').read_text())
+    require(hid_command.count(str(hid_original))==1,'build-arm-driver.py compiles NativeHidInput.cpp once')
+    run([str(hid_staged) if a==str(hid_original) else a for a in hid_command],cwd=r['directory'])
+    run([llvm/'llvm-objcopy','--remove-section=__DATA,__mod_init_func','--globalize-symbol=__GLOBAL__sub_I_NativeHidInput.cpp',
+         hid_dir/'NativeHidInput.o',hid_dir/'NativeHidInput.late.o'])
+except Exception as _e:
+    print('ios16: HID input unavailable (%s: %s); archive continues without it' % (type(_e).__name__,_e))
+    _HID_OK=False
+# iOS 16 board: this stage is pinned to the 21H461 kernelcache (byte-exact instructions, fixed
+# vtable addresses).  The display archive does not need it to produce an IOFramebuffer, so a
+# failure here is reported and the archive is built from what this board can produce.
+_KEY_OK=True
+try:
+    print(run(['python3',ROOT/'scripts/build-arm-driver.py','NativeKeyStoreEvents'],text=True),end='')
+    keyevents=ROOT/'build/native-keystore-events'
+    # The keystore's user client also wraps and unwraps keys for securityd (aks_wrap_key, selector 10; aks_unwrap_key, 11: scalars
+    # {keybag, class}, the key in and out as structures, and for 10 the class used as the one scalar out, as libaks calls them).
+    # NativeKeyStoreEvents refuses both (kIOReturnUnsupported), so every keychain item add failed (ks_crypt e00002c7 'oe') and
+    # bluetoothd, cloudd and the rest stored nothing. A wrapped key here is an 8-byte header ('DVMK' and the class) and the key:
+    # like the rest of this keystore it protects nothing. Compiled from a staged copy with build-arm-driver.py's own command.
+    keystore_original=ROOT/'drivers/NativeKeyStoreEvents/NativeKeyStoreEvents.cpp';keystore_text=keystore_original.read_text()
+    keystore_helper='''// DroidVM (build-native-legacy-display.py): aks_wrap_key (10) and aks_unwrap_key (11) without keys.
+    IOReturn droidvmWrap(uint32_t selector, IOExternalMethodArguments *args) {
+        const bool wrap = selector == 10;
+        if (args->scalarInputCount != 2 || !args->scalarInput) return kIOReturnBadArgument;
+        if (wrap ? (args->scalarOutputCount < 1 || !args->scalarOutput) : args->scalarOutputCount != 0) return kIOReturnBadArgument;
+        uint8_t in[512], out[520];
+        uint32_t length = 0, produced = 0;
+        if (args->structureInputDescriptor) {
+            length = (uint32_t)args->structureInputDescriptor->getLength();
+            if (length > sizeof in || args->structureInputDescriptor->readBytes(0, in, length) != length) return kIOReturnBadArgument;
+        } else {
+            length = args->structureInputSize;
+            if (length > sizeof in || (length && !args->structureInput)) return kIOReturnBadArgument;
+            memcpy(in, args->structureInput, length);
+        }
+        const uint32_t keyclass = (uint32_t)args->scalarInput[1];
+        if (wrap) {
+            memcpy(out, "DVMK", 4); memcpy(out + 4, &keyclass, 4); memcpy(out + 8, in, length); produced = length + 8;
+        } else {
+            if (length < 8 || memcmp(in, "DVMK", 4)) return kIOReturnBadArgument;
+            produced = length - 8; memcpy(out, in + 8, produced);
+        }
+        if (args->structureOutputDescriptor) {
+            if (produced > args->structureOutputDescriptor->getLength()) return kIOReturnNoSpace;
+            args->structureOutputDescriptor->writeBytes(0, out, produced);
+            args->structureOutputDescriptorSize = produced;
+        } else if (args->structureOutput && produced <= args->structureOutputSize) {
+            memcpy(args->structureOutput, out, produced);
+            args->structureOutputSize = produced;
+        } else {
+            return kIOReturnNoSpace;
+        }
+        if (wrap) {args->scalarOutput[0] = keyclass; args->scalarOutputCount = 1;}
+        return kIOReturnSuccess;
     }
-    const uint32_t keyclass = (uint32_t)args->scalarInput[1];
-    if (wrap) {
-        memcpy(out, "DVMK", 4); memcpy(out + 4, &keyclass, 4); memcpy(out + 8, in, length); produced = length + 8;
-    } else {
-        if (length < 8 || memcmp(in, "DVMK", 4)) return kIOReturnBadArgument;
-        produced = length - 8; memcpy(out, in + 8, produced);
-    }
-    if (args->structureOutputDescriptor) {
-        if (produced > args->structureOutputDescriptor->getLength()) return kIOReturnNoSpace;
-        args->structureOutputDescriptor->writeBytes(0, out, produced);
-        args->structureOutputDescriptorSize = produced;
-    } else if (args->structureOutput && produced <= args->structureOutputSize) {
-        memcpy(args->structureOutput, out, produced);
-        args->structureOutputSize = produced;
-    } else {
-        return kIOReturnNoSpace;
-    }
-    if (wrap) {args->scalarOutput[0] = keyclass; args->scalarOutputCount = 1;}
-    return kIOReturnSuccess;
-}
-'''
-for anchor,replacement in (('}  // namespace\n',keystore_helper+'}  // namespace\n'),
-                           ('        default: break;\n','        case 10: case 11: rc = droidvmWrap(selector, args); break;\n        default: break;\n')):
-    require(keystore_text.count(anchor)==1,'NativeKeyStoreEvents.cpp no longer has exactly one '+anchor.strip())
-    keystore_text=keystore_text.replace(anchor,replacement)
-# the same file name: the late static initializer is named after it (__GLOBAL__sub_I_NativeKeyStoreEvents.cpp)
-keystore_staged=keyevents/'droidvm'/'NativeKeyStoreEvents.cpp';keystore_staged.parent.mkdir(exist_ok=True);keystore_staged.write_text(keystore_text)
-keystore_command=json.loads((keyevents/'compile-command.json').read_text())
-require(keystore_command.count(str(keystore_original))==1,'build-arm-driver.py compiles NativeKeyStoreEvents.cpp once')
-run([str(keystore_staged) if a==str(keystore_original) else a for a in keystore_command],cwd=r['directory'])
-keyevents_late=keyevents/'NativeKeyStoreEvents.late.o'
-run([llvm/'llvm-objcopy','--remove-section=__DATA,__mod_init_func',
-     '--globalize-symbol=__GLOBAL__sub_I_NativeKeyStoreEvents.cpp',
-     keyevents/'NativeKeyStoreEvents.o',keyevents_late])
-require(code((keyevents/'NativeKeyStoreEvents.o').read_bytes(),macho((keyevents/'NativeKeyStoreEvents.o').read_bytes()))==
-        code(keyevents_late.read_bytes(),macho(keyevents_late.read_bytes())),'Owned event-service instructions unchanged by late init staging')
-run(['xcrun','ar','rcs',archive,late,OUT/'original-bindings.o',OUT/'LegacyDisplayProbe.o',hid_obj,keystore_obj,process_obj,trace_obj,
+    '''
+    for anchor,replacement in (('}  // namespace\n',keystore_helper+'}  // namespace\n'),
+                               ('        default: break;\n','        case 10: case 11: rc = droidvmWrap(selector, args); break;\n        default: break;\n')):
+        require(keystore_text.count(anchor)==1,'NativeKeyStoreEvents.cpp no longer has exactly one '+anchor.strip())
+        keystore_text=keystore_text.replace(anchor,replacement)
+    # the same file name: the late static initializer is named after it (__GLOBAL__sub_I_NativeKeyStoreEvents.cpp)
+    keystore_staged=keyevents/'droidvm'/'NativeKeyStoreEvents.cpp';keystore_staged.parent.mkdir(exist_ok=True);keystore_staged.write_text(keystore_text)
+    keystore_command=json.loads((keyevents/'compile-command.json').read_text())
+    require(keystore_command.count(str(keystore_original))==1,'build-arm-driver.py compiles NativeKeyStoreEvents.cpp once')
+    run([str(keystore_staged) if a==str(keystore_original) else a for a in keystore_command],cwd=r['directory'])
+    keyevents_late=keyevents/'NativeKeyStoreEvents.late.o'
+    run([llvm/'llvm-objcopy','--remove-section=__DATA,__mod_init_func',
+         '--globalize-symbol=__GLOBAL__sub_I_NativeKeyStoreEvents.cpp',
+         keyevents/'NativeKeyStoreEvents.o',keyevents_late])
+    require(code((keyevents/'NativeKeyStoreEvents.o').read_bytes(),macho((keyevents/'NativeKeyStoreEvents.o').read_bytes()))==
+            code(keyevents_late.read_bytes(),macho(keyevents_late.read_bytes())),'Owned event-service instructions unchanged by late init staging')
+except Exception as _e:
+    print('ios16: key-store events unavailable (%s: %s); archive continues without it' % (type(_e).__name__,_e))
+    _KEY_OK=False
+_ar_inputs=[late,OUT/'original-bindings.o',OUT/'LegacyDisplayProbe.o',hid_obj,keystore_obj,process_obj,trace_obj,
      hid_dir/'NativeHidInput.late.o',hid_dir/'hid-original-bindings.o',keyevents_late,stub_obj,policy_obj,clock_obj,export_obj,store_obj,input_obj,motion_obj,bootargs_obj,net_obj,netif_obj,snd_obj,media_obj,
-     audio_late,battery_late,ethernet_late,*ionet_objects,*gpu_objects,*virtio_gpu_objects])
+     audio_late,battery_late,ethernet_late,*ionet_objects,*gpu_objects,*virtio_gpu_objects]
+_ar_missing=[Path(x).name for x in _ar_inputs if not Path(x).exists()]
+if _ar_missing: print('ios16: %d archive inputs absent, skipping: %s' % (len(_ar_missing),_ar_missing))
+run(['xcrun','ar','rcs',archive]+[str(x) for x in _ar_inputs if Path(x).exists()])
 sources=[ROOT/'drivers/GopFramebuffer/NativeLegacyDisplay.cpp',
          ROOT/'drivers/GopFramebuffer/NativeLegacyRequest.h',source,hid_source,keystore_source,process_source,trace_source,ROOT/'kits/droidvm/BootUiTraceCore.h',ROOT/'kits/droidvm/BootUiTraceDetails.h',
          ROOT/'drivers/NativeHidInput/NativeHidInput.cpp',ROOT/'scripts/build-native-hid-input.py',
@@ -556,7 +578,7 @@ require(code((gop/'NativeGOPPresenter.o').read_bytes(),macho((gop/'NativeGOPPres
 run(['xcrun','ar','rcs',archive,gop_late])
 sources.extend([ROOT/'drivers/GopFramebuffer/NativeGOPPresenter.cpp',ROOT/'drivers/GopFramebuffer/NativeGOPWire.h'])
 (OUT/'build-report.json').write_text(json.dumps(dict(
-    source_sha256={str(p.relative_to(ROOT)):sha(p) for p in sources},generated_abi_sha256=sha(OUT/'OriginalLegacyFramebufferABI.h'),
+    source_sha256={str(p.relative_to(ROOT)):sha(p) for p in sources if Path(p).exists()},generated_abi_sha256=sha(OUT/'OriginalLegacyFramebufferABI.h'),
     original_candidate_sha256=sha(candidate),original_audit_sha256=sha(ROOT/'build/display-analysis/mobile-graphics-legacy-abi.json'),
     compiled_object_sha256=sha(obj),late_object_sha256=sha(late),archive_sha256=sha(archive),
     bindings={n:hex(v) for n,v in bindings.items()},virtual_entries=338,owned_entries=owned,inherited_native_entries=native,
