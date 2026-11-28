@@ -1,0 +1,1 @@
+vgpu 2026-11-28: pacing counter stubs
