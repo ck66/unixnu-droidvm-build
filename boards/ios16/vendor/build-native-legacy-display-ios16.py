@@ -487,6 +487,9 @@ void droidvm_battery_attach() __attribute__((weak));
 void droidvm_battery_attach() {}
 void ios16_hid_input_static_init() __asm__("__GLOBAL__sub_I_NativeHidInput.cpp");
 void ios16_hid_input_static_init() {}
+// KeyStoreProbe calls the source event service's static initializer the same way.
+void ios16_keyevents_static_init() __asm__("__GLOBAL__sub_I_NativeKeyStoreEvents.cpp");
+void ios16_keyevents_static_init() {}
 }
 """)
 _stub16_obj=OUT/'ios16-display-stubs.o'
