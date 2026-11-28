@@ -1,0 +1,1 @@
+stub 2026-11-28: weak stubs for HID/motion/bindfs/gpu-probe helpers
